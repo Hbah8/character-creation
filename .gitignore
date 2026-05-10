@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+character-app/dist/
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local

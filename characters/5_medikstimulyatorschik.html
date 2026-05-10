@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>5. Медик-стимуляторщик - Досье оператора</title>
+  <link rel="stylesheet" href="operator_sheet_style.css">
+</head>
+<body>
+  <!--
+    Как быстро сделать нового персонажа:
+    1. Скопируй этот HTML-файл.
+    2. Замени текст внутри блоков .value, таблиц и списков.
+    3. Для портрета замени блок .portrait-placeholder на:
+       <img src="portrait.png" alt="Портрет оператора">
+    4. Открой HTML в браузере и печатай в PDF: A4, без полей, background graphics включены.
+  -->
+  <main class="sheet">
+    <div class="content">
+      <header class="header">
+        <div>
+          <div class="titlebar">
+            <div class="main-title">Досье оператора</div>
+            <div class="file-no">Файл: PREG-005</div>
+          </div>
+
+          <div class="id-grid">
+            <div class="id-cell">
+              <div class="label">Позывной</div>
+              <div class="value"></div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Имя</div>
+              <div class="value">Медик-стимуляторщик</div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Ранг</div>
+              <div class="value"></div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Роль</div>
+              <div class="value">Полевой врач с экспериментальными препаратами.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="portrait">
+          <div class="portrait-placeholder">Портрет<br>оператора</div>
+        </div>
+      </header>
+
+      <section class="columns">
+        <div class="column">
+          <section class="section">
+            <div class="section-title">Характеристики</div>
+            <table class="table stat-table">
+              <tr><td>Ловкость</td><td>d6</td></tr>
+<tr><td>Смекалка</td><td>d8</td></tr>
+<tr><td>Характер</td><td>d8</td></tr>
+<tr><td>Сила</td><td>d4</td></tr>
+<tr><td>Выносливость</td><td>d8</td></tr>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Боевые параметры</div>
+            <table class="table combat-table">
+              <tr><td>Скорость</td><td>6</td></tr>
+<tr><td>Защита</td><td>2</td></tr>
+<tr><td>Расчёт</td><td>Fighting отсутствует → 2</td></tr>
+<tr><td>Стойкость</td><td>6</td></tr>
+<tr><td>Расчёт</td><td>Vigor d8 → 2 + 4 = 6</td></tr>
+<tr><td>Мана</td><td>нет</td></tr>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Навыки</div>
+            <table class="table skill-table">
+              <thead>
+                <tr><th>Навык</th><th>Знач.</th><th>Хар-ка</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Healing</td><td>d10</td><td>Смекалка</td></tr>
+<tr><td>Science</td><td>d8</td><td>Смекалка</td></tr>
+<tr><td>Notice</td><td>d8</td><td>Смекалка</td></tr>
+<tr><td>Shooting</td><td>d6</td><td>Ловкость</td></tr>
+<tr><td>Persuasion</td><td>d6</td><td>Характер</td></tr>
+<tr><td>Athletics</td><td>d6</td><td>Ловкость</td></tr>
+<tr><td>Common Knowledge</td><td>d6</td><td>Смекалка</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <div class="column">
+          <section class="section">
+            <div class="section-title">Черты</div>
+            <div class="list">
+              <p class="item"><strong>Храбрый / Brave</strong> — +2 к Fear checks и сопротивлению Intimidation.</p>
+<p class="item"><strong>Связи / Connections</strong> — Может обращаться к влиятельным знакомым за услугами. <strong>ЗАМЕНА:</strong> `Healer` → `Connections`. Прямого аналога лечения в `edges.ts` нет.</p>
+<p class="item"><strong>Удача / Luck</strong> — +1 Benny за сессию. <strong>ЗАМЕНА:</strong> `Elan` → `Luck`.</p>
+<p class="item"><strong>Стальные нервы / Nerves of Steel</strong> — Игнорирует 1 пункт штрафа за ранения. <strong>ЗАМЕНА:</strong> `Iron Jaw` → `Nerves of Steel`.</p>
+<p class="item"><strong>Боевые рефлексы / Combat Reflexes</strong> — +2 к восстановлению от Shaken/Stunned. <strong>ЗАМЕНА:</strong> `Soldier` → `Combat Reflexes`.</p>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Изъяны</div>
+            <div class="list">
+              <p class="item"><strong>Клятва / Vow</strong> — Minor: значимое обязательство. Major: доминирует над жизнью.</p>
+<p class="item"><strong>Привычка / Habit</strong> — Minor: раздражающая привычка, −1 Charisma. Major: опасная зависимость, −2 Charisma.</p>
+<p class="item"><strong>Пацифист / Pacifist Minor</strong> — Дерётся только в самозащите.</p>
+<p class="item"><strong>Безжалостный / Ruthless</strong> — Minor: готов вредить невиновным ради высшей цели. Major: сделает всё ради цели.</p>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Оружие</div>
+            <table class="table weapon-table">
+              <thead>
+                <tr><th>Оружие</th><th>Дист.</th><th>Урон</th><th>AP</th><th>RoF</th><th>Маг.</th></tr>
+              </thead>
+              <tbody>
+                
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Снаряжение</div>
+            <div class="list">
+              
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Особые правила персонажа</div>
+            <div class="list">
+              <p class="item">Лечит, снимает последствия, даёт стимы: бонус сейчас, откат потом.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="notes">
+        <div class="section-title">Заметки</div>
+        <div class="notes-lines"></div>
+        <div class="edit-hint">Место для записей</div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

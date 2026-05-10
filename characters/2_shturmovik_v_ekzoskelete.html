@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2. Штурмовик в экзоскелете - Досье оператора</title>
+  <link rel="stylesheet" href="operator_sheet_style.css">
+</head>
+<body>
+  <!--
+    Как быстро сделать нового персонажа:
+    1. Скопируй этот HTML-файл.
+    2. Замени текст внутри блоков .value, таблиц и списков.
+    3. Для портрета замени блок .portrait-placeholder на:
+       <img src="portrait.png" alt="Портрет оператора">
+    4. Открой HTML в браузере и печатай в PDF: A4, без полей, background graphics включены.
+  -->
+  <main class="sheet">
+    <div class="content">
+      <header class="header">
+        <div>
+          <div class="titlebar">
+            <div class="main-title">Досье оператора</div>
+            <div class="file-no">Файл: PREG-002</div>
+          </div>
+
+          <div class="id-grid">
+            <div class="id-cell">
+              <div class="label">Позывной</div>
+              <div class="value"></div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Имя</div>
+              <div class="value">Штурмовик в экзоскелете</div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Ранг</div>
+              <div class="value"></div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Роль</div>
+              <div class="value">Проломщик, тяжёлый щит отряда.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="portrait">
+          <div class="portrait-placeholder">Портрет<br>оператора</div>
+        </div>
+      </header>
+
+      <section class="columns">
+        <div class="column">
+          <section class="section">
+            <div class="section-title">Характеристики</div>
+            <table class="table stat-table">
+              <tr><td>Ловкость</td><td>d6</td></tr>
+<tr><td>Смекалка</td><td>d4</td></tr>
+<tr><td>Характер</td><td>d8</td></tr>
+<tr><td>Сила</td><td>d10</td></tr>
+<tr><td>Выносливость</td><td>d10</td></tr>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Боевые параметры</div>
+            <table class="table combat-table">
+              <tr><td>Скорость</td><td>5 при <strong>Slow Minor</strong> / 4 при <strong>Slow Major</strong></td></tr>
+<tr><td>Защита</td><td>8</td></tr>
+<tr><td>Расчёт</td><td>Fighting d10 → 2 + 5 = 7; <strong>Block</strong> +1 → 8</td></tr>
+<tr><td>Стойкость</td><td>8 + (6)</td></tr>
+<tr><td>Расчёт</td><td>Vigor d10 → 2 + 5 = 7; <strong>Brawny</strong> +1 → 8</td></tr>
+<tr><td>Мана</td><td>нет</td></tr>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Навыки</div>
+            <table class="table skill-table">
+              <thead>
+                <tr><th>Навык</th><th>Знач.</th><th>Хар-ка</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Драка</td><td>d10</td><td>Ловкость</td></tr>
+<tr><td>Стрельба</td><td>d8</td><td></td></tr>
+<tr><td>Атлетика</td><td>d8</td><td>Ловкость</td></tr>
+<tr><td>Запугивание</td><td>d8</td><td></td></tr>
+<tr><td>Внимание</td><td>d6</td><td>Смекалка</td></tr>
+<tr><td>Ремонт</td><td>d4</td><td></td></tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <div class="column">
+          <section class="section">
+            <div class="section-title">Черты</div>
+            <div class="list">
+              <p class="item"><strong>Бугай</strong> — Размер и Стойкость +1, лимит нагрузки выше на шаг.</p>
+<p class="item"><strong>Боевые рефлексы</strong> — +2 к восстановлению от Шока/Оглушения.</p>
+<p class="item"><strong>Стальные нервы</strong> — Игнорирует 1 пункт штрафа за ранения.</p>
+<p class="item"><strong>Круговой удар</strong> — Атакует всех соседних врагов с −2.</p>
+<p class="item"><strong>Блок</strong> — +1 Защита, -1 бонус к окружению для врагов</p>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Изъяны</div>
+            <div class="list">
+              <p class="item"><strong>Медлительный</strong> — Minor: Pace 5, бег d4. Major: Pace 4, бег d4, −2 к Athletics и проверкам на рефлексы.</p>
+<p class="item"><strong>Упрямый</strong> — Всегда хочет по-своему и постоянно спорит.</p>
+<p class="item"><strong>Кровожадный</strong> — Не берёт пленных; −4 к Charisma.</p>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Оружие</div>
+            <table class="table weapon-table">
+              <thead>
+                <tr><th>Оружие</th><th>Дист.</th><th>Урон</th><th>AP</th><th>RoF</th><th>Маг.</th></tr>
+              </thead>
+              <tbody>
+                
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Снаряжение</div>
+            <div class="list">
+              
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Особые правила персонажа</div>
+            <div class="list">
+              <p class="item">Держит коридор, ломает двери, тащит раненых, но страдает от перегрева/неповоротливости.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="notes">
+        <div class="section-title">Заметки</div>
+        <div class="notes-lines"></div>
+        <div class="edit-hint">Место для записей</div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

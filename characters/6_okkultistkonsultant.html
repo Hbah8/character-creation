@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>6. Оккультист-консультант - Досье оператора</title>
+  <link rel="stylesheet" href="operator_sheet_style.css">
+</head>
+<body>
+  <!--
+    Как быстро сделать нового персонажа:
+    1. Скопируй этот HTML-файл.
+    2. Замени текст внутри блоков .value, таблиц и списков.
+    3. Для портрета замени блок .portrait-placeholder на:
+       <img src="portrait.png" alt="Портрет оператора">
+    4. Открой HTML в браузере и печатай в PDF: A4, без полей, background graphics включены.
+  -->
+  <main class="sheet">
+    <div class="content">
+      <header class="header">
+        <div>
+          <div class="titlebar">
+            <div class="main-title">Досье оператора</div>
+            <div class="file-no">Файл: PREG-006</div>
+          </div>
+
+          <div class="id-grid">
+            <div class="id-cell">
+              <div class="label">Позывной</div>
+              <div class="value"></div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Имя</div>
+              <div class="value">Оккультист-консультант</div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Ранг</div>
+              <div class="value"></div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Роль</div>
+              <div class="value">Специалист по аномалиям при спецслужбах.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="portrait">
+          <div class="portrait-placeholder">Портрет<br>оператора</div>
+        </div>
+      </header>
+
+      <section class="columns">
+        <div class="column">
+          <section class="section">
+            <div class="section-title">Характеристики</div>
+            <table class="table stat-table">
+              <tr><td>Ловкость</td><td>d6</td></tr>
+<tr><td>Смекалка</td><td>d10</td></tr>
+<tr><td>Характер</td><td>d10</td></tr>
+<tr><td>Сила</td><td>d4</td></tr>
+<tr><td>Выносливость</td><td>d6</td></tr>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Боевые параметры</div>
+            <table class="table combat-table">
+              <tr><td>Скорость</td><td>6</td></tr>
+<tr><td>Защита</td><td>2</td></tr>
+<tr><td>Расчёт</td><td>Fighting отсутствует → 2</td></tr>
+<tr><td>Стойкость</td><td>5</td></tr>
+<tr><td>Расчёт</td><td>Vigor d6 → 2 + 3 = 5</td></tr>
+<tr><td>Мана</td><td>минимум <strong>+5 Power Points</strong> от черты <strong>Power Points</strong>. Базовая мана от <strong>Arcane Background</strong> в `edges.ts` не указана, поэтому точный итог не считаю.</td></tr>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Навыки</div>
+            <table class="table skill-table">
+              <thead>
+                <tr><th>Навык</th><th>Знач.</th><th>Хар-ка</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Occult</td><td>d10</td><td>Смекалка</td></tr>
+<tr><td>Research</td><td>d10</td><td>Смекалка</td></tr>
+<tr><td>Notice</td><td>d8</td><td>Смекалка</td></tr>
+<tr><td>Persuasion</td><td>d6</td><td>Характер</td></tr>
+<tr><td>Shooting</td><td>d6</td><td>Ловкость</td></tr>
+<tr><td>Focus</td><td>d8</td><td>Характер</td></tr>
+<tr><td>Stealth</td><td>d6</td><td>Ловкость</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <div class="column">
+          <section class="section">
+            <div class="section-title">Черты</div>
+            <div class="list">
+              <p class="item"><strong>Магический дар / Arcane Background</strong> — Доступ к supernatural powers. Подтипы: Magic, Miracles, Psionics, Weird Science, Gifted.</p>
+<p class="item"><strong>Новые силы / New Powers</strong> — Изучает две новые powers.</p>
+<p class="item"><strong>Очки силы / Power Points</strong> — +5 Power Points. Можно брать несколько раз.</p>
+<p class="item"><strong>Следователь / Investigator</strong> — +2 к Research и некоторым Notice rolls.</p>
+<p class="item"><strong>Быстрое восстановление / Rapid Recharge</strong> — Восстанавливает 10 Power Points в час. <strong>ЗАМЕНА:</strong> `Danger Sense` → `Rapid Recharge`.</p>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Изъяны</div>
+            <div class="list">
+              <p class="item"><strong>Чужак / Outsider</strong> — Minor: −2 Persuasion с местными. Major: нет законных прав, −2 Persuasion.</p>
+<p class="item"><strong>Бредовые убеждения / Delusional Minor</strong> — Мягко экстравагантное ложное убеждение.</p>
+<p class="item"><strong>Любопытный / Curious</strong> — Обязан расследовать тайны и неизвестное.</p>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Оружие</div>
+            <table class="table weapon-table">
+              <thead>
+                <tr><th>Оружие</th><th>Дист.</th><th>Урон</th><th>AP</th><th>RoF</th><th>Маг.</th></tr>
+              </thead>
+              <tbody>
+                
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Снаряжение</div>
+            <div class="list">
+              
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Особые правила персонажа</div>
+            <div class="list">
+              <p class="item">Чувствует артефакты, неправильные документы, “холодные” сейфы, следы ритуалов.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="notes">
+        <div class="section-title">Заметки</div>
+        <div class="notes-lines"></div>
+        <div class="edit-hint">Место для записей</div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

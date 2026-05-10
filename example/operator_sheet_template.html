@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Шаблон чарника - Досье оператора</title>
+  <link rel="stylesheet" href="operator_sheet_style.css">
+</head>
+<body>
+  <!--
+    Как быстро сделать нового персонажа:
+    1. Скопируй этот HTML-файл.
+    2. Замени текст внутри блоков .value, таблиц и списков.
+    3. Для портрета замени блок .portrait-placeholder на:
+       <img src="portrait.png" alt="Портрет оператора">
+    4. Открой HTML в браузере и печатай в PDF: A4, без полей, background graphics включены.
+  -->
+  <main class="sheet">
+    <div class="content">
+      <header class="header">
+        <div>
+          <div class="titlebar">
+            <div class="main-title">Досье оператора</div>
+            <div class="file-no">Файл: WLF-██-001</div>
+          </div>
+
+          <div class="id-grid">
+            <div class="id-cell">
+              <div class="label">Позывной</div>
+              <div class="value">KRIEG</div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Имя</div>
+              <div class="value">Имя Фамилия</div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Ранг</div>
+              <div class="value">Ветеран</div>
+            </div>
+            <div class="id-cell">
+              <div class="label">Роль</div>
+              <div class="value">Штурмовик</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="portrait">
+          <div class="portrait-placeholder">Портрет<br>оператора</div>
+        </div>
+      </header>
+
+      <section class="columns">
+        <div class="column">
+          <section class="section">
+            <div class="section-title">Характеристики</div>
+            <table class="table stat-table">
+              <tr><td>Ловкость</td><td>d8</td></tr>
+              <tr><td>Сила</td><td>d6</td></tr>
+              <tr><td>Смекалка</td><td>d8</td></tr>
+              <tr><td>Характер</td><td>d6</td></tr>
+              <tr><td>Выносливость</td><td>d8</td></tr>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Боевые параметры</div>
+            <table class="table combat-table">
+              <tr><td>Шаг</td><td>6</td></tr>
+              <tr><td>Парирование</td><td>6</td></tr>
+              <tr><td>Стойкость</td><td>8 (2)</td></tr>
+              <tr><td>Бенни</td><td>3</td></tr>
+              <tr><td>Раны</td><td>0 / 3</td></tr>
+              <tr><td>Усталость</td><td>0 / 2</td></tr>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Навыки</div>
+            <table class="table skill-table">
+              <thead>
+                <tr><th>Навык</th><th>Знач.</th><th>Хар-ка</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Стрельба</td><td>d10</td><td>Ловкость</td></tr>
+                <tr><td>Драка</td><td>d8</td><td>Ловкость</td></tr>
+                <tr><td>Атлетика</td><td>d8</td><td>Ловкость</td></tr>
+                <tr><td>Внимание</td><td>d8</td><td>Смекалка</td></tr>
+                <tr><td>Скрытность</td><td>d6</td><td>Ловкость</td></tr>
+                <tr><td>Запугивание</td><td>d6</td><td>Характер</td></tr>
+                <tr><td>Ремонт</td><td>d6</td><td>Смекалка</td></tr>
+                <tr><td>Вождение</td><td>d6</td><td>Ловкость</td></tr>
+                <tr><td>Лечение</td><td>d4</td><td>Смекалка</td></tr>
+                <tr><td>Общие знания</td><td>d6</td><td>Смекалка</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <div class="column">
+          <section class="section">
+            <div class="section-title">Черты</div>
+            <div class="list">
+              <p class="item"><strong>Хладнокровие</strong> - в начале раунда бери две карты действия, выбирай одну.</p>
+              <p class="item"><strong>Меткий стрелок</strong> - +2 к Стрельбе, если не двигался в этом ходу.</p>
+              <p class="item"><strong>Боевая закалка</strong> - +1 к Стойкости.</p>
+              <p class="item"><strong>Командная подготовка</strong> - +1 к поддержке союзника в пределах связи.</p>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Изъяны</div>
+            <div class="list">
+              <p class="item"><strong>Кровожадность (К)</strong> - склонен добивать врагов и идти на жесткие решения.</p>
+              <p class="item"><strong>Долг (М)</strong> - обязан выполнять приказы своей структуры.</p>
+              <p class="item"><strong>Враг (М)</strong> - за оператором охотится конкретная сторона конфликта.</p>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Оружие</div>
+            <table class="table weapon-table">
+              <thead>
+                <tr><th>Оружие</th><th>Дист.</th><th>Урон</th><th>AP</th><th>RoF</th><th>Маг.</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Sturmgewehr</td><td>24/48/96</td><td>2d8+1</td><td>2</td><td>3</td><td>30</td></tr>
+                <tr><td>Pistole</td><td>12/24/48</td><td>2d6</td><td>1</td><td>1</td><td>10</td></tr>
+                <tr><td>Kampfmesser</td><td>ближ.</td><td>Сил+d4</td><td>-</td><td>-</td><td>-</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Снаряжение</div>
+            <div class="list">
+              <p class="item">Бронежилет, шлем, рация.</p>
+              <p class="item">Аптечка, турникет, фонарь.</p>
+              <p class="item">Гранаты x2, дымовая граната x1.</p>
+              <p class="item">Инструмент для вскрытия / технический набор.</p>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Особые правила персонажа</div>
+            <div class="list">
+              <p class="item"><strong>Тяжелая броня</strong> - уже учтена в Стойкости; при снятии брони пересчитать защиту.</p>
+              <p class="item"><strong>Очередь</strong> - используй RoF оружия; расход патронов отмечай в поле заметок.</p>
+              <p class="item"><strong>Сектор подавления</strong> - работает только при наличии боеприпасов и линии огня.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="notes">
+        <div class="section-title">Заметки</div>
+        <div class="notes-lines"></div>
+        <div class="edit-hint">Место для ранений, патронов, временных эффектов, найденных кодов, целей миссии и личных пометок игрока.</div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
