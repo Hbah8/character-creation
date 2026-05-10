@@ -1,11 +1,5 @@
 import type { Character } from '@/types/character'
 
-const DIE_NAMES = ['d4', 'd6', 'd8', 'd10', 'd12'] as const
-
-function isDieName(value: unknown): value is Character['agility'] {
-  return typeof value === 'string' && (value === '' || (DIE_NAMES as readonly string[]).includes(value))
-}
-
 function isString(value: unknown): value is string {
   return typeof value === 'string'
 }
