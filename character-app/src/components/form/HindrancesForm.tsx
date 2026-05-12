@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import type { Hindrance } from '@/types/character'
 import { Trash2, Plus } from 'lucide-react'
@@ -15,19 +15,19 @@ interface Props {
 
 export function HindrancesForm({ hindrances, onAdd, onUpdate, onRemove }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Hindrances</h2>
         <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus className="size-3.5 mr-1" /> Add Hindrance
+          <Plus data-icon="inline-start" /> Add Hindrance
         </Button>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {hindrances.map(h => (
-          <div key={h.id} className="space-y-1.5 p-2 border rounded-md">
+          <div key={h.id} className="flex flex-col gap-1.5 p-2 border rounded-md">
             <div className="flex items-center gap-2">
-              <div className="flex-1 space-y-1">
+              <div className="flex-1 flex flex-col gap-1">
                 <Label className="text-xs">Name</Label>
                 <Input
                   value={h.name}
@@ -35,23 +35,25 @@ export function HindrancesForm({ hindrances, onAdd, onUpdate, onRemove }: Props)
                   placeholder="Hindrance name"
                 />
               </div>
-              <div className="w-28 space-y-1">
+              <div className="w-28 flex flex-col gap-1">
                 <Label className="text-xs">Severity</Label>
                 <Select value={h.severity} onValueChange={val => onUpdate(h.id, { severity: val as Hindrance['severity'] })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="М">Minor (М)</SelectItem>
-                    <SelectItem value="К">Major (К)</SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="М">Minor (М)</SelectItem>
+                      <SelectItem value="К">Major (К)</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
               <Button size="icon" variant="ghost" onClick={() => onRemove(h.id)} className="mt-5 text-destructive hover:text-destructive">
-                <Trash2 className="size-3.5" />
+                <Trash2 />
               </Button>
             </div>
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <Label className="text-xs">Description</Label>
               <Textarea
                 value={h.description}

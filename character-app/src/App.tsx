@@ -51,7 +51,7 @@ function App() {
         {/* Form panel */}
         <div className="w-[420px] shrink-0 border-r flex flex-col min-h-0 print:hidden">
           <ScrollArea className="flex-1 overflow-hidden">
-            <div className="p-4 space-y-6">
+            <div className="p-4 flex flex-col gap-6">
               <IdentityForm character={character} onChange={store.updateField} />
               <Separator />
               <AttributesForm character={character} onChange={store.updateField} />
@@ -124,7 +124,7 @@ function App() {
         </div>
 
         <TabsContent value="form" className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-          <div className="p-4 space-y-6">
+          <div className="p-4 flex flex-col gap-6">
               <IdentityForm character={character} onChange={store.updateField} />
               <Separator />
               <AttributesForm character={character} onChange={store.updateField} />

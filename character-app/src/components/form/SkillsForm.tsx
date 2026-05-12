@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { DieName, Skill } from '@/types/character'
 import { Trash2, Plus } from 'lucide-react'
 
@@ -24,15 +24,15 @@ interface Props {
 
 export function SkillsForm({ skills, onAdd, onUpdate, onRemove }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Skills</h2>
         <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus className="size-3.5 mr-1" /> Add Skill
+          <Plus data-icon="inline-start" /> Add Skill
         </Button>
       </div>
 
-      <div className="space-y-2 overflow-x-auto">
+      <div className="flex flex-col gap-2 overflow-x-auto">
         <div className="grid grid-cols-[1fr_80px_140px_36px] gap-1.5 text-xs text-muted-foreground px-1 min-w-[320px]">
           <Label className="text-xs">Name</Label>
           <Label className="text-xs">Die</Label>
@@ -52,9 +52,11 @@ export function SkillsForm({ skills, onAdd, onUpdate, onRemove }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {DIE_NAMES.map(d => (
-                  <SelectItem key={d} value={d}>{d}</SelectItem>
-                ))}
+                <SelectGroup>
+                  {DIE_NAMES.map(d => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
             <Select value={skill.linkedAttribute} onValueChange={val => onUpdate(skill.id, { linkedAttribute: val })}>
@@ -62,13 +64,15 @@ export function SkillsForm({ skills, onAdd, onUpdate, onRemove }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {LINKED_ATTRIBUTES.map(attr => (
-                  <SelectItem key={attr} value={attr}>{attr}</SelectItem>
-                ))}
+                <SelectGroup>
+                  {LINKED_ATTRIBUTES.map(attr => (
+                    <SelectItem key={attr} value={attr}>{attr}</SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
             <Button size="icon" variant="ghost" onClick={() => onRemove(skill.id)} className="text-destructive hover:text-destructive">
-              <Trash2 className="size-3.5" />
+              <Trash2 />
             </Button>
           </div>
         ))}

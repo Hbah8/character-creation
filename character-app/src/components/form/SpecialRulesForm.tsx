@@ -14,19 +14,19 @@ interface Props {
 
 export function SpecialRulesForm({ specialRules, onAdd, onUpdate, onRemove }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Special Rules</h2>
         <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus className="size-3.5 mr-1" /> Add Rule
+          <Plus data-icon="inline-start" /> Add Rule
         </Button>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {specialRules.map(rule => (
-          <div key={rule.id} className="space-y-1.5 p-2 border rounded-md">
+          <div key={rule.id} className="flex flex-col gap-1.5 p-2 border rounded-md">
             <div className="flex items-center gap-2">
-              <div className="flex-1 space-y-1">
+              <div className="flex-1 flex flex-col gap-1">
                 <Label className="text-xs">Name</Label>
                 <Input
                   value={rule.name}
@@ -35,10 +35,10 @@ export function SpecialRulesForm({ specialRules, onAdd, onUpdate, onRemove }: Pr
                 />
               </div>
               <Button size="icon" variant="ghost" onClick={() => onRemove(rule.id)} className="mt-5 text-destructive hover:text-destructive">
-                <Trash2 className="size-3.5" />
+                <Trash2 />
               </Button>
             </div>
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <Label className="text-xs">Description</Label>
               <Textarea
                 value={rule.description}

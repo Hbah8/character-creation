@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -39,20 +40,24 @@ export function ExportDropdown({ onExportPdf, onExportJson, onImportJson }: Prop
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline">
-            Export / Import <ChevronDown className="ml-1 size-4" />
+            Export / Import <ChevronDown data-icon="inline-end" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onExportPdf}>
-            <FileText className="mr-2 size-4" /> Export PDF
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={onExportJson}>
-            <FileJson className="mr-2 size-4" /> Export JSON
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={onExportPdf}>
+              <FileText data-icon="inline-start" /> Export PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onExportJson}>
+              <FileJson data-icon="inline-start" /> Export JSON
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-            <Upload className="mr-2 size-4" /> Import JSON
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+              <Upload data-icon="inline-start" /> Import JSON
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </>

@@ -21,7 +21,7 @@
   --page-bg: #e7e1d4;
   --paper: #f7f2e8;
   --ink: #171717;
-  --muted: #5c5c5c;
+  --sheet-muted: #5c5c5c;
   --line: #1e1e1e;
   --red: #9d0000;
   --red-dark: #6f0000;
@@ -135,7 +135,7 @@ html, body {
 .id-rank-role {
   font-family: var(--font-head);
   font-size: 8pt;
-  color: var(--muted);
+  color: var(--sheet-muted);
   text-transform: uppercase;
   letter-spacing: 0.4pt;
 }
@@ -161,7 +161,7 @@ html, body {
   font-family: var(--font-head);
   font-size: 6pt;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--sheet-muted);
   letter-spacing: 0.4pt;
 }
 
@@ -172,7 +172,7 @@ html, body {
 }
 
 .qs-sep {
-  color: var(--muted);
+  color: var(--sheet-muted);
   font-size: 10pt;
   margin-top: 2mm;
 }

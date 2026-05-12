@@ -22,20 +22,20 @@ const COLUMNS: { key: keyof Weapon; label: string; placeholder: string }[] = [
 
 export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Weapons</h2>
         <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus className="size-3.5 mr-1" /> Add Weapon
+          <Plus data-icon="inline-start" /> Add Weapon
         </Button>
       </div>
 
       {/* Mobile: card-per-weapon layout */}
-      <div className="md:hidden space-y-3">
+      <div className="md:hidden flex flex-col gap-3">
         {weapons.map(w => (
-          <div key={w.id} className="rounded-md border p-3 space-y-2">
+          <div key={w.id} className="rounded-md border p-3 flex flex-col gap-2">
             {/* Name — full width */}
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <Label className="text-xs">Name</Label>
               <Input
                 value={w.name}
@@ -45,26 +45,26 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
             </div>
             {/* Range / Damage */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
+              <div className="flex flex-col gap-1">
                 <Label className="text-xs">Range</Label>
                 <Input value={w.range} onChange={e => onUpdate(w.id, { range: e.target.value })} placeholder="24/48/96" />
               </div>
-              <div className="space-y-1">
+              <div className="flex flex-col gap-1">
                 <Label className="text-xs">Damage</Label>
                 <Input value={w.damage} onChange={e => onUpdate(w.id, { damage: e.target.value })} placeholder="2d8+1" />
               </div>
             </div>
             {/* AP / RoF / Mag */}
             <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1">
+              <div className="flex flex-col gap-1">
                 <Label className="text-xs">AP</Label>
                 <Input value={w.ap} onChange={e => onUpdate(w.id, { ap: e.target.value })} placeholder="2" />
               </div>
-              <div className="space-y-1">
+              <div className="flex flex-col gap-1">
                 <Label className="text-xs">RoF</Label>
                 <Input value={w.rof} onChange={e => onUpdate(w.id, { rof: e.target.value })} placeholder="1" />
               </div>
-              <div className="space-y-1">
+              <div className="flex flex-col gap-1">
                 <Label className="text-xs">Mag.</Label>
                 <Input value={w.magazine} onChange={e => onUpdate(w.id, { magazine: e.target.value })} placeholder="30" />
               </div>
@@ -72,7 +72,7 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
             {/* Delete */}
             <div className="flex justify-end">
               <Button size="sm" variant="ghost" onClick={() => onRemove(w.id)} className="text-destructive hover:text-destructive">
-                <Trash2 className="size-3.5 mr-1" /> Remove
+                <Trash2 data-icon="inline-start" /> Remove
               </Button>
             </div>
           </div>
@@ -83,7 +83,7 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
       </div>
 
       {/* Desktop: table layout */}
-      <div className="hidden md:block space-y-2">
+      <div className="hidden md:flex flex-col gap-2">
         <div className="grid grid-cols-[2fr_1.2fr_1.2fr_0.6fr_0.6fr_0.7fr_36px] gap-1.5">
           {COLUMNS.map(c => (
             <Label key={c.key} className="text-xs">{c.label}</Label>
@@ -102,7 +102,7 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
               />
             ))}
             <Button size="icon" variant="ghost" onClick={() => onRemove(w.id)} className="text-destructive hover:text-destructive">
-              <Trash2 className="size-3.5" />
+              <Trash2 />
             </Button>
           </div>
         ))}

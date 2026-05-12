@@ -9,9 +9,9 @@ interface Props {
 
 export function NotesForm({ notes, onChange }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Notes</h2>
-      <div className="space-y-1">
+      <div className="flex flex-col gap-1">
         <Label htmlFor="notes">Notes / Заметки</Label>
         <Textarea
           id="notes"

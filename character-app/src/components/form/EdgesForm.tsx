@@ -14,19 +14,19 @@ interface Props {
 
 export function EdgesForm({ edges, onAdd, onUpdate, onRemove }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Edges</h2>
         <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus className="size-3.5 mr-1" /> Add Edge
+          <Plus data-icon="inline-start" /> Add Edge
         </Button>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {edges.map(edge => (
-          <div key={edge.id} className="space-y-1.5 p-2 border rounded-md">
+          <div key={edge.id} className="flex flex-col gap-1.5 p-2 border rounded-md">
             <div className="flex items-center gap-2">
-              <div className="flex-1 space-y-1">
+              <div className="flex-1 flex flex-col gap-1">
                 <Label className="text-xs">Name</Label>
                 <Input
                   value={edge.name}
@@ -35,10 +35,10 @@ export function EdgesForm({ edges, onAdd, onUpdate, onRemove }: Props) {
                 />
               </div>
               <Button size="icon" variant="ghost" onClick={() => onRemove(edge.id)} className="mt-5 text-destructive hover:text-destructive">
-                <Trash2 className="size-3.5" />
+                <Trash2 />
               </Button>
             </div>
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <Label className="text-xs">Effect</Label>
               <Textarea
                 value={edge.effect}

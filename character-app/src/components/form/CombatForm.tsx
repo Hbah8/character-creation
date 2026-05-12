@@ -19,11 +19,11 @@ const FIELDS: { key: keyof Character; label: string }[] = [
 
 export function CombatForm({ character, onChange }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Combat Parameters</h2>
       <div className="grid grid-cols-2 gap-3">
         {FIELDS.map(({ key, label }) => (
-          <div key={key} className="space-y-1">
+          <div key={key} className="flex flex-col gap-1">
             <Label htmlFor={key}>{label}</Label>
             <Input
               id={key}

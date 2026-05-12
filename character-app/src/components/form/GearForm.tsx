@@ -11,15 +11,15 @@ interface Props {
 
 export function GearForm({ gear, onAdd, onUpdate, onRemove }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Gear</h2>
         <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus className="size-3.5 mr-1" /> Add Item
+          <Plus data-icon="inline-start" /> Add Item
         </Button>
       </div>
 
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         {gear.map((item, i) => (
           <div key={i} className="flex items-center gap-2">
             <Input
@@ -28,7 +28,7 @@ export function GearForm({ gear, onAdd, onUpdate, onRemove }: Props) {
               placeholder="Gear item…"
             />
             <Button size="icon" variant="ghost" onClick={() => onRemove(i)} className="text-destructive hover:text-destructive">
-              <Trash2 className="size-3.5" />
+              <Trash2 />
             </Button>
           </div>
         ))}
