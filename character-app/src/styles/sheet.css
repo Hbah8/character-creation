@@ -205,6 +205,10 @@ html, body {
   padding: 3mm;
 }
 
+.sheet--mobile .columns {
+  grid-template-columns: 1fr;
+}
+
 .columns {
   display: grid;
   grid-template-columns: 0.45fr 0.55fr;
@@ -342,6 +346,7 @@ html, body {
   letter-spacing: 0.15pt;
 }
 
+.weapon-table { table-layout: fixed; }
 .weapon-table th:nth-child(1) { width: 31%; }
 .weapon-table th:nth-child(2) { width: 22%; }
 .weapon-table th:nth-child(3) { width: 17%; }

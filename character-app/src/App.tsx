@@ -35,7 +35,7 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground print:h-auto">
+    <div className="flex flex-col h-[100svh] w-full max-w-full overflow-x-hidden bg-background text-foreground print:h-auto">
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-2 border-b shrink-0 print:hidden">
         <h1 className="text-lg font-semibold tracking-tight">SWADE Character Creator</h1>
@@ -115,7 +115,7 @@ function App() {
       </div>
 
       {/* Mobile: tab layout */}
-      <Tabs defaultValue="form" className="flex md:hidden flex-col flex-1 min-h-0">
+      <Tabs defaultValue="form" className="flex md:hidden flex-col flex-1 min-h-0 w-full min-w-0 overflow-x-hidden">
         <div className="shrink-0 border-b px-3 py-1.5">
           <TabsList className="w-full">
             <TabsTrigger value="form" className="flex-1">Edit Form</TabsTrigger>
@@ -123,9 +123,8 @@ function App() {
           </TabsList>
         </div>
 
-        <TabsContent value="form" className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="p-4 space-y-6">
+        <TabsContent value="form" className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+          <div className="p-4 space-y-6">
               <IdentityForm character={character} onChange={store.updateField} />
               <Separator />
               <AttributesForm character={character} onChange={store.updateField} />
@@ -179,11 +178,10 @@ function App() {
                 onChange={val => store.updateField('notes', val)}
               />
             </div>
-          </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="preview" className="flex-1 min-h-0 bg-[#d0d0d0] overflow-hidden">
-          <CharacterSheet character={character} />
+        <TabsContent value="preview" className="flex-1 min-h-0 bg-[#d0d0d0] overflow-y-auto overflow-x-hidden">
+          <CharacterSheet character={character} fitToContainer />
         </TabsContent>
       </Tabs>
 
