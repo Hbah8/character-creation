@@ -30,7 +30,60 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
         </Button>
       </div>
 
-      <div className="space-y-2">
+      {/* Mobile: card-per-weapon layout */}
+      <div className="md:hidden space-y-3">
+        {weapons.map(w => (
+          <div key={w.id} className="rounded-md border p-3 space-y-2">
+            {/* Name — full width */}
+            <div className="space-y-1">
+              <Label className="text-xs">Name</Label>
+              <Input
+                value={w.name}
+                onChange={e => onUpdate(w.id, { name: e.target.value })}
+                placeholder="Weapon name"
+              />
+            </div>
+            {/* Range / Damage */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Range</Label>
+                <Input value={w.range} onChange={e => onUpdate(w.id, { range: e.target.value })} placeholder="24/48/96" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Damage</Label>
+                <Input value={w.damage} onChange={e => onUpdate(w.id, { damage: e.target.value })} placeholder="2d8+1" />
+              </div>
+            </div>
+            {/* AP / RoF / Mag */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">AP</Label>
+                <Input value={w.ap} onChange={e => onUpdate(w.id, { ap: e.target.value })} placeholder="2" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">RoF</Label>
+                <Input value={w.rof} onChange={e => onUpdate(w.id, { rof: e.target.value })} placeholder="1" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Mag.</Label>
+                <Input value={w.magazine} onChange={e => onUpdate(w.id, { magazine: e.target.value })} placeholder="30" />
+              </div>
+            </div>
+            {/* Delete */}
+            <div className="flex justify-end">
+              <Button size="sm" variant="ghost" onClick={() => onRemove(w.id)} className="text-destructive hover:text-destructive">
+                <Trash2 className="size-3.5 mr-1" /> Remove
+              </Button>
+            </div>
+          </div>
+        ))}
+        {weapons.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-2">No weapons yet.</p>
+        )}
+      </div>
+
+      {/* Desktop: table layout */}
+      <div className="hidden md:block space-y-2">
         <div className="grid grid-cols-[2fr_1.2fr_1.2fr_0.6fr_0.6fr_0.7fr_36px] gap-1.5">
           {COLUMNS.map(c => (
             <Label key={c.key} className="text-xs">{c.label}</Label>

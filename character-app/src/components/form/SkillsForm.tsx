@@ -32,8 +32,8 @@ export function SkillsForm({ skills, onAdd, onUpdate, onRemove }: Props) {
         </Button>
       </div>
 
-      <div className="space-y-2">
-        <div className="grid grid-cols-[1fr_80px_140px_36px] gap-1.5 text-xs text-muted-foreground px-1">
+      <div className="space-y-2 overflow-x-auto">
+        <div className="grid grid-cols-[1fr_80px_140px_36px] gap-1.5 text-xs text-muted-foreground px-1 min-w-[320px]">
           <Label className="text-xs">Name</Label>
           <Label className="text-xs">Die</Label>
           <Label className="text-xs">Linked Attribute</Label>
@@ -41,7 +41,7 @@ export function SkillsForm({ skills, onAdd, onUpdate, onRemove }: Props) {
         </div>
 
         {skills.map(skill => (
-          <div key={skill.id} className="grid grid-cols-[1fr_80px_140px_36px] gap-1.5 items-center">
+          <div key={skill.id} className="grid grid-cols-[1fr_80px_140px_36px] gap-1.5 items-center min-w-[320px]">
             <Input
               value={skill.name}
               onChange={e => onUpdate(skill.id, { name: e.target.value })}
