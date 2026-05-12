@@ -21,7 +21,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Separator } from '@/components/ui/separator'
-import { Library } from 'lucide-react'
+import { Library, Link } from 'lucide-react'
+import { encodeCharacterToHash, buildShareUrl } from '@/services/shareService'
 
 interface Props {
   library: ReturnType<typeof useCharacterLibrary>
@@ -32,9 +33,20 @@ interface Props {
 
 export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: Props) {
   const { t } = useTranslation('library')
+  const { t: tShare } = useTranslation('share')
   const [open, setOpen] = useState(false)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [confirmNewOpen, setConfirmNewOpen] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  function handleShare(id: string, character: Character) {
+    const { hash } = encodeCharacterToHash(character)
+    const url = buildShareUrl(hash)
+    void navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(id)
+      setTimeout(() => setCopiedId(prev => (prev === id ? null : prev)), 2000)
+    })
+  }
 
   function handleLoad(id: string) {
     const char = library.loadById(id)
@@ -108,6 +120,14 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
                       onClick={() => handleLoad(entry.id)}
                     >
                       {t('load')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleShare(entry.id, entry.character)}
+                    >
+                      <Link data-icon="inline-start" />
+                      {copiedId === entry.id ? tShare('copied') : tShare('copyLink')}
                     </Button>
                     <Button
                       size="sm"

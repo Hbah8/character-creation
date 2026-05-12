@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCharacterStore } from '@/store/useCharacterStore'
 import { useCharacterLibrary } from '@/store/useCharacterLibrary'
@@ -16,12 +16,15 @@ import { NotesForm } from '@/components/form/NotesForm'
 import { ExportDropdown } from '@/components/ExportDropdown'
 import { CharacterLibrary } from '@/components/CharacterLibrary'
 import { ImportErrorDialog } from '@/components/ImportErrorDialog'
+import { ShareConfirmDialog } from '@/components/ShareConfirmDialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { exportToJson, exportToPdf } from '@/services/exportService'
 import { importFromJson } from '@/services/importService'
+import { encodeCharacterToHash, decodeCharacterFromHash, buildShareUrl } from '@/services/shareService'
+import type { Character } from '@/types/character'
 import { detectInitialLocale, changeLocale } from '@/i18n/index'
 import { getDefaultCharacter } from '@/data/defaultCharacter'
 import type { Locale } from '@/i18n/types'
@@ -41,11 +44,28 @@ function App() {
   const [cleanSnapshot, setCleanSnapshot] = useState<string>(
     () => JSON.stringify(getDefaultCharacter(initialLocale))
   )
+  const [copyLinkStatus, setCopyLinkStatus] = useState<'idle' | 'copied'>('idle')
+  const [pendingShareChar, setPendingShareChar] = useState<Character | null>(null)
+  const [pendingSharePortraitStripped, setPendingSharePortraitStripped] = useState(false)
+  const copyLinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isDirty = useMemo(
     () => JSON.stringify(character) !== cleanSnapshot,
     [character, cleanSnapshot]
   )
+
+  useEffect(() => {
+    const hash = window.location.hash
+    if (!hash || hash === '#') return
+    history.replaceState(null, '', window.location.pathname + window.location.search)
+    try {
+      const { character: shared, portraitStripped } = decodeCharacterFromHash(hash)
+      setPendingShareChar(shared)
+      setPendingSharePortraitStripped(portraitStripped)
+    } catch {
+      setImportError('share.decodeError')
+    }
+  }, [])
 
   function handleSave() {
     library.save(character)
@@ -73,6 +93,28 @@ function App() {
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'validation.import.notAnObject')
     }
+  }
+
+  function handleCopyLink() {
+    const { hash } = encodeCharacterToHash(character)
+    const url = buildShareUrl(hash)
+    void navigator.clipboard.writeText(url).then(() => {
+      setCopyLinkStatus('copied')
+      if (copyLinkTimerRef.current) clearTimeout(copyLinkTimerRef.current)
+      copyLinkTimerRef.current = setTimeout(() => setCopyLinkStatus('idle'), 2000)
+    })
+  }
+
+  function handleShareConfirm() {
+    if (!pendingShareChar) return
+    store.replaceCharacter(pendingShareChar)
+    setCleanSnapshot(JSON.stringify(pendingShareChar))
+    library.markNew()
+    setPendingShareChar(null)
+  }
+
+  function handleShareCancel() {
+    setPendingShareChar(null)
   }
 
   function handleLocaleChange(next: Locale) {
@@ -174,6 +216,8 @@ function App() {
             onExportPdf={() => exportToPdf()}
             onExportJson={() => exportToJson(character)}
             onImportJson={handleImportJson}
+            onCopyLink={handleCopyLink}
+            copyLinkStatus={copyLinkStatus}
           />
         </div>
       </header>
@@ -219,6 +263,13 @@ function App() {
         open={importError !== null}
         message={importError ?? ''}
         onClose={() => setImportError(null)}
+      />
+      <ShareConfirmDialog
+        open={pendingShareChar !== null}
+        callsign={pendingShareChar?.callsign ?? ''}
+        portraitStripped={pendingSharePortraitStripped}
+        onConfirm={handleShareConfirm}
+        onCancel={handleShareCancel}
       />
     </div>
   )

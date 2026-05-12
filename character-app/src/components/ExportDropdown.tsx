@@ -9,17 +9,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ChevronDown, FileJson, FileText, Upload } from 'lucide-react'
+import { ChevronDown, FileJson, FileText, Link, Upload } from 'lucide-react'
 
 interface Props {
   onExportPdf: () => void
   onExportJson: () => void
   onImportJson: (file: File) => void
+  onCopyLink: () => void
+  copyLinkStatus: 'idle' | 'copied'
 }
 
-export function ExportDropdown({ onExportPdf, onExportJson, onImportJson }: Props) {
+export function ExportDropdown({ onExportPdf, onExportJson, onImportJson, onCopyLink, copyLinkStatus }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { t } = useTranslation('header')
+  const { t: tShare } = useTranslation('share')
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -52,6 +55,10 @@ export function ExportDropdown({ onExportPdf, onExportJson, onImportJson }: Prop
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onExportJson}>
               <FileJson data-icon="inline-start" /> {t('exportJson')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onCopyLink}>
+              <Link data-icon="inline-start" />
+              {copyLinkStatus === 'copied' ? tShare('copied') : tShare('copyLink')}
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
