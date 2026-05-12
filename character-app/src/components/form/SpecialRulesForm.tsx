@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import type { SpecialRule } from '@/types/character'
 import { Trash2, Plus } from 'lucide-react'
 
@@ -42,9 +42,9 @@ export function SpecialRulesForm({ specialRules, onAdd, onUpdate, onRemove }: Pr
             </div>
             <div className="flex flex-col gap-1">
               <Label className="text-xs">{t('specialRules.fieldDescription')}</Label>
-              <Textarea
+              <MarkdownEditor
                 value={rule.description}
-                onChange={e => onUpdate(rule.id, { description: e.target.value })}
+                onChange={v => onUpdate(rule.id, { description: v })}
                 placeholder={t('specialRules.ruleDescPlaceholder')}
                 rows={2}
               />

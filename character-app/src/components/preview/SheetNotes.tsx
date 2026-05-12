@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { Character } from '@/types/character'
 
 interface Props {
@@ -35,7 +37,9 @@ export function SheetNotes({ character }: Props) {
           <span className="marker-line" />
         </div>
         {character.notes && (
-          <div className="markers-notes">{character.notes}</div>
+          <div className="markers-notes">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{character.notes}</ReactMarkdown>
+          </div>
         )}
       </div>
     </section>

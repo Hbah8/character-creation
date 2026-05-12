@@ -104,6 +104,10 @@ const form = {
     label: 'Заметки',
     placeholder: 'Раны, расход патронов, временные эффекты, задачи миссии…',
   },
+  markdownEditor: {
+    tabEdit: 'Редактировать',
+    tabPreview: 'Превью',
+  },
 } as const
 
 export default form

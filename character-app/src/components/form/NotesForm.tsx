@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import type { Character } from '@/types/character'
 
 interface Props {
@@ -15,10 +15,10 @@ export function NotesForm({ notes, onChange }: Props) {
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.notes')}</h2>
       <div className="flex flex-col gap-1">
         <Label htmlFor="notes">{t('notes.label')}</Label>
-        <Textarea
+        <MarkdownEditor
           id="notes"
           value={notes}
-          onChange={e => onChange(e.target.value)}
+          onChange={onChange}
           placeholder={t('notes.placeholder')}
           rows={4}
         />

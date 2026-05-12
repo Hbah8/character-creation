@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { Character } from '@/types/character'
 
 interface Props {
@@ -13,10 +15,16 @@ export function SheetSpecialRules({ character }: Props) {
       <div className="section-title">{t('sections.specialRules')}</div>
       <div className="list">
         {character.specialRules.map(rule => (
-          <p key={rule.id} className="item">
+          <div key={rule.id} className="item">
             <strong>{rule.name}</strong>
-            {rule.description ? ` - ${rule.description}` : ''}
-          </p>
+            {rule.description ? (
+              <div className="item-description">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {rule.description}
+                </ReactMarkdown>
+              </div>
+            ) : null}
+          </div>
         ))}
       </div>
     </section>

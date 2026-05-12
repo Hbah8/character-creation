@@ -104,6 +104,10 @@ const form = {
     label: 'Notes',
     placeholder: 'Wounds, ammo tracking, temp effects, mission objectives…',
   },
+  markdownEditor: {
+    tabEdit: 'Edit',
+    tabPreview: 'Preview',
+  },
 } as const
 
 export default form

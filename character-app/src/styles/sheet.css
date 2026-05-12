@@ -415,6 +415,123 @@ html, body {
   padding-top: 2mm;
 }
 
+/* ── Markdown rendered inside sheet sections ─────────────────── */
+
+.markers-notes p,
+.list .item p {
+  margin: 0 0 1mm;
+}
+
+.markers-notes p:last-child,
+.list .item p:last-child {
+  margin-bottom: 0;
+}
+
+.item-description {
+  padding-left: 0;
+  margin-top: 0.5mm;
+  font-size: 8pt;
+  color: var(--ink);
+}
+
+.markers-notes ul,
+.markers-notes ol,
+.list .item ul,
+.list .item ol {
+  margin: 0.5mm 0 1mm 3mm;
+  padding-left: 3mm;
+}
+
+.markers-notes li,
+.list .item li {
+  margin-bottom: 0.5mm;
+}
+
+.markers-notes h1,
+.markers-notes h2,
+.markers-notes h3,
+.markers-notes h4,
+.markers-notes h5,
+.markers-notes h6,
+.list .item h1,
+.list .item h2,
+.list .item h3,
+.list .item h4,
+.list .item h5,
+.list .item h6 {
+  font-family: var(--font-head);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3pt;
+  margin: 1.5mm 0 0.5mm;
+  line-height: 1.1;
+}
+
+.markers-notes h1 { font-size: 9pt; }
+.markers-notes h2 { font-size: 8.5pt; }
+.markers-notes h3,
+.markers-notes h4,
+.markers-notes h5,
+.markers-notes h6 { font-size: 8pt; }
+
+.list .item h1 { font-size: 9.5pt; }
+.list .item h2 { font-size: 9pt; }
+.list .item h3,
+.list .item h4,
+.list .item h5,
+.list .item h6 { font-size: 8.5pt; }
+
+.markers-notes blockquote,
+.list .item blockquote {
+  border-left: 1.5pt solid var(--red);
+  margin: 1mm 0 1mm 1mm;
+  padding-left: 2mm;
+  color: #444;
+  font-style: italic;
+}
+
+.markers-notes hr,
+.list .item hr {
+  border: none;
+  border-top: 0.7pt solid rgba(0,0,0,0.2);
+  margin: 1.5mm 0;
+}
+
+.markers-notes code,
+.list .item code {
+  font-family: 'Courier New', monospace;
+  font-size: 7pt;
+  background: rgba(0,0,0,0.06);
+  padding: 0 1px;
+  border-radius: 1px;
+}
+
+.markers-notes table,
+.list .item table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 7pt;
+  margin: 1mm 0;
+}
+
+.markers-notes th,
+.markers-notes td,
+.list .item th,
+.list .item td {
+  border: 0.6pt solid var(--line);
+  padding: 0.8mm 1.2mm;
+  text-align: left;
+}
+
+.markers-notes th,
+.list .item th {
+  font-family: var(--font-head);
+  font-weight: 700;
+  background: rgba(0,0,0,0.06);
+  text-transform: uppercase;
+  letter-spacing: 0.3pt;
+}
+
 @media print {
   html, body { background: transparent; }
   .sheet { margin: 0; box-shadow: none; }
