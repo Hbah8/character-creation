@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,12 +14,13 @@ interface Props {
 }
 
 export function EdgesForm({ edges, onAdd, onUpdate, onRemove }: Props) {
+  const { t } = useTranslation('form')
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Edges</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.edges')}</h2>
         <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus data-icon="inline-start" /> Add Edge
+          <Plus data-icon="inline-start" /> {t('edges.addEdge')}
         </Button>
       </div>
 
@@ -27,23 +29,23 @@ export function EdgesForm({ edges, onAdd, onUpdate, onRemove }: Props) {
           <div key={edge.id} className="flex flex-col gap-1.5 p-2 border rounded-md">
             <div className="flex items-center gap-2">
               <div className="flex-1 flex flex-col gap-1">
-                <Label className="text-xs">Name</Label>
+                <Label className="text-xs">{t('edges.fieldName')}</Label>
                 <Input
                   value={edge.name}
                   onChange={e => onUpdate(edge.id, { name: e.target.value })}
-                  placeholder="Edge name"
+                  placeholder={t('edges.edgeNamePlaceholder')}
                 />
               </div>
-              <Button size="icon" variant="ghost" onClick={() => onRemove(edge.id)} className="mt-5 text-destructive hover:text-destructive">
+              <Button size="icon" variant="ghost" onClick={() => onRemove(edge.id)} className="mt-5 text-destructive hover:text-destructive" aria-label={t('edges.removeEdge')}>
                 <Trash2 />
               </Button>
             </div>
             <div className="flex flex-col gap-1">
-              <Label className="text-xs">Effect</Label>
+              <Label className="text-xs">{t('edges.fieldEffect')}</Label>
               <Textarea
                 value={edge.effect}
                 onChange={e => onUpdate(edge.id, { effect: e.target.value })}
-                placeholder="Describe the edge effect…"
+                placeholder={t('edges.edgeEffectPlaceholder')}
                 rows={2}
               />
             </div>
@@ -51,7 +53,7 @@ export function EdgesForm({ edges, onAdd, onUpdate, onRemove }: Props) {
         ))}
 
         {edges.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-2">No edges yet.</p>
+          <p className="text-sm text-muted-foreground text-center py-2">{t('edges.noEdges')}</p>
         )}
       </div>
     </div>

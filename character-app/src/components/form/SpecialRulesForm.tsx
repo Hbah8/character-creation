@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,12 +14,13 @@ interface Props {
 }
 
 export function SpecialRulesForm({ specialRules, onAdd, onUpdate, onRemove }: Props) {
+  const { t } = useTranslation('form')
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Special Rules</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.specialRules')}</h2>
         <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus data-icon="inline-start" /> Add Rule
+          <Plus data-icon="inline-start" /> {t('specialRules.addRule')}
         </Button>
       </div>
 
@@ -27,23 +29,23 @@ export function SpecialRulesForm({ specialRules, onAdd, onUpdate, onRemove }: Pr
           <div key={rule.id} className="flex flex-col gap-1.5 p-2 border rounded-md">
             <div className="flex items-center gap-2">
               <div className="flex-1 flex flex-col gap-1">
-                <Label className="text-xs">Name</Label>
+                <Label className="text-xs">{t('specialRules.fieldName')}</Label>
                 <Input
                   value={rule.name}
                   onChange={e => onUpdate(rule.id, { name: e.target.value })}
-                  placeholder="Rule name"
+                  placeholder={t('specialRules.ruleNamePlaceholder')}
                 />
               </div>
-              <Button size="icon" variant="ghost" onClick={() => onRemove(rule.id)} className="mt-5 text-destructive hover:text-destructive">
+              <Button size="icon" variant="ghost" onClick={() => onRemove(rule.id)} className="mt-5 text-destructive hover:text-destructive" aria-label={t('specialRules.removeRule')}>
                 <Trash2 />
               </Button>
             </div>
             <div className="flex flex-col gap-1">
-              <Label className="text-xs">Description</Label>
+              <Label className="text-xs">{t('specialRules.fieldDescription')}</Label>
               <Textarea
                 value={rule.description}
                 onChange={e => onUpdate(rule.id, { description: e.target.value })}
-                placeholder="Describe the rule…"
+                placeholder={t('specialRules.ruleDescPlaceholder')}
                 rows={2}
               />
             </div>
@@ -51,7 +53,7 @@ export function SpecialRulesForm({ specialRules, onAdd, onUpdate, onRemove }: Pr
         ))}
 
         {specialRules.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-2">No special rules yet.</p>
+          <p className="text-sm text-muted-foreground text-center py-2">{t('specialRules.noRules')}</p>
         )}
       </div>
     </div>

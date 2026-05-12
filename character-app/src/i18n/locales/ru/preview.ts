@@ -1,0 +1,71 @@
+const preview = {
+  sections: {
+    attributes: 'Характеристики',
+    attributesAndSkills: 'Характеристики и Навыки',
+    combat: 'Боевые параметры',
+    skills: 'Навыки',
+    edges: 'Черты',
+    hindrances: 'Изъяны',
+    weapons: 'Оружие',
+    gear: 'Снаряжение',
+    specialRules: 'Особые правила персонажа',
+    notes: 'Отметки',
+  },
+  header: {
+    fileNoPrefix: 'Файл: ',
+    portraitAlt: 'Портрет оператора',
+    portraitPlaceholder: 'Портрет',
+    defaultCallsign: '—',
+    defaultName: '—',
+    defaultRank: '—',
+    defaultRole: '—',
+    defaultSheetTitle: 'Лист персонажа',
+  },
+  quickStats: {
+    pace: 'Шаг',
+    parry: 'Парир.',
+    toughness: 'Стойк.',
+    bennies: 'Бенни',
+    mana: 'Мана',
+  },
+  attributes: {
+    agility: 'Ловкость',
+    strength: 'Сила',
+    smarts: 'Смекалка',
+    spirit: 'Характер',
+    vigor: 'Выносливость',
+  },
+  combat: {
+    pace: 'Шаг',
+    parry: 'Парирование',
+    toughness: 'Стойкость',
+    bennies: 'Бенни',
+    wounds: 'Раны',
+    fatigue: 'Усталость',
+  },
+  skills: {
+    columnSkill: 'Навык',
+    columnDie: 'Знач.',
+    columnAttribute: 'Хар-ка',
+  },
+  weapons: {
+    columnWeapon: 'Оружие',
+    columnRange: 'Дист.',
+    columnDamage: 'Урон',
+    columnAp: 'AP',
+    columnRof: 'RoF',
+    columnMag: 'Маг.',
+  },
+  notes: {
+    shock: 'Шок',
+    wounds: 'Раны',
+    fatigue: 'Усталость',
+    tempEffects: 'Временные эффекты:',
+  },
+  hindrances: {
+    severityMinor: 'М',
+    severityMajor: 'К',
+  },
+} as const
+
+export default preview

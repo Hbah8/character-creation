@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Character } from '@/types/character'
 
 interface Props {
@@ -5,15 +6,16 @@ interface Props {
 }
 
 export function SheetSkills({ character }: Props) {
+  const { t } = useTranslation('preview')
   return (
     <section className="section">
-      <div className="section-title">Навыки</div>
+      <div className="section-title">{t('sections.skills')}</div>
       <table className="table skill-table">
         <thead>
           <tr>
-            <th>Навык</th>
-            <th>Знач.</th>
-            <th>Хар-ка</th>
+            <th>{t('skills.columnSkill')}</th>
+            <th>{t('skills.columnDie')}</th>
+            <th>{t('skills.columnAttribute')}</th>
           </tr>
         </thead>
         <tbody>
@@ -21,7 +23,7 @@ export function SheetSkills({ character }: Props) {
             <tr key={skill.id}>
               <td>{skill.name}</td>
               <td>{skill.die}</td>
-              <td>{skill.linkedAttribute}</td>
+              <td>{t(`attributes.${skill.linkedAttribute}`)}</td>
             </tr>
           ))}
         </tbody>

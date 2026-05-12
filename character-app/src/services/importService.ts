@@ -8,7 +8,7 @@ export async function importFromJson(file: File): Promise<Character> {
       try {
         const text = e.target?.result
         if (typeof text !== 'string') {
-          reject(new Error('Не удалось прочитать файл.'))
+          reject(new Error('validation.import.fileReadFailed'))
           return
         }
         const raw: unknown = JSON.parse(text)
@@ -16,13 +16,13 @@ export async function importFromJson(file: File): Promise<Character> {
         resolve(character)
       } catch (err) {
         if (err instanceof SyntaxError) {
-          reject(new Error('Файл не является допустимым JSON.'))
+          reject(new Error('validation.import.invalidJson'))
         } else {
           reject(err)
         }
       }
     }
-    reader.onerror = () => reject(new Error('Ошибка чтения файла.'))
+    reader.onerror = () => reject(new Error('validation.import.fileReadError'))
     reader.readAsText(file)
   })
 }

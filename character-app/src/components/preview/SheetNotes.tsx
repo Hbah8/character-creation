@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Character } from '@/types/character'
 
 interface Props {
@@ -11,25 +12,26 @@ function boxes(count: number) {
 }
 
 export function SheetNotes({ character }: Props) {
+  const { t } = useTranslation('preview')
   const woundCount = parseInt(character.wounds) || 3
   const fatigueCount = parseInt(character.fatigue) || 2
 
   return (
     <section className="markers">
-      <div className="section-title">Отметки</div>
+      <div className="section-title">{t('sections.notes')}</div>
       <div className="markers-body">
         <div className="markers-row">
-          <span className="marker-label">Шок</span>
+          <span className="marker-label">{t('notes.shock')}</span>
           <span className="marker-box">□</span>
           <span className="marker-gap" />
-          <span className="marker-label">Раны</span>
+          <span className="marker-label">{t('notes.wounds')}</span>
           {boxes(woundCount)}
           <span className="marker-gap" />
-          <span className="marker-label">Усталость</span>
+          <span className="marker-label">{t('notes.fatigue')}</span>
           {boxes(fatigueCount)}
         </div>
         <div className="markers-effects">
-          <span className="marker-label">Временные эффекты:</span>
+          <span className="marker-label">{t('notes.tempEffects')}</span>
           <span className="marker-line" />
         </div>
         {character.notes && (

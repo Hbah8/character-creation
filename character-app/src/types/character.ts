@@ -1,10 +1,12 @@
 export type DieName = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | ''
 
+export type AttributeKey = 'agility' | 'strength' | 'smarts' | 'spirit' | 'vigor'
+
 export interface Skill {
   id: string
   name: string
   die: DieName
-  linkedAttribute: string
+  linkedAttribute: AttributeKey
 }
 
 export interface Edge {
@@ -13,10 +15,12 @@ export interface Edge {
   effect: string
 }
 
+export type HindranceSeverity = 'minor' | 'major'
+
 export interface Hindrance {
   id: string
   name: string
-  severity: 'М' | 'К'
+  severity: HindranceSeverity
   description: string
 }
 

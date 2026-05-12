@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Character } from '@/types/character'
 
 interface Props {
@@ -5,11 +6,12 @@ interface Props {
 }
 
 export function SheetHeader({ character }: Props) {
+  const { t } = useTranslation('preview')
   return (
     <header className="header">
       <div className="titlebar">
-          <div className="main-title">{character.sheetTitle || 'Лист персонажа'}</div>
-        <div className="file-no">Файл: {character.fileNo || '—'}</div>
+          <div className="main-title">{character.sheetTitle || t('header.defaultSheetTitle')}</div>
+        <div className="file-no">{t('header.fileNoPrefix')}{character.fileNo || '—'}</div>
       </div>
       <div className="header-body">
         <div className="id-block">
@@ -19,9 +21,9 @@ export function SheetHeader({ character }: Props) {
         </div>
         <div className="portrait">
           {character.portraitUrl ? (
-            <img src={character.portraitUrl} alt="Портрет оператора" />
+            <img src={character.portraitUrl} alt={t('header.portraitAlt')} />
           ) : (
-            <div className="portrait-placeholder">Портрет<br />оператора</div>
+            <div className="portrait-placeholder">{t('header.portraitPlaceholder')}</div>
           )}
         </div>
       </div>

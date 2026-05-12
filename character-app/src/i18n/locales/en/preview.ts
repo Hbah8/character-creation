@@ -1,0 +1,71 @@
+const preview = {
+  sections: {
+    attributes: 'Attributes',
+    attributesAndSkills: 'Attributes & Skills',
+    combat: 'Combat Parameters',
+    skills: 'Skills',
+    edges: 'Edges',
+    hindrances: 'Hindrances',
+    weapons: 'Weapons',
+    gear: 'Gear',
+    specialRules: 'Special Rules',
+    notes: 'Notes',
+  },
+  header: {
+    fileNoPrefix: 'File: ',
+    portraitAlt: 'Character portrait',
+    portraitPlaceholder: 'Portrait',
+    defaultCallsign: '—',
+    defaultName: '—',
+    defaultRank: '—',
+    defaultRole: '—',
+    defaultSheetTitle: 'Character Sheet',
+  },
+  quickStats: {
+    pace: 'Pace',
+    parry: 'Parry',
+    toughness: 'Tough.',
+    bennies: 'Bennies',
+    mana: 'Mana',
+  },
+  attributes: {
+    agility: 'Agility',
+    strength: 'Strength',
+    smarts: 'Smarts',
+    spirit: 'Spirit',
+    vigor: 'Vigor',
+  },
+  combat: {
+    pace: 'Pace',
+    parry: 'Parry',
+    toughness: 'Toughness',
+    bennies: 'Bennies',
+    wounds: 'Wounds',
+    fatigue: 'Fatigue',
+  },
+  skills: {
+    columnSkill: 'Skill',
+    columnDie: 'Die',
+    columnAttribute: 'Attr.',
+  },
+  weapons: {
+    columnWeapon: 'Weapon',
+    columnRange: 'Range',
+    columnDamage: 'Damage',
+    columnAp: 'AP',
+    columnRof: 'RoF',
+    columnMag: 'Mag.',
+  },
+  notes: {
+    shock: 'Shock',
+    wounds: 'Wounds',
+    fatigue: 'Fatigue',
+    tempEffects: 'Temporary Effects:',
+  },
+  hindrances: {
+    severityMinor: 'Minor',
+    severityMajor: 'Major',
+  },
+} as const
+
+export default preview

@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -18,6 +19,7 @@ interface Props {
 
 export function ExportDropdown({ onExportPdf, onExportJson, onImportJson }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { t } = useTranslation('header')
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -40,22 +42,22 @@ export function ExportDropdown({ onExportPdf, onExportJson, onImportJson }: Prop
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline">
-            Export / Import <ChevronDown data-icon="inline-end" />
+            {t('exportImportButton')} <ChevronDown data-icon="inline-end" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={onExportPdf}>
-              <FileText data-icon="inline-start" /> Export PDF
+              <FileText data-icon="inline-start" /> {t('exportPdf')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onExportJson}>
-              <FileJson data-icon="inline-start" /> Export JSON
+              <FileJson data-icon="inline-start" /> {t('exportJson')}
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <Upload data-icon="inline-start" /> Import JSON
+              <Upload data-icon="inline-start" /> {t('importJson')}
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>

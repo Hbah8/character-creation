@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,22 +12,28 @@ interface Props {
   onRemove: (id: string) => void
 }
 
-const COLUMNS: { key: keyof Weapon; label: string; placeholder: string }[] = [
-  { key: 'name',     label: 'Name',   placeholder: 'Weapon name' },
-  { key: 'range',    label: 'Range',  placeholder: '24/48/96' },
-  { key: 'damage',   label: 'Damage', placeholder: '2d8+1' },
-  { key: 'ap',       label: 'AP',     placeholder: '2' },
-  { key: 'rof',      label: 'RoF',    placeholder: '1' },
-  { key: 'magazine', label: 'Mag.',   placeholder: '30' },
-]
+type FormTKey = Parameters<ReturnType<typeof useTranslation<'form'>>['t']>[0]
+
+type WeaponCol = { key: keyof Weapon; labelKey: FormTKey; placeholderKey: FormTKey }
 
 export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
+  const { t } = useTranslation('form')
+
+  const COLUMNS: WeaponCol[] = [
+    { key: 'name',     labelKey: 'weapons.columnName',     placeholderKey: 'weapons.weaponNamePlaceholder' },
+    { key: 'range',    labelKey: 'weapons.columnRange',    placeholderKey: 'weapons.rangePlaceholder' },
+    { key: 'damage',   labelKey: 'weapons.columnDamage',   placeholderKey: 'weapons.damagePlaceholder' },
+    { key: 'ap',       labelKey: 'weapons.columnAp',       placeholderKey: 'weapons.apPlaceholder' },
+    { key: 'rof',      labelKey: 'weapons.columnRof',      placeholderKey: 'weapons.rofPlaceholder' },
+    { key: 'magazine', labelKey: 'weapons.columnMag',      placeholderKey: 'weapons.magPlaceholder' },
+  ]
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Weapons</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.weapons')}</h2>
         <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus data-icon="inline-start" /> Add Weapon
+          <Plus data-icon="inline-start" /> {t('weapons.addWeapon')}
         </Button>
       </div>
 
@@ -36,49 +43,49 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
           <div key={w.id} className="rounded-md border p-3 flex flex-col gap-2">
             {/* Name — full width */}
             <div className="flex flex-col gap-1">
-              <Label className="text-xs">Name</Label>
+              <Label className="text-xs">{t('weapons.columnName')}</Label>
               <Input
                 value={w.name}
                 onChange={e => onUpdate(w.id, { name: e.target.value })}
-                placeholder="Weapon name"
+                placeholder={t('weapons.weaponNamePlaceholder')}
               />
             </div>
             {/* Range / Damage */}
             <div className="grid grid-cols-2 gap-2">
               <div className="flex flex-col gap-1">
-                <Label className="text-xs">Range</Label>
-                <Input value={w.range} onChange={e => onUpdate(w.id, { range: e.target.value })} placeholder="24/48/96" />
+                <Label className="text-xs">{t('weapons.columnRange')}</Label>
+                <Input value={w.range} onChange={e => onUpdate(w.id, { range: e.target.value })} placeholder={t('weapons.rangePlaceholder')} />
               </div>
               <div className="flex flex-col gap-1">
-                <Label className="text-xs">Damage</Label>
-                <Input value={w.damage} onChange={e => onUpdate(w.id, { damage: e.target.value })} placeholder="2d8+1" />
+                <Label className="text-xs">{t('weapons.columnDamage')}</Label>
+                <Input value={w.damage} onChange={e => onUpdate(w.id, { damage: e.target.value })} placeholder={t('weapons.damagePlaceholder')} />
               </div>
             </div>
             {/* AP / RoF / Mag */}
             <div className="grid grid-cols-3 gap-2">
               <div className="flex flex-col gap-1">
-                <Label className="text-xs">AP</Label>
-                <Input value={w.ap} onChange={e => onUpdate(w.id, { ap: e.target.value })} placeholder="2" />
+                <Label className="text-xs">{t('weapons.columnAp')}</Label>
+                <Input value={w.ap} onChange={e => onUpdate(w.id, { ap: e.target.value })} placeholder={t('weapons.apPlaceholder')} />
               </div>
               <div className="flex flex-col gap-1">
-                <Label className="text-xs">RoF</Label>
-                <Input value={w.rof} onChange={e => onUpdate(w.id, { rof: e.target.value })} placeholder="1" />
+                <Label className="text-xs">{t('weapons.columnRof')}</Label>
+                <Input value={w.rof} onChange={e => onUpdate(w.id, { rof: e.target.value })} placeholder={t('weapons.rofPlaceholder')} />
               </div>
               <div className="flex flex-col gap-1">
-                <Label className="text-xs">Mag.</Label>
-                <Input value={w.magazine} onChange={e => onUpdate(w.id, { magazine: e.target.value })} placeholder="30" />
+                <Label className="text-xs">{t('weapons.columnMag')}</Label>
+                <Input value={w.magazine} onChange={e => onUpdate(w.id, { magazine: e.target.value })} placeholder={t('weapons.magPlaceholder')} />
               </div>
             </div>
             {/* Delete */}
             <div className="flex justify-end">
               <Button size="sm" variant="ghost" onClick={() => onRemove(w.id)} className="text-destructive hover:text-destructive">
-                <Trash2 data-icon="inline-start" /> Remove
+                <Trash2 data-icon="inline-start" /> {t('weapons.removeWeapon')}
               </Button>
             </div>
           </div>
         ))}
         {weapons.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-2">No weapons yet.</p>
+          <p className="text-sm text-muted-foreground text-center py-2">{t('weapons.noWeapons')}</p>
         )}
       </div>
 
@@ -86,7 +93,7 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
       <div className="hidden md:flex flex-col gap-2">
         <div className="grid grid-cols-[2fr_1.2fr_1.2fr_0.6fr_0.6fr_0.7fr_36px] gap-1.5">
           {COLUMNS.map(c => (
-            <Label key={c.key} className="text-xs">{c.label}</Label>
+            <Label key={c.key} className="text-xs">{t(c.labelKey as never)}</Label>
           ))}
           <span />
         </div>
@@ -98,17 +105,17 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
                 key={c.key}
                 value={w[c.key]}
                 onChange={e => onUpdate(w.id, { [c.key]: e.target.value })}
-                placeholder={c.placeholder}
+                placeholder={t(c.placeholderKey as never)}
               />
             ))}
-            <Button size="icon" variant="ghost" onClick={() => onRemove(w.id)} className="text-destructive hover:text-destructive">
+            <Button size="icon" variant="ghost" onClick={() => onRemove(w.id)} className="text-destructive hover:text-destructive" aria-label={t('weapons.removeWeapon')}>
               <Trash2 />
             </Button>
           </div>
         ))}
 
         {weapons.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-2">No weapons yet.</p>
+          <p className="text-sm text-muted-foreground text-center py-2">{t('weapons.noWeapons')}</p>
         )}
       </div>
     </div>

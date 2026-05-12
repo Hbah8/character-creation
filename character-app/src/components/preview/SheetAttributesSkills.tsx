@@ -1,34 +1,30 @@
-import type { Character } from '@/types/character'
+import { useTranslation } from 'react-i18next'
+import type { Character, AttributeKey } from '@/types/character'
+
+const ATTRIBUTE_KEYS: AttributeKey[] = ['agility', 'smarts', 'spirit', 'strength', 'vigor']
 
 interface Props {
   character: Character
 }
 
-const ATTRIBUTES = [
-  { key: 'agility' as const, label: 'Ловкость' },
-  { key: 'smarts' as const, label: 'Смекалка' },
-  { key: 'spirit' as const, label: 'Характер' },
-  { key: 'strength' as const, label: 'Сила' },
-  { key: 'vigor' as const, label: 'Выносливость' },
-]
-
 export function SheetAttributesSkills({ character }: Props) {
+  const { t } = useTranslation('preview')
   return (
     <section className="section">
-      <div className="section-title">Характеристики и Навыки</div>
+      <div className="section-title">{t('sections.attributesAndSkills')}</div>
       <table className="table attr-skill-table">
         <tbody>
-          {ATTRIBUTES.map(attr => {
-            const skills = character.skills.filter(s => s.linkedAttribute === attr.label)
+          {ATTRIBUTE_KEYS.map(attrKey => {
+            const skills = character.skills.filter(s => s.linkedAttribute === attrKey)
             return (
               <>
-                <tr key={`${attr.key}-header`} className="attr-header-row">
+                <tr key={`${attrKey}-header`} className="attr-header-row">
                   <td className="attr-header-cell">
-                    {attr.label.toUpperCase()} {character[attr.key]}
+                    {t(`attributes.${attrKey}`).toUpperCase()} {character[attrKey]}
                   </td>
                 </tr>
                 {skills.length > 0 && (
-                  <tr key={`${attr.key}-skills`} className="attr-skills-row">
+                  <tr key={`${attrKey}-skills`} className="attr-skills-row">
                     <td className="attr-skills-cell">
                       {skills.map(s => `${s.name} ${s.die}`).join(' · ')}
                     </td>

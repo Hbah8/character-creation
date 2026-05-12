@@ -2,8 +2,8 @@ import { useState, useCallback } from 'react'
 import type { Character, Skill, Edge, Hindrance, Weapon, SpecialRule } from '@/types/character'
 import { defaultCharacter } from '@/data/defaultCharacter'
 
-export function useCharacterStore() {
-  const [character, setCharacter] = useState<Character>(defaultCharacter)
+export function useCharacterStore(initialCharacter?: Character) {
+  const [character, setCharacter] = useState<Character>(initialCharacter ?? defaultCharacter)
 
   const updateField = useCallback(<K extends keyof Character>(key: K, value: Character[K]) => {
     setCharacter(prev => ({ ...prev, [key]: value }))
@@ -15,7 +15,7 @@ export function useCharacterStore() {
       ...prev,
       skills: [
         ...prev.skills,
-        { id: crypto.randomUUID(), name: 'Новый навык', die: 'd4', linkedAttribute: 'Ловкость' } satisfies Skill,
+        { id: crypto.randomUUID(), name: '', die: 'd4', linkedAttribute: 'agility' } satisfies Skill,
       ],
     }))
   }, [])
@@ -56,7 +56,7 @@ export function useCharacterStore() {
       ...prev,
       hindrances: [
         ...prev.hindrances,
-        { id: crypto.randomUUID(), name: '', severity: 'М' as const, description: '' } satisfies Hindrance,
+        { id: crypto.randomUUID(), name: '', severity: 'minor' as const, description: '' } satisfies Hindrance,
       ],
     }))
   }, [])
