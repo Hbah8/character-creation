@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCharacterStore } from '@/store/useCharacterStore'
+import { useCharacterLibrary } from '@/store/useCharacterLibrary'
 import { CharacterSheet } from '@/components/preview/CharacterSheet'
 import { IdentityForm } from '@/components/form/IdentityForm'
 import { AttributesForm } from '@/components/form/AttributesForm'
@@ -13,6 +14,7 @@ import { GearForm } from '@/components/form/GearForm'
 import { SpecialRulesForm } from '@/components/form/SpecialRulesForm'
 import { NotesForm } from '@/components/form/NotesForm'
 import { ExportDropdown } from '@/components/ExportDropdown'
+import { CharacterLibrary } from '@/components/CharacterLibrary'
 import { ImportErrorDialog } from '@/components/ImportErrorDialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -29,16 +31,45 @@ const initialLocale = detectInitialLocale()
 function App() {
   const store = useCharacterStore(getDefaultCharacter(initialLocale))
   const { character } = store
+  const library = useCharacterLibrary()
   const { t: tNav } = useTranslation('navigation')
   const { t: tHeader } = useTranslation('header')
+  const { t: tLibrary } = useTranslation('library')
 
   const [importError, setImportError] = useState<string | null>(null)
   const [locale, setLocale] = useState<Locale>(initialLocale)
+  const [cleanSnapshot, setCleanSnapshot] = useState<string>(
+    () => JSON.stringify(getDefaultCharacter(initialLocale))
+  )
+
+  const isDirty = useMemo(
+    () => JSON.stringify(character) !== cleanSnapshot,
+    [character, cleanSnapshot]
+  )
+
+  function handleSave() {
+    library.save(character)
+    setCleanSnapshot(JSON.stringify(character))
+  }
+
+  function handleLoad(char: ReturnType<typeof library.loadById>) {
+    store.replaceCharacter(char)
+    setCleanSnapshot(JSON.stringify(char))
+  }
+
+  function handleNewCharacter() {
+    const fresh = getDefaultCharacter(locale)
+    store.replaceCharacter(fresh)
+    setCleanSnapshot(JSON.stringify(fresh))
+    library.markNew()
+  }
 
   async function handleImportJson(file: File) {
     try {
       const imported = await importFromJson(file)
       store.replaceCharacter(imported)
+      setCleanSnapshot(JSON.stringify(imported))
+      library.markNew()
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'validation.import.notAnObject')
     }
@@ -130,6 +161,15 @@ function App() {
               RU
             </Button>
           </div>
+          <CharacterLibrary
+            library={library}
+            isDirty={isDirty}
+            onLoad={handleLoad}
+            onNewCharacter={handleNewCharacter}
+          />
+          <Button variant="outline" size="sm" onClick={handleSave}>
+            {tLibrary('save')}
+          </Button>
           <ExportDropdown
             onExportPdf={() => exportToPdf()}
             onExportJson={() => exportToJson(character)}
