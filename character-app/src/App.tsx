@@ -17,6 +17,7 @@ import { ExportDropdown } from '@/components/ExportDropdown'
 import { CharacterLibrary } from '@/components/CharacterLibrary'
 import { ImportErrorDialog } from '@/components/ImportErrorDialog'
 import { ShareConfirmDialog } from '@/components/ShareConfirmDialog'
+import { WelcomeDialog, hasSeenWelcome, markWelcomeSeen } from '@/components/WelcomeDialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -49,7 +50,13 @@ function App() {
   const [copyLinkStatus, setCopyLinkStatus] = useState<'idle' | 'copied'>('idle')
   const [pendingShareChar, setPendingShareChar] = useState<Character | null>(null)
   const [pendingSharePortraitStripped, setPendingSharePortraitStripped] = useState(false)
+  const [welcomeOpen, setWelcomeOpen] = useState(() => !hasSeenWelcome())
   const copyLinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function handleWelcomeClose() {
+    markWelcomeSeen()
+    setWelcomeOpen(false)
+  }
 
   const isDirty = useMemo(
     () => JSON.stringify(character) !== cleanSnapshot,
@@ -203,6 +210,15 @@ function App() {
       <header className="flex items-center justify-between px-4 py-2 border-b shrink-0 print:hidden gap-2">
         <h1 className="text-lg font-semibold tracking-tight">{tHeader('appTitle')}</h1>
         <div className="flex items-center gap-2">
+          <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              title={tHeader('helpButton')}
+              onClick={() => setWelcomeOpen(true)}
+            >
+              ?
+            </Button>
           <div className="flex items-center rounded-md border overflow-hidden">
             <Button
               variant={locale === 'en' ? 'default' : 'ghost'}
@@ -277,6 +293,7 @@ function App() {
         </TabsContent>
       </Tabs>
 
+      <WelcomeDialog open={welcomeOpen} onClose={handleWelcomeClose} />
       <ImportErrorDialog
         open={importError !== null}
         message={importError ?? ''}
