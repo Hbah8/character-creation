@@ -30,7 +30,7 @@ export function PortraitUpload({ value, onChange }: Props) {
       onChange(base64)
     } catch (err) {
       if (err instanceof Error) {
-        setError(t(err.message as Parameters<typeof t>[0]))
+        setError(t(err.message as 'identity.portraitErrorType' | 'identity.portraitErrorSize'))
       }
     }
   }
