@@ -25,6 +25,8 @@ import { exportToJson, exportToPdf } from '@/services/exportService'
 import { importFromJson } from '@/services/importService'
 import { encodeCharacterToHash, decodeCharacterFromHash, buildShareUrl } from '@/services/shareService'
 import type { Character } from '@/types/character'
+import { DEFAULT_LAYOUT } from '@/types/character'
+import type { ColumnSide } from '@/types/character'
 import { detectInitialLocale, changeLocale } from '@/i18n/index'
 import { getDefaultCharacter } from '@/data/defaultCharacter'
 import type { Locale } from '@/i18n/types'
@@ -122,6 +124,12 @@ function App() {
     changeLocale(next)
   }
 
+  function handleLayoutChange(block: keyof typeof DEFAULT_LAYOUT, col: ColumnSide) {
+    store.updateField('layout', { ...(character.layout ?? DEFAULT_LAYOUT), [block]: col })
+  }
+
+  const layout = character.layout ?? DEFAULT_LAYOUT
+
   const FormContent = (
     <>
       <IdentityForm character={character} onChange={store.updateField} />
@@ -142,6 +150,8 @@ function App() {
         onAdd={store.addEdge}
         onUpdate={store.updateEdge}
         onRemove={store.removeEdge}
+        column={layout.edges}
+        onColumnChange={col => handleLayoutChange('edges', col)}
       />
       <Separator />
       <HindrancesForm
@@ -149,6 +159,8 @@ function App() {
         onAdd={store.addHindrance}
         onUpdate={store.updateHindrance}
         onRemove={store.removeHindrance}
+        column={layout.hindrances}
+        onColumnChange={col => handleLayoutChange('hindrances', col)}
       />
       <Separator />
       <WeaponsForm
@@ -156,6 +168,8 @@ function App() {
         onAdd={store.addWeapon}
         onUpdate={store.updateWeapon}
         onRemove={store.removeWeapon}
+        column={layout.weapons}
+        onColumnChange={col => handleLayoutChange('weapons', col)}
       />
       <Separator />
       <GearForm
@@ -163,6 +177,8 @@ function App() {
         onAdd={store.addGearItem}
         onUpdate={store.updateGearItem}
         onRemove={store.removeGearItem}
+        column={layout.gear}
+        onColumnChange={col => handleLayoutChange('gear', col)}
       />
       <Separator />
       <SpecialRulesForm
@@ -170,6 +186,8 @@ function App() {
         onAdd={store.addSpecialRule}
         onUpdate={store.updateSpecialRule}
         onRemove={store.removeSpecialRule}
+        column={layout.specialRules}
+        onColumnChange={col => handleLayoutChange('specialRules', col)}
       />
       <Separator />
       <NotesForm

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import type { Edge } from '@/types/character'
+import type { Edge, ColumnSide } from '@/types/character'
 import { Trash2, Plus } from 'lucide-react'
 
 interface Props {
@@ -11,17 +11,25 @@ interface Props {
   onAdd: () => void
   onUpdate: (id: string, patch: Partial<Edge>) => void
   onRemove: (id: string) => void
+  column: ColumnSide
+  onColumnChange: (col: ColumnSide) => void
 }
 
-export function EdgesForm({ edges, onAdd, onUpdate, onRemove }: Props) {
+export function EdgesForm({ edges, onAdd, onUpdate, onRemove, column, onColumnChange }: Props) {
   const { t } = useTranslation('form')
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.edges')}</h2>
-        <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus data-icon="inline-start" /> {t('edges.addEdge')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-md border overflow-hidden">
+            <Button size="sm" variant={column === 'left' ? 'default' : 'ghost'} className="rounded-none h-7 px-2 text-xs" onClick={() => onColumnChange('left')}>←</Button>
+            <Button size="sm" variant={column === 'right' ? 'default' : 'ghost'} className="rounded-none h-7 px-2 text-xs" onClick={() => onColumnChange('right')}>→</Button>
+          </div>
+          <Button size="sm" variant="outline" onClick={onAdd}>
+            <Plus data-icon="inline-start" /> {t('edges.addEdge')}
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3">

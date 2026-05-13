@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { Weapon } from '@/types/character'
+import type { Weapon, ColumnSide } from '@/types/character'
 import { Trash2, Plus } from 'lucide-react'
 
 interface Props {
@@ -10,13 +10,15 @@ interface Props {
   onAdd: () => void
   onUpdate: (id: string, patch: Partial<Weapon>) => void
   onRemove: (id: string) => void
+  column: ColumnSide
+  onColumnChange: (col: ColumnSide) => void
 }
 
 type FormTKey = Parameters<ReturnType<typeof useTranslation<'form'>>['t']>[0]
 
 type WeaponCol = { key: keyof Weapon; labelKey: FormTKey; placeholderKey: FormTKey }
 
-export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
+export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove, column, onColumnChange }: Props) {
   const { t } = useTranslation('form')
 
   const COLUMNS: WeaponCol[] = [
@@ -32,9 +34,15 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove }: Props) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.weapons')}</h2>
-        <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus data-icon="inline-start" /> {t('weapons.addWeapon')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-md border overflow-hidden">
+            <Button size="sm" variant={column === 'left' ? 'default' : 'ghost'} className="rounded-none h-7 px-2 text-xs" onClick={() => onColumnChange('left')}>←</Button>
+            <Button size="sm" variant={column === 'right' ? 'default' : 'ghost'} className="rounded-none h-7 px-2 text-xs" onClick={() => onColumnChange('right')}>→</Button>
+          </div>
+          <Button size="sm" variant="outline" onClick={onAdd}>
+            <Plus data-icon="inline-start" /> {t('weapons.addWeapon')}
+          </Button>
+        </div>
       </div>
 
       {/* Mobile: card-per-weapon layout */}

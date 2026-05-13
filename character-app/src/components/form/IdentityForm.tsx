@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { Character } from '@/types/character'
+import { PortraitUpload } from '@/components/form/PortraitUpload'
 
 interface Props {
   character: Character
@@ -38,9 +39,8 @@ export function IdentityForm({ character, onChange }: Props) {
           <Label htmlFor="fileNo">{t('identity.fileNo')}</Label>
           <Input id="fileNo" value={character.fileNo} onChange={e => onChange('fileNo', e.target.value)} />
         </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="portraitUrl">{t('identity.portraitUrl')}</Label>
-          <Input id="portraitUrl" value={character.portraitUrl} onChange={e => onChange('portraitUrl', e.target.value)} placeholder={t('identity.portraitUrlPlaceholder')} />
+        <div className="col-span-2">
+          <PortraitUpload value={character.portraitUrl} onChange={val => onChange('portraitUrl', val)} />
         </div>
       </div>
     </div>

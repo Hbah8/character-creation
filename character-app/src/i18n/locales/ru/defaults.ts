@@ -1,4 +1,5 @@
 import type { Character } from '@/types/character'
+import { DEFAULT_LAYOUT } from '@/types/character'
 
 export const ruDefaultCharacter: Character = {
   sheetTitle: 'Лист персонажа',
@@ -69,4 +70,6 @@ export const ruDefaultCharacter: Character = {
   ],
 
   notes: '',
+
+  layout: DEFAULT_LAYOUT,
 }

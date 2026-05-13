@@ -1,4 +1,5 @@
-import type { Character, AttributeKey, HindranceSeverity } from '@/types/character'
+import type { Character, AttributeKey, HindranceSeverity, CharacterLayout, ColumnSide } from '@/types/character'
+import { DEFAULT_LAYOUT } from '@/types/character'
 
 function isString(value: unknown): value is string {
   return typeof value === 'string'
@@ -80,5 +81,18 @@ export function validateCharacterImport(raw: unknown): Character {
     return { ...s, linkedAttribute: migrateLinkedAttribute(s.linkedAttribute) }
   })
 
-  return { ...(raw as unknown as Character), hindrances: hindrances as Character['hindrances'], skills: skills as Character['skills'] }
+  const COLUMN_SIDES: ColumnSide[] = ['left', 'right']
+  const LAYOUT_KEYS: (keyof CharacterLayout)[] = ['weapons', 'edges', 'hindrances', 'gear', 'specialRules']
+
+  let layout: CharacterLayout = { ...DEFAULT_LAYOUT }
+  if (isObject(raw.layout)) {
+    const partial: Partial<CharacterLayout> = {}
+    for (const key of LAYOUT_KEYS) {
+      const val = (raw.layout as Record<string, unknown>)[key]
+      partial[key] = COLUMN_SIDES.includes(val as ColumnSide) ? (val as ColumnSide) : DEFAULT_LAYOUT[key]
+    }
+    layout = partial as CharacterLayout
+  }
+
+  return { ...(raw as unknown as Character), hindrances: hindrances as Character['hindrances'], skills: skills as Character['skills'], layout }
 }

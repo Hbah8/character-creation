@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import type { Character } from '@/types/character'
+import { DEFAULT_LAYOUT } from '@/types/character'
 import '@/styles/sheet.css'
 import { SheetHeader } from './SheetHeader'
 import { SheetQuickStats } from './SheetQuickStats'
@@ -78,6 +79,7 @@ export function CharacterSheet({ character, fitToContainer = false }: Props) {
   // zoom affects layout (unlike transform: scale), so the container tracks the actual
   // rendered size — no overflow, no clipping, no absolute positioning needed.
   if (fitToContainer) {
+    const layout = character.layout ?? DEFAULT_LAYOUT
     return (
       <div
         ref={wrapperRef}
@@ -100,13 +102,18 @@ export function CharacterSheet({ character, fitToContainer = false }: Props) {
               <section className="columns">
                 <div className="column">
                   <SheetAttributesSkills character={character} />
-                  <SheetWeapons character={character} />
+                  {layout.weapons === 'left' && <SheetWeapons character={character} />}
+                  {layout.edges === 'left' && <SheetEdges character={character} />}
+                  {layout.hindrances === 'left' && <SheetHindrances character={character} />}
+                  {layout.gear === 'left' && <SheetGear character={character} />}
+                  {layout.specialRules === 'left' && <SheetSpecialRules character={character} />}
                 </div>
                 <div className="column">
-                  <SheetEdges character={character} />
-                  <SheetHindrances character={character} />
-                  <SheetGear character={character} />
-                  <SheetSpecialRules character={character} />
+                  {layout.weapons === 'right' && <SheetWeapons character={character} />}
+                  {layout.edges === 'right' && <SheetEdges character={character} />}
+                  {layout.hindrances === 'right' && <SheetHindrances character={character} />}
+                  {layout.gear === 'right' && <SheetGear character={character} />}
+                  {layout.specialRules === 'right' && <SheetSpecialRules character={character} />}
                 </div>
               </section>
               <SheetNotes character={character} />
@@ -147,16 +154,28 @@ export function CharacterSheet({ character, fitToContainer = false }: Props) {
             <SheetHeader character={character} />
             <SheetQuickStats character={character} />
             <section className="columns">
-              <div className="column">
-                <SheetAttributesSkills character={character} />
-                <SheetWeapons character={character} />
-              </div>
-              <div className="column">
-                <SheetEdges character={character} />
-                <SheetHindrances character={character} />
-                <SheetGear character={character} />
-                <SheetSpecialRules character={character} />
-              </div>
+              {(() => {
+                const layout = character.layout ?? DEFAULT_LAYOUT
+                return (
+                  <>
+                    <div className="column">
+                      <SheetAttributesSkills character={character} />
+                      {layout.weapons === 'left' && <SheetWeapons character={character} />}
+                      {layout.edges === 'left' && <SheetEdges character={character} />}
+                      {layout.hindrances === 'left' && <SheetHindrances character={character} />}
+                      {layout.gear === 'left' && <SheetGear character={character} />}
+                      {layout.specialRules === 'left' && <SheetSpecialRules character={character} />}
+                    </div>
+                    <div className="column">
+                      {layout.weapons === 'right' && <SheetWeapons character={character} />}
+                      {layout.edges === 'right' && <SheetEdges character={character} />}
+                      {layout.hindrances === 'right' && <SheetHindrances character={character} />}
+                      {layout.gear === 'right' && <SheetGear character={character} />}
+                      {layout.specialRules === 'right' && <SheetSpecialRules character={character} />}
+                    </div>
+                  </>
+                )
+              })()}
             </section>
             <SheetNotes character={character} />
           </div>

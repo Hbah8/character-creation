@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { ColumnSide } from '@/types/character'
 import { Trash2, Plus } from 'lucide-react'
 
 interface Props {
@@ -8,17 +9,25 @@ interface Props {
   onAdd: () => void
   onUpdate: (index: number, value: string) => void
   onRemove: (index: number) => void
+  column: ColumnSide
+  onColumnChange: (col: ColumnSide) => void
 }
 
-export function GearForm({ gear, onAdd, onUpdate, onRemove }: Props) {
+export function GearForm({ gear, onAdd, onUpdate, onRemove, column, onColumnChange }: Props) {
   const { t } = useTranslation('form')
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.gear')}</h2>
-        <Button size="sm" variant="outline" onClick={onAdd}>
-          <Plus data-icon="inline-start" /> {t('gear.addItem')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-md border overflow-hidden">
+            <Button size="sm" variant={column === 'left' ? 'default' : 'ghost'} className="rounded-none h-7 px-2 text-xs" onClick={() => onColumnChange('left')}>←</Button>
+            <Button size="sm" variant={column === 'right' ? 'default' : 'ghost'} className="rounded-none h-7 px-2 text-xs" onClick={() => onColumnChange('right')}>→</Button>
+          </div>
+          <Button size="sm" variant="outline" onClick={onAdd}>
+            <Plus data-icon="inline-start" /> {t('gear.addItem')}
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

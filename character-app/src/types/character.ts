@@ -40,6 +40,24 @@ export interface SpecialRule {
   description: string
 }
 
+export type ColumnSide = 'left' | 'right'
+
+export interface CharacterLayout {
+  weapons: ColumnSide
+  edges: ColumnSide
+  hindrances: ColumnSide
+  gear: ColumnSide
+  specialRules: ColumnSide
+}
+
+export const DEFAULT_LAYOUT: CharacterLayout = {
+  weapons: 'left',
+  edges: 'right',
+  hindrances: 'right',
+  gear: 'right',
+  specialRules: 'right',
+}
+
 export interface Character {
   // Identity
   sheetTitle: string
@@ -86,4 +104,7 @@ export interface Character {
 
   // Notes
   notes: string
+
+  // Layout
+  layout?: CharacterLayout
 }
