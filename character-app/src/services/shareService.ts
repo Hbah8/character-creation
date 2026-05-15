@@ -45,7 +45,7 @@ export function decodeCharacterFromHash(rawHash: string): DecodeResult {
 export function buildShareUrl(hash: string): string {
   return (
     window.location.origin +
-    window.location.pathname +
+    '/character-creation/creator' +
     '#' +
     hash
   )

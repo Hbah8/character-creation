@@ -15,13 +15,17 @@ import { SheetNotes } from './SheetNotes'
 // A4 at 96dpi: 210mm = ~794px
 const SHEET_WIDTH_PX = 794
 
+export type ScaleMode = 'fit-width' | 'full-page' | '100%'
+
 interface Props {
   character: Character
   /** Scale to fit both width and height of the container (mobile preview). Default: scale by width only. */
   fitToContainer?: boolean
+  /** Controls how the desktop preview scales. Default: 'fit-width'. Ignored when fitToContainer=true. */
+  scaleMode?: ScaleMode
 }
 
-export function CharacterSheet({ character, fitToContainer = false }: Props) {
+export function CharacterSheet({ character, fitToContainer = false, scaleMode = 'fit-width' }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
@@ -70,7 +74,13 @@ export function CharacterSheet({ character, fitToContainer = false }: Props) {
   }, [])
 
   const widthScale = containerSize.width > 0 ? containerSize.width / SHEET_WIDTH_PX : 1
-  const scale = widthScale
+  const heightScale = containerSize.height > 0 && sheetHeight > 0 ? containerSize.height / sheetHeight : 1
+  // Never upscale beyond 100% — preview should match PDF size, only scale down for narrow containers
+  const scale = scaleMode === '100%'
+    ? 1
+    : scaleMode === 'full-page'
+    ? Math.min(widthScale, heightScale, 1)
+    : Math.min(widthScale, 1)
 
   // Compensate for blank layout space left by transform: scale() — only needed in scrollable mode
   const bottomCompensation = !fitToContainer && sheetHeight > 0 ? -sheetHeight * (1 - scale) : 0

@@ -31,6 +31,14 @@ const header = {
   welcomeMiscTitle: 'Прочее',
   welcomeLocale: 'Переключение языка: EN / RU',
   welcomeUnsaved: 'Индикатор несохранённых изменений',
+  unsaved: 'Есть несохранённые изменения',
+  savedAt: 'Сохранено {{time}}',
+  scalesFitWidth: 'По ширине',
+  scalesFullPage: 'Вся страница',
+  scalesActual: '100%',
+  newCharacterPlaceholder: 'Новый персонаж',
+  previewLabel: 'Превью листа',
+  sectionsHeading: 'Секции персонажа',
 } as const
 
 export default header

@@ -31,6 +31,14 @@ const header = {
   welcomeMiscTitle: 'Miscellaneous',
   welcomeLocale: 'Language switching: EN / RU',
   welcomeUnsaved: 'Unsaved changes indicator',
+  unsaved: 'Unsaved changes',
+  savedAt: 'Saved {{time}}',
+  scalesFitWidth: 'Width',
+  scalesFullPage: 'Page',
+  scalesActual: '100%',
+  newCharacterPlaceholder: 'New Character',
+  previewLabel: 'Sheet Preview',
+  sectionsHeading: 'Sections',
 } as const
 
 export default header
