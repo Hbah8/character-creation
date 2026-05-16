@@ -23,9 +23,9 @@ const preview = {
   },
   quickStats: {
     pace: 'Шаг',
-    parry: 'Парир.',
+    parry: 'Защита',
     toughness: 'Стойк.',
-    bennies: 'Бенни',
+    bennies: 'Фишки',
     mana: 'Мана',
   },
   attributes: {
@@ -37,9 +37,9 @@ const preview = {
   },
   combat: {
     pace: 'Шаг',
-    parry: 'Парирование',
+    parry: 'Защита',
     toughness: 'Стойкость',
-    bennies: 'Бенни',
+    bennies: 'Фишки',
     wounds: 'Раны',
     fatigue: 'Усталость',
   },

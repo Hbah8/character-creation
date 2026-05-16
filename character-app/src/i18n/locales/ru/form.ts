@@ -35,9 +35,9 @@ const form = {
   },
   combat: {
     pace: 'Шаг',
-    parry: 'Парирование',
+    parry: 'Защита',
     toughness: 'Стойкость',
-    bennies: 'Бенни',
+    bennies: 'Фишки',
     wounds: 'Раны',
     fatigue: 'Усталость',
     mana: 'Мана',
