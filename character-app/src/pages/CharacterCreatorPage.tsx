@@ -352,6 +352,15 @@ export function CharacterCreatorPage() {
           <Button
             variant="ghost"
             size="sm"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            title={tHeader('helpButton')}
+            onClick={() => setWelcomeOpen(true)}
+          >
+            ?
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-7 px-2 text-xs font-medium"
             onClick={() => handleLocaleChange(locale === 'en' ? 'ru' : 'en')}
           >
