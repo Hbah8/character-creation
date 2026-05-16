@@ -1,5 +1,5 @@
 import { useLocation, Link } from 'react-router-dom'
-import { LayoutDashboard, Users } from 'lucide-react'
+import { LayoutDashboard, Swords, Users } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -12,6 +12,7 @@ import {
 const NAV_ITEMS = [
   { label: 'Обзор', href: '/', icon: LayoutDashboard },
   { label: 'Персонажи', href: '/creator', icon: Users },
+  { label: 'Бой', href: '/combat', icon: Swords },
 ]
 
 export function AppSidebar() {
