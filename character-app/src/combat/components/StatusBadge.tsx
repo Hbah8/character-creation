@@ -29,6 +29,18 @@ const STATUS_CONFIG: Record<CombatantStatus, { label: string; className: string 
     label: 'Умирает',
     className: 'bg-red-900/50 text-red-800 dark:text-red-200 border-red-900/70 font-bold',
   },
+  grabbed: {
+    label: 'Схвачен',
+    className: 'bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/40',
+  },
+  restrained: {
+    label: 'Обездвижен',
+    className: 'bg-blue-700/20 text-blue-800 dark:text-blue-300 border-blue-700/40',
+  },
+  prone: {
+    label: 'Лежачий',
+    className: 'bg-slate-500/20 text-slate-700 dark:text-slate-400 border-slate-500/40',
+  },
 }
 
 export function StatusBadge({ status }: { status: CombatantStatus }) {
@@ -73,6 +85,9 @@ export const ALL_STATUSES: CombatantStatus[] = [
   'stunned',
   'incapacitated',
   'dying',
+  'grabbed',
+  'restrained',
+  'prone',
 ]
 
 // ── Card badge ────────────────────────────────────────────────────────────────

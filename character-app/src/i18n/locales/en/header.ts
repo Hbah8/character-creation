@@ -39,6 +39,9 @@ const header = {
   newCharacterPlaceholder: 'New Character',
   previewLabel: 'Sheet Preview',
   sectionsHeading: 'Sections',
+  worldDataButton: 'World Data',
+  worldStats: '{{entities}} entities, {{relationships}} relationships',
+  backToWorlds: 'Back to worlds',
 } as const
 
 export default header

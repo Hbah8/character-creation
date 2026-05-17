@@ -52,6 +52,7 @@ export function useCombatStore() {
           card: undefined,
           pendingCard: undefined,
           statuses: [],
+          onHold: false,
           groupShocked: params.type === 'group' ? 0 : undefined,
           groupEliminated: params.type === 'group' ? 0 : undefined,
           pace: params.pace ?? 6,
@@ -87,10 +88,17 @@ export function useCombatStore() {
       prev.map(c => {
         if (c.id !== id) return c
         const has = c.statuses.includes(status)
-        return {
-          ...c,
+        const isApplying = !has
+        const next: Partial<typeof c> = {
           statuses: has ? c.statuses.filter(s => s !== status) : [...c.statuses, status],
         }
+        if (has && status === 'grabbed') next.grabbedBy = undefined
+        if (has && status === 'restrained') next.restrainedBy = undefined
+        // Per SWADE: applying shaken/stunned to an on-hold combatant removes on-hold
+        if (isApplying && (status === 'shaken' || status === 'stunned') && c.onHold) {
+          next.onHold = false
+        }
+        return { ...c, ...next }
       }),
     )
   }, [])
@@ -135,7 +143,10 @@ export function useCombatStore() {
       setDiscardPile(workDiscard)
       if (jokerFound) setJokerDrawnThisRound(true)
       const first = sortByCard(newCombatants).find(c => c.card)
-      if (first) setActiveCombatantId(first.id)
+      if (first) {
+        setActiveCombatantId(first.id)
+        setFocusedCombatantId(first.id)
+      }
     },
     [combatants, deck, discardPile],
   )
@@ -185,7 +196,7 @@ export function useCombatStore() {
     let workDeck = [...deck]
     let workDiscard = [...discardPile]
 
-    // Return current cards to discard
+    // Return ALL current cards to discard (including on-hold combatants)
     for (const c of combatants) {
       if (c.card) workDiscard.push(c.card)
       if (c.pendingCard) workDiscard.push(c.pendingCard)
@@ -197,17 +208,25 @@ export function useCombatStore() {
       workDiscard = []
     }
 
+    // On-hold combatants do NOT receive a new card (SWADE rule)
+    const heldIds = new Set(combatants.filter(c => c.onHold).map(c => c.id))
+    const nonHeld = combatants.filter(c => !c.onHold)
+
     // Ensure enough cards
-    if (workDeck.length < combatants.length) {
+    if (workDeck.length < nonHeld.length) {
       workDeck = shuffle([...workDeck, ...workDiscard])
       workDiscard = []
     }
 
-    const dealtCards = workDeck.splice(0, combatants.length)
+    const dealtCards = workDeck.splice(0, nonHeld.length)
 
     let jokerFound = false
-    let newCombatants = combatants.map((c, i) => {
-      const card = dealtCards[i]
+    let cardIdx = 0
+    let newCombatants = combatants.map(c => {
+      if (heldIds.has(c.id)) {
+        return { ...c, card: undefined, pendingCard: undefined }
+      }
+      const card = dealtCards[cardIdx++]
       if (card && card.suit === 'joker') jokerFound = true
       return { ...c, card, pendingCard: undefined }
     })
@@ -224,12 +243,15 @@ export function useCombatStore() {
     setRound(prev => prev + 1)
     setJokerDrawnThisRound(jokerFound)
     const first = sortByCard(newCombatants).find(c => c.card)
-    if (first) setActiveCombatantId(first.id)
+    if (first) {
+      setActiveCombatantId(first.id)
+      setFocusedCombatantId(first.id)
+    }
   }, [combatants, deck, discardPile, jokerDrawnThisRound])
 
   const resetCombat = useCallback(() => {
     setCombatants(prev =>
-      prev.map(c => ({ ...c, card: undefined, pendingCard: undefined, statuses: [] })),
+      prev.map(c => ({ ...c, card: undefined, pendingCard: undefined, statuses: [], grabbedBy: undefined, restrainedBy: undefined, onHold: false })),
     )
     setDeck(shuffle(generateDeck()))
     setDiscardPile([])
@@ -243,12 +265,39 @@ export function useCombatStore() {
     if (sorted.length === 0) return
     if (!activeCombatantId) {
       setActiveCombatantId(sorted[0].id)
+      setFocusedCombatantId(sorted[0].id)
       return
     }
     const idx = sorted.findIndex(c => c.id === activeCombatantId)
-    const next = sorted[(idx + 1) % sorted.length]
+    let nextIdx = (idx + 1) % sorted.length
+    let iterations = 0
+    while (sorted[nextIdx].onHold && iterations < sorted.length) {
+      nextIdx = (nextIdx + 1) % sorted.length
+      iterations++
+    }
+    const next = sorted[nextIdx]
     setActiveCombatantId(next.id)
+    setFocusedCombatantId(next.id)
   }, [combatants, activeCombatantId])
+
+  const takeHold = useCallback((id: string) => {
+    const updatedCombatants = combatants.map(c =>
+      c.id === id ? { ...c, onHold: true } : c,
+    )
+    setCombatants(updatedCombatants)
+    const sorted = sortByCard(updatedCombatants)
+    const idx = sorted.findIndex(c => c.id === id)
+    if (idx === -1) return
+    let nextIdx = (idx + 1) % sorted.length
+    let iterations = 0
+    while (sorted[nextIdx].onHold && iterations < sorted.length) {
+      nextIdx = (nextIdx + 1) % sorted.length
+      iterations++
+    }
+    const next = sorted[nextIdx]
+    setActiveCombatantId(next.id)
+    setFocusedCombatantId(next.id)
+  }, [combatants])
 
   return {
     combatants,
@@ -260,6 +309,7 @@ export function useCombatStore() {
     activeCombatantId,
     setActiveCombatantId,
     advanceTurn,
+    takeHold,
     addCombatant,
     removeCombatant,
     clearCombatants,

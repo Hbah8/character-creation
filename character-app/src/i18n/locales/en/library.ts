@@ -13,6 +13,19 @@ const library = {
   unsavedWarning: 'You have unsaved changes. Create a new character anyway?',
   lastSaved: 'Saved',
   unnamed: 'Unnamed',
+  worlds: {
+    title: 'Worlds',
+    description: 'Build campaign worlds as entity cards, Markdown notes, and editable relationship graphs.',
+    newWorld: 'New World',
+    untitledWorld: 'Untitled World',
+    noSummary: 'No summary yet.',
+    entityCount: '{{count}} entities',
+    relationshipCount: '{{count}} relationships',
+    open: 'Open',
+    deleteWorld: 'Delete world',
+    noSavedWorlds: 'No saved worlds yet.',
+    createFirstWorld: 'Create first world',
+  },
 } as const
 
 export default library

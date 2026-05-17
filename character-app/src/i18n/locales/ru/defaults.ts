@@ -1,5 +1,7 @@
 import type { Character } from '@/types/character'
 import { DEFAULT_LAYOUT } from '@/types/character'
+import type { World } from '@/world/types'
+import { WORLD_SCHEMA_VERSION } from '@/world/types'
 
 export const ruDefaultCharacter: Character = {
   sheetTitle: 'Лист персонажа',
@@ -72,4 +74,31 @@ export const ruDefaultCharacter: Character = {
   notes: '',
 
   layout: DEFAULT_LAYOUT,
+}
+
+export const ruDefaultWorld: World = {
+  schemaVersion: WORLD_SCHEMA_VERSION,
+  name: 'Новый мир',
+  summary: '',
+  entities: [
+    {
+      id: 'default-location',
+      type: 'location',
+      title: 'Стартовая локация',
+      summary: 'Первое важное место кампании.',
+      description: '',
+      tags: [],
+      position: { x: 120, y: 120 },
+    },
+    {
+      id: 'default-faction',
+      type: 'faction',
+      title: 'Местная фракция',
+      summary: 'Группа, влияющая на стартовую ситуацию.',
+      description: '',
+      tags: [],
+      position: { x: 420, y: 120 },
+    },
+  ],
+  relationships: [],
 }

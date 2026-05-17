@@ -7,6 +7,9 @@ export type CombatantStatus =
   | 'stunned'
   | 'incapacitated'
   | 'dying'
+  | 'grabbed'
+  | 'restrained'
+  | 'prone'
 
 export interface Card {
   suit: '♠' | '♥' | '♦' | '♣' | 'joker'
@@ -27,6 +30,10 @@ export interface Combatant {
   card?: Card
   pendingCard?: Card
   statuses: CombatantStatus[]
+  /** ID of the combatant who applied the 'grabbed' status via maneuver */
+  grabbedBy?: string
+  /** ID of the combatant who applied the 'restrained' status via maneuver */
+  restrainedBy?: string
   /** Groups only: number of shocked members */
   groupShocked?: number
   /** Groups only: number of eliminated members */
@@ -38,4 +45,6 @@ export interface Combatant {
   maxWounds: number
   powerPoints: number
   maxPowerPoints: number
+  /** True while the combatant has declared "on hold" (Наготове) */
+  onHold?: boolean
 }

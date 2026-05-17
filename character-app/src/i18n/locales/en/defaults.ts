@@ -1,5 +1,7 @@
 import type { Character } from '@/types/character'
 import { DEFAULT_LAYOUT } from '@/types/character'
+import type { World } from '@/world/types'
+import { WORLD_SCHEMA_VERSION } from '@/world/types'
 
 export const enDefaultCharacter: Character = {
   sheetTitle: 'Character Sheet',
@@ -72,4 +74,31 @@ export const enDefaultCharacter: Character = {
   notes: '',
 
   layout: DEFAULT_LAYOUT,
+}
+
+export const enDefaultWorld: World = {
+  schemaVersion: WORLD_SCHEMA_VERSION,
+  name: 'New World',
+  summary: '',
+  entities: [
+    {
+      id: 'default-location',
+      type: 'location',
+      title: 'Starting Location',
+      summary: 'The first important place in the campaign.',
+      description: '',
+      tags: [],
+      position: { x: 120, y: 120 },
+    },
+    {
+      id: 'default-faction',
+      type: 'faction',
+      title: 'Local Faction',
+      summary: 'A group with influence over the starting situation.',
+      description: '',
+      tags: [],
+      position: { x: 420, y: 120 },
+    },
+  ],
+  relationships: [],
 }

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { Plus, Users, Clock, UserCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { Globe2, Plus, Users, Clock, UserCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -21,6 +22,7 @@ function formatDate(iso: string | undefined): string {
 
 export function DashboardPage() {
   const navigate = useNavigate()
+  const { t: tNav } = useTranslation('navigation')
   const library = useCharacterLibrary()
 
   const lastEntry = library.entries.length > 0
@@ -40,10 +42,14 @@ export function DashboardPage() {
           <p className="text-muted-foreground text-sm leading-relaxed">
             Создавайте, редактируйте и управляйте персонажами для ваших кампаний.
           </p>
-          <div className="mt-1">
+          <div className="mt-1 flex flex-wrap gap-2">
             <Button onClick={() => navigate('/creator')}>
               <Plus className="size-4 mr-1.5" />
               Новый персонаж
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/worlds')}>
+              <Globe2 className="size-4 mr-1.5" />
+              {tNav('worlds')}
             </Button>
           </div>
         </div>

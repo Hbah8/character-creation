@@ -13,6 +13,19 @@ const library = {
   unsavedWarning: 'Есть несохранённые изменения. Всё равно создать нового персонажа?',
   lastSaved: 'Сохранено',
   unnamed: 'Без позывного',
+  worlds: {
+    title: 'Миры',
+    description: 'Создавайте миры кампаний как карточки объектов, Markdown-заметки и редактируемые графы связей.',
+    newWorld: 'Новый мир',
+    untitledWorld: 'Без названия',
+    noSummary: 'Краткого описания пока нет.',
+    entityCount: 'Объектов: {{count}}',
+    relationshipCount: 'Связей: {{count}}',
+    open: 'Открыть',
+    deleteWorld: 'Удалить мир',
+    noSavedWorlds: 'Сохраненных миров пока нет.',
+    createFirstWorld: 'Создать первый мир',
+  },
 } as const
 
 export default library

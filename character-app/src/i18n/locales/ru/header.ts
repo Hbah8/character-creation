@@ -39,6 +39,9 @@ const header = {
   newCharacterPlaceholder: 'Новый персонаж',
   previewLabel: 'Превью листа',
   sectionsHeading: 'Секции персонажа',
+  worldDataButton: 'Данные мира',
+  worldStats: 'Объектов: {{entities}}, связей: {{relationships}}',
+  backToWorlds: 'Назад к мирам',
 } as const
 
 export default header
