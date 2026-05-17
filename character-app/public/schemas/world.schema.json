@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/character-creation/schemas/world.schema.json",
+  "title": "SWADE World Builder World",
+  "description": "Serialized world state used by the World Builder JSON export/import flow.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "name",
+    "summary",
+    "entities",
+    "relationships"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "Optional schema hint for editors. The app ignores this field during import."
+    },
+    "schemaVersion": {
+      "const": 1,
+      "description": "World Builder schema version."
+    },
+    "name": {
+      "type": "string",
+      "description": "World name."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Short world or campaign summary."
+    },
+    "entities": {
+      "type": "array",
+      "description": "World graph nodes. Entity ids must be unique.",
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "description": "World graph edges. sourceId and targetId must reference existing entity ids.",
+      "items": {
+        "$ref": "#/$defs/relationship"
+      }
+    }
+  },
+  "$defs": {
+    "entityType": {
+      "type": "string",
+      "enum": [
+        "location",
+        "faction",
+        "npc",
+        "event",
+        "item",
+        "note"
+      ]
+    },
+    "relationshipType": {
+      "type": "string",
+      "enum": [
+        "controls",
+        "belongs_to",
+        "located_in",
+        "ally",
+        "enemy",
+        "knows",
+        "caused",
+        "mentions",
+        "custom"
+      ]
+    },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "title",
+        "summary",
+        "description",
+        "tags",
+        "position"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/$defs/entityType"
+        },
+        "title": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string",
+          "description": "Markdown notes for this entity."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "position": {
+          "$ref": "#/$defs/position"
+        }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sourceId",
+        "targetId",
+        "type",
+        "label",
+        "description"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/$defs/relationshipType"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string",
+          "description": "Markdown notes for this relationship."
+        }
+      }
+    }
+  }
+}

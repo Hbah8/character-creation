@@ -133,6 +133,8 @@ const form = {
     relationships: 'Связи',
     relationshipLabel: 'Метка',
     relationshipMarkdownPlaceholder: 'Почему эта связь важна и что может ее изменить...',
+    showMiniMap: 'Карта',
+    hideMiniMap: 'Скрыть карту',
     missingEntity: 'Объект не найден',
     newEntityTitle: 'Новый объект: {{type}}',
     entityTypes: {

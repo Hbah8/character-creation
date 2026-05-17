@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Background,
@@ -7,10 +7,14 @@ import {
   ReactFlow,
   type Connection,
   type EdgeMouseHandler,
-  type NodeChange,
+  type OnNodeDrag,
   type NodeMouseHandler,
+  useEdgesState,
+  useNodesState,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { Map } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { World, WorldPosition } from '@/world/types'
 import type { WorldEntityType, WorldRelationshipType } from '@/world/types'
 import {
@@ -42,7 +46,7 @@ export function WorldGraph({
   onCreateRelationship,
 }: Props) {
   const { t } = useTranslation('form')
-  const { nodes, edges } = useMemo(
+  const mappedGraph = useMemo(
     () => worldToGraph(world, selectedEntityId, selectedRelationshipId, {
       entityType: (type: WorldEntityType) => t(WORLD_ENTITY_LABEL_KEYS[type]),
       relationshipType: (type: WorldRelationshipType) => t(WORLD_RELATIONSHIP_LABEL_KEYS[type]),
@@ -50,12 +54,17 @@ export function WorldGraph({
     [world, selectedEntityId, selectedRelationshipId, t],
   )
 
-  const handleNodesChange = useCallback((changes: NodeChange<WorldGraphNode>[]) => {
-    for (const change of changes) {
-      if (change.type === 'position' && change.position) {
-        onMoveEntity(change.id, change.position)
-      }
-    }
+  const [nodes, setNodes, handleNodesChange] = useNodesState<WorldGraphNode>(mappedGraph.nodes)
+  const [edges, setEdges, handleEdgesChange] = useEdgesState(mappedGraph.edges)
+  const [showMiniMap, setShowMiniMap] = useState(false)
+
+  useEffect(() => {
+    setNodes(mappedGraph.nodes)
+    setEdges(mappedGraph.edges)
+  }, [mappedGraph, setEdges, setNodes])
+
+  const handleNodeDragStop: OnNodeDrag<WorldGraphNode> = useCallback((_, node) => {
+    onMoveEntity(node.id, node.position)
   }, [onMoveEntity])
 
   const handleNodeClick: NodeMouseHandler<WorldGraphNode> = useCallback((_, node) => {
@@ -74,11 +83,25 @@ export function WorldGraph({
   }, [onCreateRelationship])
 
   return (
-    <div className="h-full w-full bg-muted/40">
+    <div className="relative h-full w-full bg-muted/40">
+      <div className="absolute right-3 top-3 z-10">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="h-8 shadow-sm"
+          onClick={() => setShowMiniMap(prev => !prev)}
+        >
+          <Map className="size-3.5 mr-1.5" />
+          {showMiniMap ? t('world.hideMiniMap') : t('world.showMiniMap')}
+        </Button>
+      </div>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
+        onNodeDragStop={handleNodeDragStop}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
         onConnect={handleConnect}
@@ -87,13 +110,14 @@ export function WorldGraph({
           onSelectRelationship(null)
         }}
         fitView
+        onlyRenderVisibleElements
         nodesDraggable
         nodesConnectable
         elementsSelectable
       >
         <Background />
         <Controls />
-        <MiniMap pannable zoomable />
+        {showMiniMap && <MiniMap pannable zoomable />}
       </ReactFlow>
     </div>
   )

@@ -133,6 +133,8 @@ const form = {
     relationships: 'Relationships',
     relationshipLabel: 'Label',
     relationshipMarkdownPlaceholder: 'Why this connection matters, what can change it...',
+    showMiniMap: 'Map',
+    hideMiniMap: 'Hide map',
     missingEntity: 'Missing entity',
     newEntityTitle: 'New {{type}}',
     entityTypes: {
