@@ -78,7 +78,7 @@ export function validateCharacterImport(raw: unknown): Character {
 
   const skills = (raw.skills as unknown[]).map((s) => {
     if (!isObject(s)) return s
-    return { ...s, linkedAttribute: migrateLinkedAttribute(s.linkedAttribute) }
+    return { ...s, linkedAttribute: migrateLinkedAttribute(s.linkedAttribute), isStarter: !!s.isStarter }
   })
 
   const COLUMN_SIDES: ColumnSide[] = ['left', 'right']

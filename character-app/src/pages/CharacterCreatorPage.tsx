@@ -229,6 +229,7 @@ export function CharacterCreatorPage() {
         return (
           <SkillsForm
             skills={character.skills}
+            character={character}
             onAdd={store.addSkill}
             onUpdate={store.updateSkill}
             onRemove={store.removeSkill}

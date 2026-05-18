@@ -32,6 +32,7 @@ const form = {
     smarts: 'Smarts',
     spirit: 'Spirit',
     vigor: 'Vigor',
+    pointsSpent: 'Points spent: {{spent}} / 5',
   },
   combat: {
     pace: 'Pace',
@@ -47,10 +48,13 @@ const form = {
     columnName: 'Name',
     columnDie: 'Die',
     columnLinkedAttribute: 'Linked Attribute',
+    columnStarter: 'Starter',
     skillNamePlaceholder: 'Skill name',
     noSkills: 'No skills yet.',
     removeSkill: 'Remove skill',
     newSkillName: 'New Skill',
+    pointsSpent: 'Points spent: {{spent}} / 12',
+    starterTooltip: 'Free d4 — does not cost a skill point',
   },
   edges: {
     addEdge: 'Add Edge',

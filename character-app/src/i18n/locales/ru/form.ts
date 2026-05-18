@@ -32,6 +32,7 @@ const form = {
     smarts: 'Смекалка',
     spirit: 'Характер',
     vigor: 'Выносливость',
+    pointsSpent: 'Потрачено: {{spent}} / 5',
   },
   combat: {
     pace: 'Шаг',
@@ -47,10 +48,13 @@ const form = {
     columnName: 'Название',
     columnDie: 'Кубик',
     columnLinkedAttribute: 'Характеристика',
+    columnStarter: 'Стартовый',
     skillNamePlaceholder: 'Название навыка',
     noSkills: 'Нет навыков.',
     removeSkill: 'Удалить навык',
     newSkillName: 'Новый навык',
+    pointsSpent: 'Потрачено: {{spent}} / 12',
+    starterTooltip: 'Бесплатное d4 — не тратит очко навыка',
   },
   edges: {
     addEdge: 'Добавить черту',

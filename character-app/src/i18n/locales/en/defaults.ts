@@ -27,16 +27,16 @@ export const enDefaultCharacter: Character = {
   mana: '-',
 
   skills: [
-    { id: '1', name: 'Shooting', die: 'd10', linkedAttribute: 'agility' },
-    { id: '2', name: 'Fighting', die: 'd8', linkedAttribute: 'agility' },
-    { id: '3', name: 'Athletics', die: 'd8', linkedAttribute: 'agility' },
-    { id: '4', name: 'Notice', die: 'd8', linkedAttribute: 'smarts' },
-    { id: '5', name: 'Stealth', die: 'd6', linkedAttribute: 'agility' },
-    { id: '6', name: 'Intimidation', die: 'd6', linkedAttribute: 'spirit' },
-    { id: '7', name: 'Repair', die: 'd6', linkedAttribute: 'smarts' },
-    { id: '8', name: 'Driving', die: 'd6', linkedAttribute: 'agility' },
-    { id: '9', name: 'Healing', die: 'd4', linkedAttribute: 'smarts' },
-    { id: '10', name: 'Common Knowledge', die: 'd6', linkedAttribute: 'smarts' },
+    { id: '1', name: 'Shooting', die: 'd10', linkedAttribute: 'agility', isStarter: false },
+    { id: '2', name: 'Fighting', die: 'd8', linkedAttribute: 'agility', isStarter: false },
+    { id: '3', name: 'Athletics', die: 'd8', linkedAttribute: 'agility', isStarter: false },
+    { id: '4', name: 'Notice', die: 'd8', linkedAttribute: 'smarts', isStarter: false },
+    { id: '5', name: 'Stealth', die: 'd6', linkedAttribute: 'agility', isStarter: false },
+    { id: '6', name: 'Intimidation', die: 'd6', linkedAttribute: 'spirit', isStarter: false },
+    { id: '7', name: 'Repair', die: 'd6', linkedAttribute: 'smarts', isStarter: false },
+    { id: '8', name: 'Driving', die: 'd6', linkedAttribute: 'agility', isStarter: false },
+    { id: '9', name: 'Healing', die: 'd4', linkedAttribute: 'smarts', isStarter: false },
+    { id: '10', name: 'Common Knowledge', die: 'd6', linkedAttribute: 'smarts', isStarter: false },
   ],
 
   edges: [

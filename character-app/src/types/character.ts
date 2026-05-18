@@ -7,6 +7,7 @@ export interface Skill {
   name: string
   die: DieName
   linkedAttribute: AttributeKey
+  isStarter?: boolean
 }
 
 export interface Edge {

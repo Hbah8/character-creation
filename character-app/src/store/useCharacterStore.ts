@@ -15,7 +15,7 @@ export function useCharacterStore(initialCharacter?: Character) {
       ...prev,
       skills: [
         ...prev.skills,
-        { id: crypto.randomUUID(), name: '', die: 'd4', linkedAttribute: 'agility' } satisfies Skill,
+        { id: crypto.randomUUID(), name: '', die: 'd4', linkedAttribute: 'agility', isStarter: false } satisfies Skill,
       ],
     }))
   }, [])

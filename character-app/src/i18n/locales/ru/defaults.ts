@@ -27,16 +27,16 @@ export const ruDefaultCharacter: Character = {
   mana: '-',
 
   skills: [
-    { id: '1', name: 'Стрельба', die: 'd10', linkedAttribute: 'agility' },
-    { id: '2', name: 'Драка', die: 'd8', linkedAttribute: 'agility' },
-    { id: '3', name: 'Атлетика', die: 'd8', linkedAttribute: 'agility' },
-    { id: '4', name: 'Внимание', die: 'd8', linkedAttribute: 'smarts' },
-    { id: '5', name: 'Скрытность', die: 'd6', linkedAttribute: 'agility' },
-    { id: '6', name: 'Запугивание', die: 'd6', linkedAttribute: 'spirit' },
-    { id: '7', name: 'Ремонт', die: 'd6', linkedAttribute: 'smarts' },
-    { id: '8', name: 'Вождение', die: 'd6', linkedAttribute: 'agility' },
-    { id: '9', name: 'Лечение', die: 'd4', linkedAttribute: 'smarts' },
-    { id: '10', name: 'Общие знания', die: 'd6', linkedAttribute: 'smarts' },
+    { id: '1', name: 'Стрельба', die: 'd10', linkedAttribute: 'agility', isStarter: false },
+    { id: '2', name: 'Драка', die: 'd8', linkedAttribute: 'agility', isStarter: false },
+    { id: '3', name: 'Атлетика', die: 'd8', linkedAttribute: 'agility', isStarter: false },
+    { id: '4', name: 'Внимание', die: 'd8', linkedAttribute: 'smarts', isStarter: false },
+    { id: '5', name: 'Скрытность', die: 'd6', linkedAttribute: 'agility', isStarter: false },
+    { id: '6', name: 'Запугивание', die: 'd6', linkedAttribute: 'spirit', isStarter: false },
+    { id: '7', name: 'Ремонт', die: 'd6', linkedAttribute: 'smarts', isStarter: false },
+    { id: '8', name: 'Вождение', die: 'd6', linkedAttribute: 'agility', isStarter: false },
+    { id: '9', name: 'Лечение', die: 'd4', linkedAttribute: 'smarts', isStarter: false },
+    { id: '10', name: 'Общие знания', die: 'd6', linkedAttribute: 'smarts', isStarter: false },
   ],
 
   edges: [
