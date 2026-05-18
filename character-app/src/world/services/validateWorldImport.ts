@@ -4,6 +4,7 @@ import type {
   WorldEntityType,
   WorldRelationship,
   WorldRelationshipType,
+  SettingRules,
 } from '@/world/types'
 import {
   WORLD_ENTITY_TYPES,
@@ -29,6 +30,21 @@ function isEntityType(value: unknown): value is WorldEntityType {
 
 function isRelationshipType(value: unknown): value is WorldRelationshipType {
   return WORLD_RELATIONSHIP_TYPES.includes(value as WorldRelationshipType)
+}
+
+function validateSettingRules(raw: unknown): SettingRules {
+  const defaults: SettingRules = { skillPointsBudget: 12, attributePointsBudget: 5 }
+  if (raw === undefined || raw === null) return defaults
+  if (!isObject(raw)) {
+    throw new Error('validation.world.settingRulesNotObject')
+  }
+  const skillPointsBudget = isNumber(raw.skillPointsBudget) && raw.skillPointsBudget > 0
+    ? raw.skillPointsBudget
+    : defaults.skillPointsBudget
+  const attributePointsBudget = isNumber(raw.attributePointsBudget) && raw.attributePointsBudget > 0
+    ? raw.attributePointsBudget
+    : defaults.attributePointsBudget
+  return { skillPointsBudget, attributePointsBudget }
 }
 
 function validateTags(value: unknown, id: string): string[] {
@@ -162,6 +178,7 @@ export function validateWorldImport(raw: unknown): World {
     schemaVersion: WORLD_SCHEMA_VERSION,
     name: raw.name,
     summary: raw.summary,
+    settingRules: validateSettingRules(raw.settingRules),
     entities,
     relationships,
   }

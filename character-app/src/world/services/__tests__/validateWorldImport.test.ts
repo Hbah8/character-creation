@@ -7,6 +7,7 @@ function validWorld(): World {
     schemaVersion: 1,
     name: 'Deadlands Frontier',
     summary: 'A compact campaign frame.',
+    settingRules: { skillPointsBudget: 12, attributePointsBudget: 5 },
     entities: [
       {
         id: 'loc-1',

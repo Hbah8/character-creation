@@ -6,6 +6,7 @@ import type { World, WorldEntityType, WorldPosition } from '@/world/types'
 function cloneWorld(world: World): World {
   return {
     ...world,
+    settingRules: { ...world.settingRules },
     entities: world.entities.map(entity => ({
       ...entity,
       tags: [...entity.tags],

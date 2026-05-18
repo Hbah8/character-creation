@@ -43,6 +43,23 @@
       "items": {
         "$ref": "#/$defs/relationship"
       }
+    },
+    "settingRules": {
+      "type": "object",
+      "description": "SWADE setting rule overrides for this world. Absent fields fall back to SWADE defaults.",
+      "additionalProperties": false,
+      "properties": {
+        "skillPointsBudget": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of skill points available during character creation. Default: 12."
+        },
+        "attributePointsBudget": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of attribute points available during character creation. Default: 5."
+        }
+      }
     }
   },
   "$defs": {

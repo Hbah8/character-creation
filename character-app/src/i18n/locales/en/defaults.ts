@@ -80,6 +80,10 @@ export const enDefaultWorld: World = {
   schemaVersion: WORLD_SCHEMA_VERSION,
   name: 'New World',
   summary: '',
+  settingRules: {
+    skillPointsBudget: 12,
+    attributePointsBudget: 5,
+  },
   entities: [
     {
       id: 'default-location',

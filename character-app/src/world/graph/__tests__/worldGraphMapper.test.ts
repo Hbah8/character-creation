@@ -6,6 +6,7 @@ const world: World = {
   schemaVersion: 1,
   name: 'Test World',
   summary: '',
+  settingRules: { skillPointsBudget: 12, attributePointsBudget: 5 },
   entities: [
     {
       id: 'location-1',

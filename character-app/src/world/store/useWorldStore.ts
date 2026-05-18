@@ -6,6 +6,7 @@ import type {
   WorldPosition,
   WorldRelationship,
   WorldRelationshipType,
+  SettingRules,
 } from '@/world/types'
 import { defaultWorld, createWorldEntity } from '@/world/data/defaultWorld'
 import { applyEntityPosition } from '@/world/graph/worldGraphMapper'
@@ -90,6 +91,13 @@ export function useWorldStore(initialWorld?: World) {
     }))
   }, [])
 
+  const updateSettingRules = useCallback((rules: Partial<SettingRules>) => {
+    setWorld(prev => ({
+      ...prev,
+      settingRules: { ...prev.settingRules, ...rules },
+    }))
+  }, [])
+
   return {
     world,
     replaceWorld,
@@ -101,5 +109,6 @@ export function useWorldStore(initialWorld?: World) {
     addRelationship,
     updateRelationship,
     removeRelationship,
+    updateSettingRules,
   }
 }

@@ -25,6 +25,11 @@ export const WORLD_RELATIONSHIP_TYPES = [
 
 export type WorldRelationshipType = typeof WORLD_RELATIONSHIP_TYPES[number]
 
+export interface SettingRules {
+  skillPointsBudget: number
+  attributePointsBudget: number
+}
+
 export interface WorldPosition {
   x: number
   y: number
@@ -53,6 +58,7 @@ export interface World {
   schemaVersion: typeof WORLD_SCHEMA_VERSION
   name: string
   summary: string
+  settingRules: SettingRules
   entities: WorldEntity[]
   relationships: WorldRelationship[]
 }

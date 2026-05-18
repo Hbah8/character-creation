@@ -80,6 +80,10 @@ export const ruDefaultWorld: World = {
   schemaVersion: WORLD_SCHEMA_VERSION,
   name: 'Новый мир',
   summary: '',
+  settingRules: {
+    skillPointsBudget: 12,
+    attributePointsBudget: 5,
+  },
   entities: [
     {
       id: 'default-location',
