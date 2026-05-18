@@ -110,3 +110,14 @@ All state must be serializable so JSON export/import works consistently across a
 Before running a new command, wait for the previous command's output. If commands are run, read the full output and confirm success before proceeding.
 
 Do not run multiple commands in parallel. Do not spam similar commands.
+
+## Skills
+
+The following agent skills are available under `.github/skills/`. Load the relevant SKILL.md before starting a task that falls in that domain.
+
+| Skill | Path | When to use |
+|---|---|---|
+| **swade-mastery** | `.github/skills/swade-mastery/SKILL.md` | Any task that requires accurate SWADE rules knowledge: character creation math, combat mechanics, edges/hindrances/powers logic, size system, etc. |
+| **shadcn** | `.github/skills/shadcn/SKILL.md` | Adding, auditing, or styling shadcn/ui components; running `npx shadcn@latest add`; working with `components.json` or component registries. |
+| **localization** | `.github/skills/localization/SKILL.md` | Adding or extending i18n (i18next / react-i18next): locale namespaces, typed keys, locale selector, migrating hardcoded strings. |
+| **tauri-installer-setup** | `.github/skills/tauri-installer-setup/SKILL.md` | Setting up a Tauri v1 desktop build, MSI packaging, or proxy bundling for this app. |

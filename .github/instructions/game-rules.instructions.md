@@ -1,7 +1,7 @@
 # Critical Game Rules in Code
 
-> For full SWADE rules, terminology, combat, conditions, and size system see the **swade-mastery** skill at `.github/agents/swade-mastery/SKILL.md`.
-> Detailed tables and examples live in `.github/agents/swade-mastery/reference/`.
+> For full SWADE rules, terminology, combat, conditions, and size system see the **swade-mastery** skill at `.github/skills/swade-mastery/SKILL.md`.
+> Detailed tables and examples live in `.github/skills/swade-mastery/reference/`.
 > This file maps rules → code only.
 
 ### Skill Point Costs (`computeSkillPointsSpent`)
