@@ -70,9 +70,10 @@ export function CharacterCreatorPage() {
 
   const library = useCharacterLibrary()
   const { activeWorldId } = useWorldLibrary()
-  const store = useCharacterStore(
-    id ? getDefaultCharacter(initialLocale) : { ...getDefaultCharacter(initialLocale), worldId: activeWorldId ?? undefined }
-  )
+  const initialCharacter = id
+    ? getDefaultCharacter(initialLocale)
+    : { ...getDefaultCharacter(initialLocale), worldId: activeWorldId ?? undefined }
+  const store = useCharacterStore(initialCharacter)
   const { character } = store
 
   const { t: tNav } = useTranslation('navigation')
@@ -83,7 +84,7 @@ export function CharacterCreatorPage() {
   const [importError, setImportError] = useState<string | null>(null)
   const [locale, setLocale] = useState<Locale>(initialLocale)
   const [cleanSnapshot, setCleanSnapshot] = useState<string>(
-    () => JSON.stringify(getDefaultCharacter(initialLocale))
+    () => JSON.stringify(initialCharacter)
   )
   const [copyLinkStatus, setCopyLinkStatus] = useState<'idle' | 'copied'>('idle')
   const [pendingShareChar, setPendingShareChar] = useState<Character | null>(null)
@@ -163,8 +164,9 @@ export function CharacterCreatorPage() {
   async function handleImportJson(file: File) {
     try {
       const imported = await importFromJson(file)
-      store.replaceCharacter(imported)
-      setCleanSnapshot(JSON.stringify(imported))
+      const withWorld = { ...imported, worldId: activeWorldId ?? undefined }
+      store.replaceCharacter(withWorld)
+      setCleanSnapshot(JSON.stringify(withWorld))
       setSavedAt(null)
       library.markNew()
     } catch (err) {
@@ -184,8 +186,9 @@ export function CharacterCreatorPage() {
 
   function handleShareConfirm() {
     if (!pendingShareChar) return
-    store.replaceCharacter(pendingShareChar)
-    setCleanSnapshot(JSON.stringify(pendingShareChar))
+    const withWorld = { ...pendingShareChar, worldId: activeWorldId ?? undefined }
+    store.replaceCharacter(withWorld)
+    setCleanSnapshot(JSON.stringify(withWorld))
     setSavedAt(null)
     library.markNew()
     setPendingShareChar(null)

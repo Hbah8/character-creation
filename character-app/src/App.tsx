@@ -16,8 +16,8 @@ function App() {
             <Route path="combat" element={<CombatTrackerPage />} />
             <Route path="worlds" element={<WorldLibraryPage />} />
           </Route>
-          <Route path="creator" element={<CharacterCreatorPage />} />
-          <Route path="creator/:id" element={<CharacterCreatorPage />} />
+          <Route path="creator" element={<CharacterCreatorPage key="new" />} />
+          <Route path="creator/:id" element={<CharacterCreatorPage key="edit" />} />
           <Route path="worlds/new" element={<WorldBuilderPage />} />
           <Route path="worlds/:id" element={<WorldBuilderPage />} />
         </Routes>
