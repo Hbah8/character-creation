@@ -13,6 +13,9 @@ const library = {
   unsavedWarning: 'Есть несохранённые изменения. Всё равно создать нового персонажа?',
   lastSaved: 'Сохранено',
   unnamed: 'Без позывного',
+  filterAll: 'Все',
+  filterCurrentWorld: 'Текущий мир',
+  filterNoWorld: 'Без мира',
   worlds: {
     title: 'Миры',
     description: 'Создавайте миры кампаний как карточки объектов, Markdown-заметки и редактируемые графы связей.',

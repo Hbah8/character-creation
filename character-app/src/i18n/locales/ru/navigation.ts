@@ -3,6 +3,7 @@ const navigation = {
   characters: 'Персонажи',
   worlds: 'Миры',
   combat: 'Бой',
+  handbooks: 'Справочники',
   editForm: 'Редактор',
   preview: 'Превью',
   data: 'Данные',

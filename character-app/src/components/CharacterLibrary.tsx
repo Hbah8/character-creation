@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { useCharacterLibrary } from '@/store/useCharacterLibrary'
 import type { Character } from '@/types/character'
+import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -31,13 +32,23 @@ interface Props {
   onNewCharacter: () => void
 }
 
+type FilterMode = 'current' | 'all' | 'noWorld'
+
 export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: Props) {
   const { t } = useTranslation('library')
   const { t: tShare } = useTranslation('share')
+  const { activeWorldId } = useWorldLibrary()
   const [open, setOpen] = useState(false)
+  const [filter, setFilter] = useState<FilterMode>(() => activeWorldId ? 'current' : 'all')
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [confirmNewOpen, setConfirmNewOpen] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const visibleEntries = (() => {
+    if (filter === 'current') return library.entries.filter(e => e.character.worldId === activeWorldId)
+    if (filter === 'noWorld') return library.entries.filter(e => !e.character.worldId)
+    return library.entries
+  })()
 
   function handleShare(id: string, character: Character) {
     const { hash } = encodeCharacterToHash(character)
@@ -90,13 +101,42 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
             <DialogTitle>{t('title')}</DialogTitle>
           </DialogHeader>
 
-          {library.entries.length === 0 ? (
+          {activeWorldId && (
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={filter === 'current' ? 'secondary' : 'ghost'}
+                className="text-xs h-7"
+                onClick={() => setFilter('current')}
+              >
+                {t('filterCurrentWorld')}
+              </Button>
+              <Button
+                size="sm"
+                variant={filter === 'all' ? 'secondary' : 'ghost'}
+                className="text-xs h-7"
+                onClick={() => setFilter('all')}
+              >
+                {t('filterAll')}
+              </Button>
+              <Button
+                size="sm"
+                variant={filter === 'noWorld' ? 'secondary' : 'ghost'}
+                className="text-xs h-7"
+                onClick={() => setFilter('noWorld')}
+              >
+                {t('filterNoWorld')}
+              </Button>
+            </div>
+          )}
+
+          {visibleEntries.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
               {t('noCharacters')}
             </p>
           ) : (
             <div className="flex flex-col divide-y max-h-96 overflow-y-auto">
-              {library.entries.map(entry => (
+              {visibleEntries.map(entry => (
                 <div
                   key={entry.id}
                   className="flex items-center justify-between gap-3 py-3"

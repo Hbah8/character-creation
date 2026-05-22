@@ -11,6 +11,7 @@ import enPreview from './locales/en/preview'
 import enValidation from './locales/en/validation'
 import enLibrary from './locales/en/library'
 import enShare from './locales/en/share'
+import enHandbooks from './locales/en/handbooks'
 
 import ruCommon from './locales/ru/common'
 import ruHeader from './locales/ru/header'
@@ -20,6 +21,7 @@ import ruPreview from './locales/ru/preview'
 import ruValidation from './locales/ru/validation'
 import ruLibrary from './locales/ru/library'
 import ruShare from './locales/ru/share'
+import ruHandbooks from './locales/ru/handbooks'
 
 const LOCALE_STORAGE_KEY = 'swade-locale'
 
@@ -56,6 +58,7 @@ i18n
         validation: enValidation,
         library: enLibrary,
         share: enShare,
+        handbooks: enHandbooks,
       },
       ru: {
         common: ruCommon,
@@ -66,6 +69,7 @@ i18n
         validation: ruValidation,
         library: ruLibrary,
         share: ruShare,
+        handbooks: ruHandbooks,
       },
     },
     interpolation: {

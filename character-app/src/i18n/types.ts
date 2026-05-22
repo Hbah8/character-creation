@@ -11,6 +11,7 @@ import type enPreview from './locales/en/preview'
 import type enValidation from './locales/en/validation'
 import type enLibrary from './locales/en/library'
 import type enShare from './locales/en/share'
+import type enHandbooks from './locales/en/handbooks'
 
 declare module 'i18next' {
   interface CustomTypeOptions {
@@ -24,6 +25,7 @@ declare module 'i18next' {
       validation: typeof enValidation
       library: typeof enLibrary
       share: typeof enShare
+      handbooks: typeof enHandbooks
     }
   }
 }

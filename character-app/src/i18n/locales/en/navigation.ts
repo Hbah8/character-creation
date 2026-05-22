@@ -3,6 +3,7 @@ const navigation = {
   characters: 'Characters',
   worlds: 'Worlds',
   combat: 'Combat',
+  handbooks: 'Handbooks',
   editForm: 'Edit Form',
   preview: 'Preview',
   data: 'Data',

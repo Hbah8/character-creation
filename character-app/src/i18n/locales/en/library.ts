@@ -13,6 +13,9 @@ const library = {
   unsavedWarning: 'You have unsaved changes. Create a new character anyway?',
   lastSaved: 'Saved',
   unnamed: 'Unnamed',
+  filterAll: 'All',
+  filterCurrentWorld: 'Current World',
+  filterNoWorld: 'No World',
   worlds: {
     title: 'Worlds',
     description: 'Build campaign worlds as entity cards, Markdown notes, and editable relationship graphs.',
