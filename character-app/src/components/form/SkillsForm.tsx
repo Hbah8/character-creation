@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import type { Character, DieName, Skill, AttributeKey } from '@/types/character'
 import { Trash2, Plus } from 'lucide-react'
 import { calcSkillPointsSpent } from '@/services/pointsService'
+import { useSettingRules } from '@/hooks/useSettingRules'
 
 const DIE_NAMES: DieName[] = ['d4', 'd6', 'd8', 'd10', 'd12']
 const ATTRIBUTE_KEYS: AttributeKey[] = ['agility', 'strength', 'smarts', 'spirit', 'vigor']
@@ -22,12 +23,13 @@ interface Props {
 export function SkillsForm({ skills, character, onAdd, onUpdate, onRemove }: Props) {
   const { t } = useTranslation('form')
   const spent = calcSkillPointsSpent(skills, character)
+  const { skillPointsBudget } = useSettingRules(character.worldId)
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.skills')}</h2>
-        <span className={`text-xs font-medium tabular-nums ${spent > 12 ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>
-          {t('skills.pointsSpent', { spent })}
+        <span className={`text-xs font-medium tabular-nums ${spent > skillPointsBudget ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>
+          {t('skills.pointsSpent', { spent, budget: skillPointsBudget })}
         </span>
       </div>
       <Button size="sm" variant="outline" onClick={onAdd} className="self-start">

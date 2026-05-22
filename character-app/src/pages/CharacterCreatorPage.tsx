@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Eye, User, Zap, Shield, Target, Star, AlertTriangle, Crosshair, Package, Settings, FileText } from 'lucide-react'
 import { useCharacterStore } from '@/store/useCharacterStore'
 import { useCharacterLibrary } from '@/store/useCharacterLibrary'
+import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import { CharacterSheet } from '@/components/preview/CharacterSheet'
 import type { ScaleMode } from '@/components/preview/CharacterSheet'
 import { IdentityForm } from '@/components/form/IdentityForm'
@@ -68,7 +69,10 @@ export function CharacterCreatorPage() {
   const navigate = useNavigate()
 
   const library = useCharacterLibrary()
-  const store = useCharacterStore(getDefaultCharacter(initialLocale))
+  const { activeWorldId } = useWorldLibrary()
+  const store = useCharacterStore(
+    id ? getDefaultCharacter(initialLocale) : { ...getDefaultCharacter(initialLocale), worldId: activeWorldId ?? undefined }
+  )
   const { character } = store
 
   const { t: tNav } = useTranslation('navigation')

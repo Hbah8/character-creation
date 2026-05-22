@@ -106,6 +106,9 @@ export interface Character {
   // Notes
   notes: string
 
+  // World
+  worldId?: string
+
   // Layout
   layout?: CharacterLayout
 }

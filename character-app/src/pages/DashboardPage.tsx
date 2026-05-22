@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { DashboardCharacterGrid } from '@/components/DashboardCharacterGrid'
 import { useCharacterLibrary } from '@/store/useCharacterLibrary'
+import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 
 function formatDate(iso: string | undefined): string {
   if (!iso) return '—'
@@ -24,11 +25,20 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const { t: tNav } = useTranslation('navigation')
   const library = useCharacterLibrary()
+  const { activeWorldId, entries: worldEntries } = useWorldLibrary()
 
-  const lastEntry = library.entries.length > 0
-    ? library.entries.reduce((latest, e) =>
+  const filteredEntries = activeWorldId
+    ? library.entries.filter(e => e.character.worldId === activeWorldId)
+    : library.entries.filter(e => !e.character.worldId)
+
+  const activeWorldName = activeWorldId
+    ? worldEntries.find(w => w.id === activeWorldId)?.world.name
+    : undefined
+
+  const lastEntry = filteredEntries.length > 0
+    ? filteredEntries.reduce((latest, e) =>
         e.savedAt > latest.savedAt ? e : latest,
-        library.entries[0]
+        filteredEntries[0]
       )
     : undefined
 
@@ -40,7 +50,9 @@ export function DashboardPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold tracking-tight">Персонажи SWADE</h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Создавайте, редактируйте и управляйте персонажами для ваших кампаний.
+            {activeWorldName
+              ? `Мир: ${activeWorldName}`
+              : 'Персонажи без мира'}
           </p>
           <div className="mt-1 flex flex-wrap gap-2">
             <Button onClick={() => navigate('/creator')}>
@@ -63,7 +75,7 @@ export function DashboardPage() {
               <Users className="size-4 text-muted-foreground shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground leading-none mb-1">Персонажей</p>
-                <p className="text-xl font-bold leading-none">{library.entries.length}</p>
+                <p className="text-xl font-bold leading-none">{filteredEntries.length}</p>
               </div>
             </CardContent>
           </Card>
@@ -98,13 +110,13 @@ export function DashboardPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold">
               Персонажи
-              {library.entries.length > 0 && (
+              {filteredEntries.length > 0 && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
-                  ({library.entries.length})
+                  ({filteredEntries.length})
                 </span>
               )}
             </h2>
-            {library.entries.length > 0 && (
+            {filteredEntries.length > 0 && (
               <Button size="sm" variant="outline" onClick={() => navigate('/creator')}>
                 <Plus className="size-3.5 mr-1" />
                 Добавить
@@ -112,7 +124,7 @@ export function DashboardPage() {
             )}
           </div>
           <DashboardCharacterGrid
-            entries={library.entries}
+            entries={filteredEntries}
             onDelete={library.remove}
           />
         </div>

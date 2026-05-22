@@ -149,6 +149,7 @@ export function WorldBuilderPage() {
       selectedEntityId={selectedEntityId}
       onWorldNameChange={value => store.updateWorldField('name', value)}
       onWorldSummaryChange={value => store.updateWorldField('summary', value)}
+      onUpdateSettingRules={store.updateSettingRules}
       onAddEntity={handleAddEntity}
       onSelectEntity={handleSelectEntity}
     />

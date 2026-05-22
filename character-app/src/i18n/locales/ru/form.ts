@@ -32,7 +32,7 @@ const form = {
     smarts: 'Смекалка',
     spirit: 'Характер',
     vigor: 'Выносливость',
-    pointsSpent: 'Потрачено: {{spent}} / 5',
+    pointsSpent: 'Потрачено: {{spent}} / {{budget}}',
   },
   combat: {
     pace: 'Шаг',
@@ -53,7 +53,7 @@ const form = {
     noSkills: 'Нет навыков.',
     removeSkill: 'Удалить навык',
     newSkillName: 'Новый навык',
-    pointsSpent: 'Потрачено: {{spent}} / 12',
+    pointsSpent: 'Потрачено: {{spent}} / {{budget}}',
     starterTooltip: 'Бесплатное d4 — не тратит очко навыка',
   },
   edges: {
@@ -141,6 +141,13 @@ const form = {
     hideMiniMap: 'Скрыть карту',
     missingEntity: 'Объект не найден',
     newEntityTitle: 'Новый объект: {{type}}',
+    settingRules: {
+      title: 'Правила мира',
+      skillPoints: 'Очки навыков',
+      attributePoints: 'Очки характеристик',
+      reset: 'Сбросить ({{default}})',
+      hint: 'Стандарт SWADE: {{value}}',
+    },
     entityTypes: {
       location: 'Локация',
       faction: 'Фракция',

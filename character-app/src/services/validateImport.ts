@@ -94,5 +94,5 @@ export function validateCharacterImport(raw: unknown): Character {
     layout = partial as CharacterLayout
   }
 
-  return { ...(raw as unknown as Character), hindrances: hindrances as Character['hindrances'], skills: skills as Character['skills'], layout }
+  return { ...(raw as unknown as Character), hindrances: hindrances as Character['hindrances'], skills: skills as Character['skills'], layout, worldId: isString(raw.worldId) ? raw.worldId : undefined }
 }

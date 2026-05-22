@@ -32,7 +32,7 @@ const form = {
     smarts: 'Smarts',
     spirit: 'Spirit',
     vigor: 'Vigor',
-    pointsSpent: 'Points spent: {{spent}} / 5',
+    pointsSpent: 'Points spent: {{spent}} / {{budget}}',
   },
   combat: {
     pace: 'Pace',
@@ -53,7 +53,7 @@ const form = {
     noSkills: 'No skills yet.',
     removeSkill: 'Remove skill',
     newSkillName: 'New Skill',
-    pointsSpent: 'Points spent: {{spent}} / 12',
+    pointsSpent: 'Points spent: {{spent}} / {{budget}}',
     starterTooltip: 'Free d4 — does not cost a skill point',
   },
   edges: {
@@ -141,6 +141,13 @@ const form = {
     hideMiniMap: 'Hide map',
     missingEntity: 'Missing entity',
     newEntityTitle: 'New {{type}}',
+    settingRules: {
+      title: 'World Rules',
+      skillPoints: 'Skill Points',
+      attributePoints: 'Attribute Points',
+      reset: 'Reset ({{default}})',
+      hint: 'SWADE default: {{value}}',
+    },
     entityTypes: {
       location: 'Location',
       faction: 'Faction',

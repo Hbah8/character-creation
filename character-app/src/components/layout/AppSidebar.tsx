@@ -9,6 +9,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar'
+import { WorldPicker } from '@/components/layout/WorldPicker'
 
 const NAV_ITEMS = [
   { labelKey: 'overview', href: '/', icon: LayoutDashboard },
@@ -23,8 +24,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="print:hidden">
-      <SidebarHeader className="px-4 py-3 border-b">
+      <SidebarHeader className="px-4 py-3 border-b flex flex-col gap-2">
         <span className="text-sm font-semibold tracking-tight">SWADE</span>
+        <WorldPicker />
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="px-2 py-2">

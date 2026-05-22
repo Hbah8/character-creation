@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { World } from '@/world/types'
 import type { WorldLibraryEntry } from '@/world/services/worldLibraryService'
 import {
@@ -7,9 +7,31 @@ import {
   saveWorldEntry,
 } from '@/world/services/worldLibraryService'
 
+const ACTIVE_WORLD_KEY = 'active-world-id'
+const ACTIVE_WORLD_EVENT = 'active-world-changed'
+
 export function useWorldLibrary() {
   const [entries, setEntries] = useState<WorldLibraryEntry[]>(() => loadWorldLibrary())
   const [currentId, setCurrentId] = useState<string | null>(null)
+  const [activeWorldId, setActiveWorldIdState] = useState<string | null>(
+    () => localStorage.getItem(ACTIVE_WORLD_KEY)
+  )
+
+  useEffect(() => {
+    const handler = () => setActiveWorldIdState(localStorage.getItem(ACTIVE_WORLD_KEY))
+    window.addEventListener(ACTIVE_WORLD_EVENT, handler)
+    return () => window.removeEventListener(ACTIVE_WORLD_EVENT, handler)
+  }, [])
+
+  const setActiveWorldId = useCallback((id: string | null) => {
+    if (id === null) {
+      localStorage.removeItem(ACTIVE_WORLD_KEY)
+    } else {
+      localStorage.setItem(ACTIVE_WORLD_KEY, id)
+    }
+    setActiveWorldIdState(id)
+    window.dispatchEvent(new CustomEvent(ACTIVE_WORLD_EVENT))
+  }, [])
 
   const save = useCallback((world: World): string => {
     const id = currentId ?? crypto.randomUUID()
@@ -38,5 +60,5 @@ export function useWorldLibrary() {
     setCurrentId(null)
   }, [])
 
-  return { entries, currentId, save, loadById, remove, markNew }
+  return { entries, currentId, save, loadById, remove, markNew, activeWorldId, setActiveWorldId }
 }

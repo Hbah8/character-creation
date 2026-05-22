@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Character, DieName, AttributeKey } from '@/types/character'
 import { calcAttributePointsSpent } from '@/services/pointsService'
+import { useSettingRules } from '@/hooks/useSettingRules'
 
 const DIE_NAMES: DieName[] = ['d4', 'd6', 'd8', 'd10', 'd12']
 const ATTRIBUTE_KEYS: AttributeKey[] = ['agility', 'strength', 'smarts', 'spirit', 'vigor']
@@ -15,12 +16,13 @@ interface Props {
 export function AttributesForm({ character, onChange }: Props) {
   const { t } = useTranslation('form')
   const spent = calcAttributePointsSpent(character)
+  const { attributePointsBudget } = useSettingRules(character.worldId)
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.attributes')}</h2>
-        <span className={`text-xs font-medium tabular-nums ${spent > 5 ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>
-          {t('attributes.pointsSpent', { spent })}
+        <span className={`text-xs font-medium tabular-nums ${spent > attributePointsBudget ? 'text-destructive' : 'text-green-600 dark:text-green-400'}`}>
+          {t('attributes.pointsSpent', { spent, budget: attributePointsBudget })}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-3">

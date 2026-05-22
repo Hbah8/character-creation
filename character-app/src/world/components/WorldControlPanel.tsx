@@ -9,16 +9,18 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
-import type { World, WorldEntityType } from '@/world/types'
+import type { World, WorldEntityType, SettingRules } from '@/world/types'
 import { WORLD_ENTITY_TYPES } from '@/world/types'
 import { WORLD_ENTITY_LABEL_KEYS } from '@/world/i18nKeys'
 import { cn } from '@/lib/utils'
+import { WorldSettingRulesPanel } from './WorldSettingRulesPanel'
 
 interface Props {
   world: World
   selectedEntityId: string | null
   onWorldNameChange: (value: string) => void
   onWorldSummaryChange: (value: string) => void
+  onUpdateSettingRules: (rules: Partial<SettingRules>) => void
   onAddEntity: (type: WorldEntityType) => void
   onSelectEntity: (id: string) => void
 }
@@ -28,6 +30,7 @@ export function WorldControlPanel({
   selectedEntityId,
   onWorldNameChange,
   onWorldSummaryChange,
+  onUpdateSettingRules,
   onAddEntity,
   onSelectEntity,
 }: Props) {
@@ -88,6 +91,11 @@ export function WorldControlPanel({
           </div>
         </div>
       </div>
+
+      <WorldSettingRulesPanel
+        settingRules={world.settingRules}
+        onUpdate={onUpdateSettingRules}
+      />
 
       <Separator />
 

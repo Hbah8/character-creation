@@ -30,6 +30,11 @@ export interface SettingRules {
   attributePointsBudget: number
 }
 
+export const SWADE_DEFAULTS: SettingRules = {
+  skillPointsBudget: 12,
+  attributePointsBudget: 5,
+}
+
 export interface WorldPosition {
   x: number
   y: number
