@@ -152,7 +152,7 @@ export function CharacterCreatorPage() {
   }
 
   function handleNewCharacter() {
-    const fresh = getDefaultCharacter(locale)
+    const fresh = { ...getDefaultCharacter(locale), worldId: activeWorldId ?? undefined }
     store.replaceCharacter(fresh)
     setCleanSnapshot(JSON.stringify(fresh))
     setSavedAt(null)

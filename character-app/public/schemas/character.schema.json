@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/character-creation/schemas/character.schema.json",
+  "title": "SWADE Character Sheet",
+  "description": "Serialized character state used by the Character Editor JSON export/import flow.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sheetTitle",
+    "callsign",
+    "name",
+    "rank",
+    "role",
+    "fileNo",
+    "portraitUrl",
+    "agility",
+    "strength",
+    "smarts",
+    "spirit",
+    "vigor",
+    "pace",
+    "parry",
+    "toughness",
+    "bennies",
+    "wounds",
+    "fatigue",
+    "mana",
+    "skills",
+    "edges",
+    "hindrances",
+    "weapons",
+    "gear",
+    "specialRules",
+    "notes"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "Optional schema hint for editors. The app ignores this field during import."
+    },
+
+    "sheetTitle": {
+      "type": "string",
+      "description": "Display title shown at the top of the character sheet (e.g. campaign or unit name)."
+    },
+    "callsign": {
+      "type": "string",
+      "description": "Character callsign or nickname."
+    },
+    "name": {
+      "type": "string",
+      "description": "Character full name."
+    },
+    "rank": {
+      "type": "string",
+      "description": "Character rank (e.g. Novice, Seasoned, Veteran, Heroic, Legendary)."
+    },
+    "role": {
+      "type": "string",
+      "description": "Character archetype or role in the group."
+    },
+    "fileNo": {
+      "type": "string",
+      "description": "Dossier or file number (free-form identifier)."
+    },
+    "portraitUrl": {
+      "type": "string",
+      "description": "Portrait image. May be an https URL or a base64 data-URI (data:image/…). Empty string means no portrait."
+    },
+
+    "agility": {
+      "$ref": "#/$defs/dieName",
+      "description": "Agility attribute die."
+    },
+    "strength": {
+      "$ref": "#/$defs/dieName",
+      "description": "Strength attribute die."
+    },
+    "smarts": {
+      "$ref": "#/$defs/dieName",
+      "description": "Smarts attribute die."
+    },
+    "spirit": {
+      "$ref": "#/$defs/dieName",
+      "description": "Spirit attribute die."
+    },
+    "vigor": {
+      "$ref": "#/$defs/dieName",
+      "description": "Vigor attribute die."
+    },
+
+    "pace": {
+      "type": "string",
+      "description": "Movement pace (e.g. '6', '8+d6'). Stored as a free-form string."
+    },
+    "parry": {
+      "type": "string",
+      "description": "Parry derived stat. Free-form string."
+    },
+    "toughness": {
+      "type": "string",
+      "description": "Toughness derived stat, optionally including armor (e.g. '10 (2)'). Free-form string."
+    },
+    "bennies": {
+      "type": "string",
+      "description": "Benny count or notation. Free-form string."
+    },
+    "wounds": {
+      "type": "string",
+      "description": "Current wound count. Free-form string."
+    },
+    "fatigue": {
+      "type": "string",
+      "description": "Current fatigue level. Free-form string."
+    },
+    "mana": {
+      "type": "string",
+      "description": "Power Points (mana) available. Free-form string."
+    },
+
+    "skills": {
+      "type": "array",
+      "description": "List of character skills.",
+      "items": {
+        "$ref": "#/$defs/skill"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "description": "List of character edges.",
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    },
+    "hindrances": {
+      "type": "array",
+      "description": "List of character hindrances.",
+      "items": {
+        "$ref": "#/$defs/hindrance"
+      }
+    },
+    "weapons": {
+      "type": "array",
+      "description": "List of weapons and equipment with combat stats.",
+      "items": {
+        "$ref": "#/$defs/weapon"
+      }
+    },
+    "gear": {
+      "type": "array",
+      "description": "Free-form gear/inventory list. Each entry is a plain string.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "specialRules": {
+      "type": "array",
+      "description": "Custom special rules or abilities not covered by edges.",
+      "items": {
+        "$ref": "#/$defs/specialRule"
+      }
+    },
+
+    "notes": {
+      "type": "string",
+      "description": "Freeform character notes."
+    },
+
+    "worldId": {
+      "type": "string",
+      "description": "Optional ID of the World this character belongs to. When set, setting rules (point budgets, etc.) are resolved from that world."
+    },
+
+    "layout": {
+      "$ref": "#/$defs/characterLayout",
+      "description": "Column placement overrides for collections on the print sheet. Absent or null sections fall back to defaults."
+    }
+  },
+
+  "$defs": {
+    "dieName": {
+      "type": "string",
+      "enum": ["d4", "d6", "d8", "d10", "d12", ""],
+      "description": "Standard SWADE die step. Empty string means the die has not been assigned yet."
+    },
+
+    "attributeKey": {
+      "type": "string",
+      "enum": ["agility", "strength", "smarts", "spirit", "vigor"],
+      "description": "One of the five SWADE core attributes."
+    },
+
+    "hindranceSeverity": {
+      "type": "string",
+      "enum": ["minor", "major"],
+      "description": "Hindrance severity. Minor = 1 point, Major = 2 points."
+    },
+
+    "columnSide": {
+      "type": "string",
+      "enum": ["left", "right"],
+      "description": "Which column a collection is rendered in on the print sheet."
+    },
+
+    "skill": {
+      "type": "object",
+      "description": "A single character skill entry.",
+      "additionalProperties": false,
+      "required": ["id", "name", "die", "linkedAttribute"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this skill entry (UUID or similar)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Skill name (e.g. 'Athletics', 'Shooting', 'Notice')."
+        },
+        "die": {
+          "$ref": "#/$defs/dieName",
+          "description": "Current die rating for this skill."
+        },
+        "linkedAttribute": {
+          "$ref": "#/$defs/attributeKey",
+          "description": "Governing attribute for this skill."
+        },
+        "isStarter": {
+          "type": "boolean",
+          "description": "True if this is a free starter skill. Omit or false otherwise.",
+          "default": false
+        }
+      }
+    },
+
+    "edge": {
+      "type": "object",
+      "description": "A single character edge.",
+      "additionalProperties": false,
+      "required": ["id", "name", "effect"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this edge entry."
+        },
+        "name": {
+          "type": "string",
+          "description": "Edge name."
+        },
+        "effect": {
+          "type": "string",
+          "description": "Short description of the edge effect."
+        }
+      }
+    },
+
+    "hindrance": {
+      "type": "object",
+      "description": "A single character hindrance.",
+      "additionalProperties": false,
+      "required": ["id", "name", "severity", "description"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this hindrance entry."
+        },
+        "name": {
+          "type": "string",
+          "description": "Hindrance name."
+        },
+        "severity": {
+          "$ref": "#/$defs/hindranceSeverity",
+          "description": "Hindrance severity level."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of how this hindrance manifests for the character."
+        }
+      }
+    },
+
+    "weapon": {
+      "type": "object",
+      "description": "A single weapon or ranged/melee combat item.",
+      "additionalProperties": false,
+      "required": ["id", "name", "range", "damage", "ap", "rof", "magazine"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this weapon entry."
+        },
+        "name": {
+          "type": "string",
+          "description": "Weapon name."
+        },
+        "range": {
+          "type": "string",
+          "description": "Range bands (e.g. '12/24/48' for ranged, '-' for melee)."
+        },
+        "damage": {
+          "type": "string",
+          "description": "Damage dice expression (e.g. '2d6+1', 'Str+d8')."
+        },
+        "ap": {
+          "type": "string",
+          "description": "Armor Piercing value. Free-form string (e.g. '2', '-', '0')."
+        },
+        "rof": {
+          "type": "string",
+          "description": "Rate of Fire. Free-form string (e.g. '1', '3', '-')."
+        },
+        "magazine": {
+          "type": "string",
+          "description": "Magazine or clip size. Free-form string (e.g. '30', '-')."
+        }
+      }
+    },
+
+    "specialRule": {
+      "type": "object",
+      "description": "A custom special rule or ability.",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this special rule entry."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the special rule or ability."
+        },
+        "description": {
+          "type": "string",
+          "description": "Full description of the rule or ability."
+        }
+      }
+    },
+
+    "characterLayout": {
+      "type": "object",
+      "description": "Per-collection column placement on the print sheet.",
+      "additionalProperties": false,
+      "required": ["weapons", "edges", "hindrances", "gear", "specialRules"],
+      "properties": {
+        "weapons": {
+          "$ref": "#/$defs/columnSide"
+        },
+        "edges": {
+          "$ref": "#/$defs/columnSide"
+        },
+        "hindrances": {
+          "$ref": "#/$defs/columnSide"
+        },
+        "gear": {
+          "$ref": "#/$defs/columnSide"
+        },
+        "specialRules": {
+          "$ref": "#/$defs/columnSide"
+        }
+      }
+    }
+  }
+}
