@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Sheet,
@@ -23,6 +24,11 @@ import {
 
 interface Props {
   entry: AnyHandbookEntry
+  source?: 'system' | 'world'
+  activeWorldName?: string
+  onOverride?: () => void
+  onEditOverride?: () => void
+  onDeleteOverride?: () => void
 }
 
 function EntryTags({ entry }: Props) {
@@ -31,9 +37,9 @@ function EntryTags({ entry }: Props) {
   if (isEdge(entry)) {
     return (
       <div className="flex flex-wrap gap-1">
-        <Badge variant="outline">{entry.type}</Badge>
+        <Badge variant="outline">{t(`enums.edgeType.${entry.type}`)}</Badge>
         {entry.requirements?.rank && (
-          <Badge variant="secondary">{entry.requirements.rank}</Badge>
+          <Badge variant="secondary">{t(`enums.rank.${entry.requirements.rank}`)}</Badge>
         )}
       </div>
     )
@@ -42,7 +48,7 @@ function EntryTags({ entry }: Props) {
   if (isHindrance(entry)) {
     return (
       <Badge variant={entry.type === 'Major' ? 'destructive' : 'secondary'}>
-        {entry.type}
+        {t(`enums.hindranceType.${entry.type}`)}
       </Badge>
     )
   }
@@ -50,7 +56,7 @@ function EntryTags({ entry }: Props) {
   if (isWeapon(entry)) {
     return (
       <div className="flex flex-wrap gap-1">
-        <Badge variant="outline">{entry.category}</Badge>
+        <Badge variant="outline">{t(`enums.weaponCategory.${entry.category}`)}</Badge>
         <Badge variant="secondary">{t('fields.damage')}: {entry.damage}</Badge>
         {entry.range && (
           <Badge variant="secondary">{t('fields.range')}: {entry.range}</Badge>
@@ -60,7 +66,7 @@ function EntryTags({ entry }: Props) {
   }
 
   if (isGear(entry)) {
-    return <Badge variant="outline">{entry.category}</Badge>
+    return <Badge variant="outline">{t(`enums.gearCategory.${entry.category}`)}</Badge>
   }
 
   if (isPower(entry)) {
@@ -68,7 +74,7 @@ function EntryTags({ entry }: Props) {
       <div className="flex flex-wrap gap-1">
         <Badge variant="secondary">{t('fields.ppCost')}: {entry.ppCost}</Badge>
         {entry.arcaneBackground.slice(0, 3).map(ab => (
-          <Badge key={ab} variant="outline">{ab}</Badge>
+          <Badge key={ab} variant="outline">{t(`enums.arcaneBackground.${ab}`)}</Badge>
         ))}
         {entry.arcaneBackground.length > 3 && (
           <Badge variant="outline">+{entry.arcaneBackground.length - 3}</Badge>
@@ -80,7 +86,7 @@ function EntryTags({ entry }: Props) {
   if (isMount(entry)) {
     return (
       <div className="flex flex-wrap gap-1">
-        <Badge variant="outline">{entry.category}</Badge>
+        <Badge variant="outline">{t(`enums.mountCategory.${entry.category}`)}</Badge>
         <Badge variant="secondary">{t('fields.toughness')}: {entry.toughness}</Badge>
       </div>
     )
@@ -90,7 +96,7 @@ function EntryTags({ entry }: Props) {
     return (
       <div className="flex flex-wrap gap-1">
         <Badge variant={entry.type === 'positive' ? 'default' : 'destructive'}>
-          {entry.type}
+          {t(`enums.racialAbilityType.${entry.type}`)}
         </Badge>
         {entry.points !== undefined && (
           <Badge variant="secondary">{t('fields.points')}: {entry.points}</Badge>
@@ -102,8 +108,10 @@ function EntryTags({ entry }: Props) {
   return null
 }
 
-export function HandbookEntry({ entry }: Props) {
+export function HandbookEntry({ entry, source, activeWorldName, onOverride, onEditOverride, onDeleteOverride }: Props) {
   const { t } = useTranslation('handbooks')
+  const isWorld = source === 'world'
+  const badgeLabel = isWorld && activeWorldName ? activeWorldName : t('badge.swade')
 
   return (
     <Sheet>
@@ -118,7 +126,7 @@ export function HandbookEntry({ entry }: Props) {
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
               <span className="truncate">{entry.name}</span>
               <Badge variant="secondary" className="shrink-0 text-xs">
-                {t('badge.swade')}
+                {badgeLabel}
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -135,7 +143,7 @@ export function HandbookEntry({ entry }: Props) {
           <div className="flex items-center gap-2 pr-8">
             <SheetTitle className="text-base">{entry.name}</SheetTitle>
             <Badge variant="secondary" className="shrink-0 text-xs">
-              {t('badge.swade')}
+              {badgeLabel}
             </Badge>
           </div>
           <SheetDescription className="text-sm leading-relaxed">
@@ -145,6 +153,24 @@ export function HandbookEntry({ entry }: Props) {
         <div className="flex-1 overflow-y-auto p-6">
           <HandbookEntryDetail entry={entry} />
         </div>
+        {activeWorldName && (
+          <div className="p-4 border-t flex gap-2">
+            {!isWorld ? (
+              <Button size="sm" variant="outline" onClick={onOverride}>
+                {t('actions.override')}
+              </Button>
+            ) : (
+              <>
+                <Button size="sm" variant="outline" onClick={onEditOverride}>
+                  {t('actions.editOverride')}
+                </Button>
+                <Button size="sm" variant="destructive" onClick={onDeleteOverride}>
+                  {t('actions.deleteOverride')}
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   )

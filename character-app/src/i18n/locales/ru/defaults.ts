@@ -84,6 +84,7 @@ export const ruDefaultWorld: World = {
     skillPointsBudget: 12,
     attributePointsBudget: 5,
   },
+  worldHandbook: [],
   entities: [
     {
       id: 'default-location',

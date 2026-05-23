@@ -4,12 +4,15 @@ import { BookOpen, Globe2, LayoutDashboard, Swords, Users } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar'
 import { WorldPicker } from '@/components/layout/WorldPicker'
+import { changeLocale } from '@/i18n'
+import type { Locale } from '@/i18n/types'
 
 const NAV_ITEMS = [
   { labelKey: 'overview', href: '/', icon: LayoutDashboard },
@@ -21,7 +24,9 @@ const NAV_ITEMS = [
 
 export function AppSidebar() {
   const { pathname } = useLocation()
-  const { t } = useTranslation('navigation')
+  const { t, i18n } = useTranslation('navigation')
+  const currentLocale = i18n.language as Locale
+  const nextLocale: Locale = currentLocale === 'ru' ? 'en' : 'ru'
 
   return (
     <Sidebar className="print:hidden">
@@ -47,6 +52,16 @@ export function AppSidebar() {
           })}
         </SidebarMenu>
       </SidebarContent>
+      <SidebarFooter className="px-4 py-3 border-t">
+        <button
+          onClick={() => changeLocale(nextLocale)}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+        >
+          <Globe2 className="size-4 shrink-0" />
+          <span className="font-medium uppercase">{currentLocale}</span>
+          <span className="text-xs opacity-50">→ {nextLocale.toUpperCase()}</span>
+        </button>
+      </SidebarFooter>
     </Sidebar>
   )
 }

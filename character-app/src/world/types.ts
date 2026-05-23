@@ -1,3 +1,5 @@
+import type { HandbookOverride } from '@/types/handbook'
+
 export const WORLD_SCHEMA_VERSION = 1
 
 export const WORLD_ENTITY_TYPES = [
@@ -66,4 +68,5 @@ export interface World {
   settingRules: SettingRules
   entities: WorldEntity[]
   relationships: WorldRelationship[]
+  worldHandbook: HandbookOverride[]
 }

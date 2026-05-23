@@ -8,42 +8,90 @@ import { SWADE_POWERS } from '@/data/handbooks/powers'
 import { SWADE_MOUNTS } from '@/data/handbooks/mounts'
 import { SWADE_RACIAL_ABILITIES } from '@/data/handbooks/racialAbilities'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { HandbookEntryForm } from '@/handbooks/components/HandbookEntryForm'
+import { HandbookFilterPanel } from '@/handbooks/components/HandbookFilterPanel'
 import { HandbookList } from '@/handbooks/components/HandbookList'
 import { HandbookStatList } from '@/handbooks/components/HandbookStatList'
+import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
+import {
+  createEmptyHandbookFilters,
+  filterHandbookEntries,
+  hasActiveHandbookFilters,
+} from '@/handbooks/utils/filterHandbookEntries'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import type { AnyHandbookEntry } from '@/handbooks/types'
+import type { HandbookCategory, HandbookOverride } from '@/types/handbook'
 
 type TabLayout = 'cards' | 'stat'
 
 const TABS: Array<{
   key: string
   labelKey: 'tabs.edges' | 'tabs.hindrances' | 'tabs.weapons' | 'tabs.gear' | 'tabs.powers' | 'tabs.transport' | 'tabs.racialAbilities'
+  category: HandbookCategory
   entries: AnyHandbookEntry[]
   layout: TabLayout
 }> = [
-  { key: 'edges', labelKey: 'tabs.edges', entries: SWADE_EDGES as AnyHandbookEntry[], layout: 'cards' },
-  { key: 'hindrances', labelKey: 'tabs.hindrances', entries: SWADE_HINDRANCES as AnyHandbookEntry[], layout: 'cards' },
-  { key: 'weapons', labelKey: 'tabs.weapons', entries: SWADE_WEAPONS as AnyHandbookEntry[], layout: 'stat' },
-  { key: 'gear', labelKey: 'tabs.gear', entries: SWADE_GEAR as AnyHandbookEntry[], layout: 'stat' },
-  { key: 'powers', labelKey: 'tabs.powers', entries: SWADE_POWERS as AnyHandbookEntry[], layout: 'cards' },
-  { key: 'transport', labelKey: 'tabs.transport', entries: SWADE_MOUNTS as AnyHandbookEntry[], layout: 'stat' },
-  { key: 'racialAbilities', labelKey: 'tabs.racialAbilities', entries: SWADE_RACIAL_ABILITIES as AnyHandbookEntry[], layout: 'cards' },
+  { key: 'edges',           labelKey: 'tabs.edges',           category: 'edge',          entries: SWADE_EDGES as AnyHandbookEntry[],           layout: 'cards' },
+  { key: 'hindrances',      labelKey: 'tabs.hindrances',      category: 'hindrance',     entries: SWADE_HINDRANCES as AnyHandbookEntry[],      layout: 'cards' },
+  { key: 'weapons',         labelKey: 'tabs.weapons',         category: 'weapon',        entries: SWADE_WEAPONS as AnyHandbookEntry[],         layout: 'stat' },
+  { key: 'gear',            labelKey: 'tabs.gear',            category: 'gear',          entries: SWADE_GEAR as AnyHandbookEntry[],            layout: 'stat' },
+  { key: 'powers',          labelKey: 'tabs.powers',          category: 'power',         entries: SWADE_POWERS as AnyHandbookEntry[],          layout: 'cards' },
+  { key: 'transport',       labelKey: 'tabs.transport',       category: 'mount',         entries: SWADE_MOUNTS as AnyHandbookEntry[],          layout: 'stat' },
+  { key: 'racialAbilities', labelKey: 'tabs.racialAbilities', category: 'racialAbility', entries: SWADE_RACIAL_ABILITIES as AnyHandbookEntry[], layout: 'cards' },
 ]
+
+interface FormState {
+  open: boolean
+  category: HandbookCategory
+  baseEntry?: AnyHandbookEntry
+  existingOverride?: HandbookOverride
+}
 
 export function HandbooksPage() {
   const { t } = useTranslation('handbooks')
-  const { entries: worldEntries, activeWorldId } = useWorldLibrary()
-  const [search, setSearch] = useState('')
+  const { entries: worldEntries, activeWorldId, saveById } = useWorldLibrary()
+  const [filters, setFilters] = useState(createEmptyHandbookFilters)
+  const [formState, setFormState] = useState<FormState | null>(null)
 
-  // M3 stub: read world-level handbook overrides when available
   const activeWorld = activeWorldId
-    ? worldEntries.find(e => e.id === activeWorldId)?.world
+    ? worldEntries.find(e => e.id === activeWorldId)?.world ?? null
     : null
-  const worldOverrides: AnyHandbookEntry[] = (activeWorld as Record<string, unknown> | null)
-    ?.handbookOverrides as AnyHandbookEntry[] ?? []
+  const worldHandbook: HandbookOverride[] = activeWorld?.worldHandbook ?? []
 
   function handleTabChange() {
-    setSearch('')
+    setFilters(createEmptyHandbookFilters())
+  }
+
+  function openOverride(category: HandbookCategory, entry: AnyHandbookEntry) {
+    const existing = worldHandbook.find(o => o.id === entry.id && o.category === category)
+    setFormState({ open: true, category, baseEntry: entry, existingOverride: existing })
+  }
+
+  function openAddCustom(category: HandbookCategory) {
+    setFormState({ open: true, category })
+  }
+
+  function handleSaveOverride(override: HandbookOverride) {
+    if (!activeWorldId || !activeWorld) return
+    const updated = {
+      ...activeWorld,
+      worldHandbook: [
+        ...worldHandbook.filter(o => !(o.id === override.id && o.category === override.category)),
+        override,
+      ],
+    }
+    saveById(activeWorldId, updated)
+    setFormState(null)
+  }
+
+  function handleDeleteOverride(id: string, category: HandbookCategory) {
+    if (!activeWorldId || !activeWorld) return
+    const updated = {
+      ...activeWorld,
+      worldHandbook: worldHandbook.filter(o => !(o.id === id && o.category === category)),
+    }
+    saveById(activeWorldId, updated)
+    setFormState(null)
   }
 
   return (
@@ -70,9 +118,9 @@ export function HandbooksPage() {
           {/* Tab content — each tab manages its own scrolling */}
           <div className="flex-1 min-h-0 overflow-hidden">
             {TABS.map(tab => {
-              const allEntries = worldOverrides.length > 0
-                ? [...tab.entries, ...worldOverrides.filter(o => !tab.entries.some(e => e.id === o.id))]
-                : tab.entries
+              const resolved = resolveHandbookEntries(tab.category, worldHandbook, tab.entries)
+              const filtered = filterHandbookEntries(resolved, filters)
+              const hasActiveFilters = hasActiveHandbookFilters(filters)
 
               return (
                 <TabsContent
@@ -80,29 +128,63 @@ export function HandbooksPage() {
                   value={tab.key}
                   className="h-full mt-0 overflow-hidden data-[state=inactive]:hidden"
                 >
-                  {tab.layout === 'stat' ? (
-                    <HandbookStatList
-                      entries={allEntries}
-                      search={search}
-                      onSearchChange={setSearch}
+                  <div className="flex h-full overflow-hidden max-lg:flex-col">
+                    <HandbookFilterPanel
+                      category={tab.category}
+                      entries={resolved as AnyHandbookEntry[]}
+                      filters={filters}
+                      activeWorldName={activeWorld?.name}
+                      onFiltersChange={setFilters}
+                      onAddCustom={() => openAddCustom(tab.category)}
                     />
-                  ) : (
-                    <div className="h-full overflow-y-auto">
-                      <div className="p-6">
-                        <HandbookList
-                          entries={allEntries}
-                          search={search}
-                          onSearchChange={setSearch}
+                    <div className="min-w-0 flex-1 overflow-hidden">
+                      {tab.layout === 'stat' ? (
+                        <HandbookStatList
+                          entries={filtered as AnyHandbookEntry[]}
+                          hasActiveFilters={hasActiveFilters}
+                          activeWorldName={activeWorld?.name}
+                          onOverride={entry => openOverride(tab.category, entry)}
+                          onEditOverride={entry => openOverride(tab.category, entry)}
+                          onDeleteOverride={entry => handleDeleteOverride(entry.id, tab.category)}
                         />
+                      ) : (
+                        <div className="h-full overflow-y-auto">
+                          <div className="p-6">
+                            <HandbookList
+                              entries={filtered as AnyHandbookEntry[]}
+                              hasActiveFilters={hasActiveFilters}
+                              activeWorldName={activeWorld?.name}
+                              onOverride={entry => openOverride(tab.category, entry)}
+                              onEditOverride={entry => openOverride(tab.category, entry)}
+                              onDeleteOverride={entry => handleDeleteOverride(entry.id, tab.category)}
+                            />
+                          </div>
+                        </div>
+                      )}
                       </div>
-                    </div>
-                  )}
+                  </div>
                 </TabsContent>
               )
             })}
           </div>
         </Tabs>
       </div>
+
+      {formState && (
+        <HandbookEntryForm
+          open={formState.open}
+          category={formState.category}
+          baseEntry={formState.baseEntry}
+          existingOverride={formState.existingOverride}
+          worldName={activeWorld?.name ?? ''}
+          onClose={() => setFormState(null)}
+          onSave={handleSaveOverride}
+          onDelete={formState.existingOverride
+            ? () => handleDeleteOverride(formState.existingOverride!.id, formState.category)
+            : undefined
+          }
+        />
+      )}
     </div>
   )
 }

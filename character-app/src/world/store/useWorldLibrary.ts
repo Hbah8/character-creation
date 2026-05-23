@@ -56,9 +56,14 @@ export function useWorldLibrary() {
     setCurrentId(prev => (prev === id ? null : prev))
   }, [])
 
+  const saveById = useCallback((id: string, world: World): void => {
+    saveWorldEntry(id, world)
+    setEntries(loadWorldLibrary())
+  }, [])
+
   const markNew = useCallback(() => {
     setCurrentId(null)
   }, [])
 
-  return { entries, currentId, save, loadById, remove, markNew, activeWorldId, setActiveWorldId }
+  return { entries, currentId, save, saveById, loadById, remove, markNew, activeWorldId, setActiveWorldId }
 }

@@ -13,8 +13,35 @@ const handbooks = {
     placeholder: 'Поиск...',
     noResults: 'Нет результатов для «{{query}}»',
   },
+  filter: {
+    title: 'Фильтр',
+    search: 'Поиск',
+    clear: 'Сбросить',
+    source: 'Источник',
+    rank: 'Требуемый ранг',
+    flags: 'Флаги',
+    noRank: 'Без требования ранга',
+    wildCardOnly: 'Только Дикая карта',
+    noFacetGroups: 'Для этого раздела нет фильтров.',
+    noResults: 'Нет записей под выбранные фильтры.',
+  },
   badge: {
     swade: 'SWADE',
+    world: '{{worldName}}',
+  },
+  actions: {
+    override: 'Переопределить для мира',
+    addCustom: 'Добавить запись',
+    editOverride: 'Редактировать',
+    deleteOverride: 'Удалить переопределение',
+  },
+  form: {
+    titleNew: 'Новая запись',
+    titleOverride: 'Переопределение для {{worldName}}',
+    titleEdit: 'Редактировать переопределение',
+    save: 'Сохранить',
+    cancel: 'Отмена',
+    inheritedNote: 'Пустые поля наследуют системное значение.',
   },
   entry: {
     details: 'Подробнее',
@@ -28,6 +55,7 @@ const handbooks = {
   },
   fields: {
     type: 'Тип',
+    description: 'Описание',
     damage: 'Урон',
     range: 'Дальность',
     ap: 'ББ',
@@ -42,6 +70,58 @@ const handbooks = {
     handling: 'Управляемость',
     points: 'Очки',
     category: 'Категория',
+    wildCardOnly: 'Только Дикая карта',
+  },
+  enums: {
+    edgeType: {
+      Background: 'Предыстория',
+      Combat: 'Боевая',
+      Leadership: 'Лидерство',
+      Power: 'Мистическая',
+      Professional: 'Профессиональная',
+      Social: 'Социальная',
+      Weird: 'Сверхъестественная',
+      WildCard: 'Дикая карта',
+    },
+    hindranceType: {
+      Major: 'Крупный',
+      Minor: 'Мелкий',
+    },
+    racialAbilityType: {
+      positive: 'Положительная',
+      negative: 'Отрицательная',
+    },
+    rank: {
+      Novice: 'Новичок',
+      Seasoned: 'Закалённый',
+      Veteran: 'Ветеран',
+      Heroic: 'Герой',
+      Legendary: 'Легенда',
+    },
+    weaponCategory: {
+      Melee: 'Ближний бой',
+      Ranged: 'Дальний бой',
+      Thrown: 'Метательное',
+      Unarmed: 'Без оружия',
+    },
+    gearCategory: {
+      Adventuring: 'Снаряжение',
+      Clothing: 'Одежда',
+      Food: 'Еда',
+      Tools: 'Инструменты',
+      Other: 'Прочее',
+    },
+    mountCategory: {
+      animal: 'Животное',
+      vehicle: 'Транспорт',
+    },
+    arcaneBackground: {
+      Magic: 'Магия',
+      Miracles: 'Чудеса',
+      Psionics: 'Псионика',
+      SuperPowers: 'Суперсилы',
+      WeirdScience: 'Странная наука',
+    },
   },
 } as const
 

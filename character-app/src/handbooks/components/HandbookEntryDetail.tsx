@@ -30,7 +30,7 @@ export function HandbookEntryDetail({ entry }: Props) {
             <div className="flex flex-col gap-1 text-sm">
               {req.rank && (
                 <span>
-                  <span className="text-muted-foreground">{t('entry.rank')}:</span> {req.rank}
+                  <span className="text-muted-foreground">{t('entry.rank')}:</span> {t(`enums.rank.${req.rank}`)}
                 </span>
               )}
               {req.attributes && Object.entries(req.attributes).map(([attr, die]) => (
@@ -53,7 +53,10 @@ export function HandbookEntryDetail({ entry }: Props) {
         )}
         <div className="flex gap-2 items-center text-sm">
           <span className="text-muted-foreground">{t('fields.type')}:</span>
-          <Badge variant="outline">{entry.type}</Badge>
+          <Badge variant="outline">{t(`enums.edgeType.${entry.type}`)}</Badge>
+          {entry.wildCardOnly && (
+            <Badge variant="secondary">{t('fields.wildCardOnly')}</Badge>
+          )}
         </div>
       </div>
     )
@@ -63,7 +66,7 @@ export function HandbookEntryDetail({ entry }: Props) {
     return (
       <div className="flex gap-2 items-center text-sm">
         <span className="text-muted-foreground">{t('fields.type')}:</span>
-        <Badge variant={entry.type === 'Major' ? 'destructive' : 'secondary'}>{entry.type}</Badge>
+        <Badge variant={entry.type === 'Major' ? 'destructive' : 'secondary'}>{t(`enums.hindranceType.${entry.type}`)}</Badge>
       </div>
     )
   }
@@ -72,7 +75,7 @@ export function HandbookEntryDetail({ entry }: Props) {
     return (
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         <span className="text-muted-foreground">{t('fields.category')}</span>
-        <span>{entry.category}</span>
+        <span>{t(`enums.weaponCategory.${entry.category}`)}</span>
         <span className="text-muted-foreground">{t('fields.damage')}</span>
         <span>{entry.damage}</span>
         {entry.range && (
@@ -113,7 +116,7 @@ export function HandbookEntryDetail({ entry }: Props) {
     return (
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         <span className="text-muted-foreground">{t('fields.category')}</span>
-        <span>{entry.category}</span>
+        <span>{t(`enums.gearCategory.${entry.category}`)}</span>
         {entry.weight !== undefined && (
           <>
             <span className="text-muted-foreground">{t('fields.weight')}</span>
@@ -147,7 +150,7 @@ export function HandbookEntryDetail({ entry }: Props) {
           </p>
           <div className="flex flex-wrap gap-1">
             {entry.arcaneBackground.map(ab => (
-              <Badge key={ab} variant="outline">{ab}</Badge>
+              <Badge key={ab} variant="outline">{t(`enums.arcaneBackground.${ab}`)}</Badge>
             ))}
           </div>
         </div>
@@ -159,7 +162,7 @@ export function HandbookEntryDetail({ entry }: Props) {
     return (
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         <span className="text-muted-foreground">{t('fields.category')}</span>
-        <span>{entry.category}</span>
+        <span>{t(`enums.mountCategory.${entry.category}`)}</span>
         <span className="text-muted-foreground">{t('fields.toughness')}</span>
         <span>{entry.toughness}</span>
         {entry.pace !== undefined && (
@@ -188,7 +191,7 @@ export function HandbookEntryDetail({ entry }: Props) {
     return (
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         <span className="text-muted-foreground">{t('fields.type')}</span>
-        <span>{entry.type}</span>
+        <span>{t(`enums.racialAbilityType.${entry.type}`)}</span>
         {entry.points !== undefined && (
           <>
             <span className="text-muted-foreground">{t('fields.points')}</span>

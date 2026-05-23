@@ -60,6 +60,7 @@ export interface EdgeRequirements {
 
 export interface Edge extends HandbookEntry {
   type: EdgeType
+  wildCardOnly?: boolean
   requirements?: EdgeRequirements
 }
 
@@ -102,3 +103,37 @@ export interface RacialAbility extends HandbookEntry {
   type: RacialAbilityType
   points?: number
 }
+
+// ---------------------------------------------------------------------------
+// World handbook override types
+// ---------------------------------------------------------------------------
+
+export type HandbookSource = 'system' | 'world'
+
+export type HandbookCategory =
+  | 'edge'
+  | 'hindrance'
+  | 'weapon'
+  | 'gear'
+  | 'power'
+  | 'mount'
+  | 'racialAbility'
+
+export type EdgeOverride          = { id: string; category: 'edge' }          & Partial<Omit<Edge, 'id'>>
+export type HindranceOverride     = { id: string; category: 'hindrance' }     & Partial<Omit<Hindrance, 'id'>>
+export type WeaponOverride        = { id: string; category: 'weapon' }        & Partial<Omit<Weapon, 'id'>>
+export type GearOverride          = { id: string; category: 'gear' }          & Partial<Omit<Gear, 'id'>>
+export type PowerOverride         = { id: string; category: 'power' }         & Partial<Omit<Power, 'id'>>
+export type MountOverride         = { id: string; category: 'mount' }         & Partial<Omit<Mount, 'id'>>
+export type RacialAbilityOverride = { id: string; category: 'racialAbility' } & Partial<Omit<RacialAbility, 'id'>>
+
+export type HandbookOverride =
+  | EdgeOverride
+  | HindranceOverride
+  | WeaponOverride
+  | GearOverride
+  | PowerOverride
+  | MountOverride
+  | RacialAbilityOverride
+
+export type ResolvedEntry<T extends HandbookEntry> = T & { source: HandbookSource }

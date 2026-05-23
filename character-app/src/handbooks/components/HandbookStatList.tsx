@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { XIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import {
   Table,
@@ -15,13 +14,16 @@ import {
 } from '@/components/ui/table'
 import { HandbookEntryDetail } from '@/handbooks/components/HandbookEntryDetail'
 import type { AnyHandbookEntry } from '@/handbooks/types'
+import type { HandbookSource, ResolvedEntry } from '@/types/handbook'
 import { isGear, isMount, isWeapon } from '@/handbooks/types'
-import { filterHandbookEntries } from '@/handbooks/utils/filterHandbookEntries'
 
 interface Props {
   entries: AnyHandbookEntry[]
-  search: string
-  onSearchChange: (value: string) => void
+  hasActiveFilters: boolean
+  activeWorldName?: string
+  onOverride?: (entry: AnyHandbookEntry) => void
+  onEditOverride?: (entry: AnyHandbookEntry) => void
+  onDeleteOverride?: (entry: AnyHandbookEntry) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -58,11 +60,12 @@ function useColumnHeaders(entries: AnyHandbookEntry[]) {
 // ---------------------------------------------------------------------------
 
 function StatCells({ entry }: { entry: AnyHandbookEntry }) {
+  const { t } = useTranslation('handbooks')
   if (isWeapon(entry)) {
     return (
       <>
         <TableCell>
-          <Badge variant="outline" className="text-xs">{entry.category}</Badge>
+          <Badge variant="outline" className="text-xs">{t(`enums.weaponCategory.${entry.category}`)}</Badge>
         </TableCell>
         <TableCell className="font-mono text-xs">{entry.damage}</TableCell>
         <TableCell className="text-xs text-muted-foreground">{entry.range ?? '—'}</TableCell>
@@ -78,7 +81,7 @@ function StatCells({ entry }: { entry: AnyHandbookEntry }) {
     return (
       <>
         <TableCell>
-          <Badge variant="outline" className="text-xs">{entry.category}</Badge>
+          <Badge variant="outline" className="text-xs">{t(`enums.gearCategory.${entry.category}`)}</Badge>
         </TableCell>
         <TableCell className="text-xs text-muted-foreground">
           {entry.weight != null ? `${entry.weight} lb` : '—'}
@@ -94,7 +97,7 @@ function StatCells({ entry }: { entry: AnyHandbookEntry }) {
     return (
       <>
         <TableCell>
-          <Badge variant="outline" className="text-xs">{entry.category}</Badge>
+          <Badge variant="outline" className="text-xs">{t(`enums.mountCategory.${entry.category}`)}</Badge>
         </TableCell>
         <TableCell className="text-xs font-mono">{entry.toughness}</TableCell>
         <TableCell className="text-xs text-muted-foreground">
@@ -116,11 +119,18 @@ function StatCells({ entry }: { entry: AnyHandbookEntry }) {
 
 interface DetailPanelProps {
   entry: AnyHandbookEntry
+  source?: HandbookSource
+  activeWorldName?: string
   onClose: () => void
+  onOverride?: () => void
+  onEditOverride?: () => void
+  onDeleteOverride?: () => void
 }
 
-function DetailPanel({ entry, onClose }: DetailPanelProps) {
+function DetailPanel({ entry, source, activeWorldName, onClose, onOverride, onEditOverride, onDeleteOverride }: DetailPanelProps) {
   const { t } = useTranslation('handbooks')
+  const isWorld = source === 'world'
+  const badgeLabel = isWorld && activeWorldName ? activeWorldName : t('badge.swade')
 
   return (
     <div className="w-72 shrink-0 border-l flex flex-col overflow-hidden">
@@ -129,7 +139,7 @@ function DetailPanel({ entry, onClose }: DetailPanelProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-sm leading-snug">{entry.name}</span>
             <Badge variant="secondary" className="text-xs shrink-0">
-              {t('badge.swade')}
+              {badgeLabel}
             </Badge>
           </div>
         </div>
@@ -148,6 +158,24 @@ function DetailPanel({ entry, onClose }: DetailPanelProps) {
         <Separator />
         <HandbookEntryDetail entry={entry} />
       </div>
+      {activeWorldName && (
+        <div className="p-3 border-t flex gap-2">
+          {!isWorld ? (
+            <Button size="sm" variant="outline" onClick={onOverride}>
+              {t('actions.override')}
+            </Button>
+          ) : (
+            <>
+              <Button size="sm" variant="outline" onClick={onEditOverride}>
+                {t('actions.editOverride')}
+              </Button>
+              <Button size="sm" variant="destructive" onClick={onDeleteOverride}>
+                {t('actions.deleteOverride')}
+              </Button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -156,14 +184,16 @@ function DetailPanel({ entry, onClose }: DetailPanelProps) {
 // HandbookStatList
 // ---------------------------------------------------------------------------
 
-export function HandbookStatList({ entries, search, onSearchChange }: Props) {
+export function HandbookStatList({ entries, hasActiveFilters, activeWorldName, onOverride, onEditOverride, onDeleteOverride }: Props) {
   const { t } = useTranslation('handbooks')
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const filtered = filterHandbookEntries(entries, search)
   const selectedEntry = selectedId != null
     ? entries.find(e => e.id === selectedId) ?? null
     : null
+  const selectedSource = selectedEntry
+    ? (selectedEntry as ResolvedEntry<AnyHandbookEntry>).source
+    : undefined
 
   const headers = useColumnHeaders(entries)
 
@@ -173,19 +203,12 @@ export function HandbookStatList({ entries, search, onSearchChange }: Props) {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Left: search + table */}
+      {/* Left: table */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <div className="px-6 py-3 border-b">
-          <Input
-            placeholder={t('search.placeholder')}
-            value={search}
-            onChange={e => onSearchChange(e.target.value)}
-          />
-        </div>
         <div className="flex-1 overflow-y-auto">
-          {filtered.length === 0 ? (
+          {entries.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8 px-6">
-              {t('search.noResults', { query: search.trim() })}
+              {hasActiveFilters ? t('filter.noResults') : t('search.noResults', { query: '' })}
             </p>
           ) : (
             <Table>
@@ -198,7 +221,7 @@ export function HandbookStatList({ entries, search, onSearchChange }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(entry => (
+                {entries.map(entry => (
                   <TableRow
                     key={entry.id}
                     className="cursor-pointer"
@@ -217,7 +240,15 @@ export function HandbookStatList({ entries, search, onSearchChange }: Props) {
 
       {/* Right: persistent detail panel */}
       {selectedEntry && (
-        <DetailPanel entry={selectedEntry} onClose={() => setSelectedId(null)} />
+        <DetailPanel
+          entry={selectedEntry}
+          source={selectedSource}
+          activeWorldName={activeWorldName}
+          onClose={() => setSelectedId(null)}
+          onOverride={() => onOverride?.(selectedEntry)}
+          onEditOverride={() => onEditOverride?.(selectedEntry)}
+          onDeleteOverride={() => onDeleteOverride?.(selectedEntry)}
+        />
       )}
     </div>
   )

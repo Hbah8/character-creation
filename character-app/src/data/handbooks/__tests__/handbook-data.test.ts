@@ -29,7 +29,7 @@ function hasRequiredFields(entry: { id: string; name: string; description: strin
   expect(entry.description, 'description must be defined').toBeDefined()
 }
 
-function hasUniqueIds(arr: { id: string }[], label: string) {
+function hasUniqueIds(arr: readonly { id: string }[], label: string) {
   const ids = arr.map(e => e.id)
   const unique = new Set(ids)
   expect(unique.size, `${label} IDs must be unique`).toBe(ids.length)
@@ -60,9 +60,9 @@ describe('SWADE_EDGES', () => {
     })
   })
 
-  it('covers at least 6 of the 8 EdgeTypes', () => {
+  it('covers at least 7 of the 8 EdgeTypes', () => {
     const types = new Set(SWADE_EDGES.map((e: Edge) => e.type))
-    expect(types.size).toBeGreaterThanOrEqual(6)
+    expect(types.size).toBeGreaterThanOrEqual(7)
   })
 })
 

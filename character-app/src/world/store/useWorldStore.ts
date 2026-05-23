@@ -8,6 +8,7 @@ import type {
   WorldRelationshipType,
   SettingRules,
 } from '@/world/types'
+import type { HandbookOverride } from '@/types/handbook'
 import { defaultWorld, createWorldEntity } from '@/world/data/defaultWorld'
 import { applyEntityPosition } from '@/world/graph/worldGraphMapper'
 
@@ -98,6 +99,29 @@ export function useWorldStore(initialWorld?: World) {
     }))
   }, [])
 
+  const addHandbookEntry = useCallback((entry: HandbookOverride) => {
+    setWorld(prev => ({
+      ...prev,
+      worldHandbook: [...prev.worldHandbook, entry],
+    }))
+  }, [])
+
+  const updateHandbookEntry = useCallback((id: string, patch: Partial<HandbookOverride>) => {
+    setWorld(prev => ({
+      ...prev,
+      worldHandbook: prev.worldHandbook.map(e =>
+        e.id === id ? { ...e, ...patch, id: e.id, category: e.category } as HandbookOverride : e
+      ),
+    }))
+  }, [])
+
+  const removeHandbookEntry = useCallback((id: string) => {
+    setWorld(prev => ({
+      ...prev,
+      worldHandbook: prev.worldHandbook.filter(e => e.id !== id),
+    }))
+  }, [])
+
   return {
     world,
     replaceWorld,
@@ -110,5 +134,8 @@ export function useWorldStore(initialWorld?: World) {
     updateRelationship,
     removeRelationship,
     updateSettingRules,
+    addHandbookEntry,
+    updateHandbookEntry,
+    removeHandbookEntry,
   }
 }

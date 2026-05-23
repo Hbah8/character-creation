@@ -37,6 +37,7 @@ const world: World = {
       description: '',
     },
   ],
+  worldHandbook: [],
 }
 
 describe('worldGraphMapper', () => {

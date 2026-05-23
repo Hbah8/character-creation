@@ -11,6 +11,7 @@ import {
   WORLD_RELATIONSHIP_TYPES,
   WORLD_SCHEMA_VERSION,
 } from '@/world/types'
+import type { HandbookOverride, HandbookCategory } from '@/types/handbook'
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -92,6 +93,26 @@ function validateEntity(raw: unknown, index: number): WorldEntity {
       y: raw.position.y,
     },
   }
+}
+
+const HANDBOOK_CATEGORIES: readonly HandbookCategory[] = [
+  'edge', 'hindrance', 'weapon', 'gear', 'power', 'mount', 'racialAbility',
+]
+
+function isHandbookCategory(value: unknown): value is HandbookCategory {
+  return HANDBOOK_CATEGORIES.includes(value as HandbookCategory)
+}
+
+function validateWorldHandbook(raw: unknown): HandbookOverride[] {
+  if (!Array.isArray(raw)) return []
+  const valid: HandbookOverride[] = []
+  for (const item of raw) {
+    if (!isObject(item)) continue
+    if (!isString(item.id) || item.id.trim() === '') continue
+    if (!isHandbookCategory(item.category)) continue
+    valid.push(item as HandbookOverride)
+  }
+  return valid
 }
 
 function validateRelationship(
@@ -179,6 +200,7 @@ export function validateWorldImport(raw: unknown): World {
     name: raw.name,
     summary: raw.summary,
     settingRules: validateSettingRules(raw.settingRules),
+    worldHandbook: validateWorldHandbook(raw.worldHandbook),
     entities,
     relationships,
   }

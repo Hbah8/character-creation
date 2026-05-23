@@ -7,6 +7,7 @@ function cloneWorld(world: World): World {
   return {
     ...world,
     settingRules: { ...world.settingRules },
+    worldHandbook: [...world.worldHandbook],
     entities: world.entities.map(entity => ({
       ...entity,
       tags: [...entity.tags],

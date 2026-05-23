@@ -13,8 +13,35 @@ const handbooks = {
     placeholder: 'Search...',
     noResults: 'No results for "{{query}}"',
   },
+  filter: {
+    title: 'Filter',
+    search: 'Search',
+    clear: 'Reset',
+    source: 'Source',
+    rank: 'Required rank',
+    flags: 'Flags',
+    noRank: 'No rank requirement',
+    wildCardOnly: 'Wild Card only',
+    noFacetGroups: 'No filters for this section.',
+    noResults: 'No entries match the selected filters.',
+  },
   badge: {
     swade: 'SWADE',
+    world: '{{worldName}}',
+  },
+  actions: {
+    override: 'Override for world',
+    addCustom: 'Add custom entry',
+    editOverride: 'Edit override',
+    deleteOverride: 'Remove override',
+  },
+  form: {
+    titleNew: 'New custom entry',
+    titleOverride: 'Override for {{worldName}}',
+    titleEdit: 'Edit override',
+    save: 'Save',
+    cancel: 'Cancel',
+    inheritedNote: 'Blank fields inherit the system value.',
   },
   entry: {
     details: 'Details',
@@ -28,6 +55,7 @@ const handbooks = {
   },
   fields: {
     type: 'Type',
+    description: 'Description',
     damage: 'Damage',
     range: 'Range',
     ap: 'AP',
@@ -42,6 +70,58 @@ const handbooks = {
     handling: 'Handling',
     points: 'Points',
     category: 'Category',
+    wildCardOnly: 'Wild Card Only',
+  },
+  enums: {
+    edgeType: {
+      Background: 'Background',
+      Combat: 'Combat',
+      Leadership: 'Leadership',
+      Power: 'Power',
+      Professional: 'Professional',
+      Social: 'Social',
+      Weird: 'Weird',
+      WildCard: 'Wild Card',
+    },
+    hindranceType: {
+      Major: 'Major',
+      Minor: 'Minor',
+    },
+    racialAbilityType: {
+      positive: 'Positive',
+      negative: 'Negative',
+    },
+    rank: {
+      Novice: 'Novice',
+      Seasoned: 'Seasoned',
+      Veteran: 'Veteran',
+      Heroic: 'Heroic',
+      Legendary: 'Legendary',
+    },
+    weaponCategory: {
+      Melee: 'Melee',
+      Ranged: 'Ranged',
+      Thrown: 'Thrown',
+      Unarmed: 'Unarmed',
+    },
+    gearCategory: {
+      Adventuring: 'Adventuring',
+      Clothing: 'Clothing',
+      Food: 'Food',
+      Tools: 'Tools',
+      Other: 'Other',
+    },
+    mountCategory: {
+      animal: 'Animal',
+      vehicle: 'Vehicle',
+    },
+    arcaneBackground: {
+      Magic: 'Magic',
+      Miracles: 'Miracles',
+      Psionics: 'Psionics',
+      SuperPowers: 'Super Powers',
+      WeirdScience: 'Weird Science',
+    },
   },
 } as const
 
