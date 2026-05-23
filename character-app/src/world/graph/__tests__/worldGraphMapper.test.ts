@@ -7,6 +7,7 @@ const world: World = {
   name: 'Test World',
   summary: '',
   settingRules: { skillPointsBudget: 12, attributePointsBudget: 5 },
+  races: [],
   entities: [
     {
       id: 'location-1',

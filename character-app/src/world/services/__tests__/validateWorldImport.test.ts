@@ -9,6 +9,7 @@ function validWorld(): World {
     summary: 'A compact campaign frame.',
     settingRules: { skillPointsBudget: 12, attributePointsBudget: 5 },
     worldHandbook: [],
+    races: [],
     entities: [
       {
         id: 'loc-1',
@@ -155,6 +156,142 @@ describe('validateWorldImport', () => {
 
       expect(world.worldHandbook).toHaveLength(1)
       expect(world.worldHandbook[0].id).toBe('good-entry')
+    })
+  })
+
+  describe('races', () => {
+    it('accepts valid races and preserves ability references', () => {
+      const raw = {
+        ...validWorld(),
+        races: [
+          {
+            id: 'human',
+            name: 'Human',
+            description: 'Versatile people.',
+            abilities: [{ id: 'free-edge' }],
+            size: 0,
+          },
+          {
+            id: 'giant',
+            name: 'Giant',
+            description: '',
+            abilities: [],
+            size: 20,
+          },
+        ],
+      }
+
+      const world = validateWorldImport(raw)
+
+      expect(world.races).toEqual(raw.races)
+    })
+
+    it('defaults missing races to an empty array', () => {
+      const raw = { ...validWorld(), races: undefined }
+
+      const world = validateWorldImport(raw)
+
+      expect(world.races).toEqual([])
+    })
+
+    it('defaults optional race fields for backward compatibility', () => {
+      const raw = {
+        ...validWorld(),
+        races: [
+          {
+            id: 'human',
+            name: 'Human',
+          },
+        ],
+      }
+
+      const world = validateWorldImport(raw)
+
+      expect(world.races).toEqual([
+        {
+          id: 'human',
+          name: 'Human',
+          description: '',
+          abilities: [],
+          size: 0,
+        },
+      ])
+    })
+
+    it('rejects a races field that is not an array', () => {
+      const raw = { ...validWorld(), races: 'invalid' }
+
+      expect(() => validateWorldImport(raw)).toThrow('validation.world.racesNotArray')
+    })
+
+    it('rejects null races instead of treating them as missing', () => {
+      const raw = { ...validWorld(), races: null }
+
+      expect(() => validateWorldImport(raw)).toThrow('validation.world.racesNotArray')
+    })
+
+    it('rejects races with invalid ids or names', () => {
+      const missingId = {
+        ...validWorld(),
+        races: [{ id: '  ', name: 'Human', description: '', abilities: [], size: 0 }],
+      }
+      const missingName = {
+        ...validWorld(),
+        races: [{ id: 'human', name: '', description: '', abilities: [], size: 0 }],
+      }
+
+      expect(() => validateWorldImport(missingId)).toThrow('validation.world.raceMissingId:0')
+      expect(() => validateWorldImport(missingName)).toThrow('validation.world.raceMissingName:human')
+    })
+
+    it('rejects malformed racial ability references', () => {
+      const raw = {
+        ...validWorld(),
+        races: [
+          {
+            id: 'human',
+            name: 'Human',
+            description: '',
+            abilities: [{ id: 'free-edge' }, { id: '' }],
+            size: 0,
+          },
+        ],
+      }
+
+      expect(() => validateWorldImport(raw)).toThrow('validation.world.racialAbilityRefMissingId:human')
+    })
+
+    it('rejects null optional race fields when they are present', () => {
+      const nullDescription = {
+        ...validWorld(),
+        races: [{ id: 'human', name: 'Human', description: null, abilities: [], size: 0 }],
+      }
+      const nullAbilities = {
+        ...validWorld(),
+        races: [{ id: 'human', name: 'Human', description: '', abilities: null, size: 0 }],
+      }
+      const nullSize = {
+        ...validWorld(),
+        races: [{ id: 'human', name: 'Human', description: '', abilities: [], size: null }],
+      }
+
+      expect(() => validateWorldImport(nullDescription)).toThrow('validation.world.raceMissingDescription:human')
+      expect(() => validateWorldImport(nullAbilities)).toThrow('validation.world.raceAbilitiesNotArray:human')
+      expect(() => validateWorldImport(nullSize)).toThrow('validation.world.raceInvalidSize:human')
+    })
+
+    it('rejects race size outside -4 to 20', () => {
+      const tooSmall = {
+        ...validWorld(),
+        races: [{ id: 'tiny', name: 'Tiny', description: '', abilities: [], size: -5 }],
+      }
+      const tooLarge = {
+        ...validWorld(),
+        races: [{ id: 'massive', name: 'Massive', description: '', abilities: [], size: 21 }],
+      }
+
+      expect(() => validateWorldImport(tooSmall)).toThrow('validation.world.raceInvalidSize:tiny')
+      expect(() => validateWorldImport(tooLarge)).toThrow('validation.world.raceInvalidSize:massive')
     })
   })
 })

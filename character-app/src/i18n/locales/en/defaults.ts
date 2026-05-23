@@ -84,6 +84,7 @@ export const enDefaultWorld: World = {
     skillPointsBudget: 12,
     attributePointsBudget: 5,
   },
+  races: [],
   worldHandbook: [],
   entities: [
     {

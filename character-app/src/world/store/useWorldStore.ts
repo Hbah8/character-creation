@@ -7,10 +7,34 @@ import type {
   WorldRelationship,
   WorldRelationshipType,
   SettingRules,
+  Race,
 } from '@/world/types'
 import type { HandbookOverride } from '@/types/handbook'
 import { defaultWorld, createWorldEntity } from '@/world/data/defaultWorld'
 import { applyEntityPosition } from '@/world/graph/worldGraphMapper'
+
+export function addRaceToWorld(world: World, race: Race): World {
+  return {
+    ...world,
+    races: [...world.races, race],
+  }
+}
+
+export function updateRaceInWorld(world: World, id: string, updates: Partial<Race>): World {
+  return {
+    ...world,
+    races: world.races.map(race =>
+      race.id === id ? { ...race, ...updates } : race
+    ),
+  }
+}
+
+export function removeRaceFromWorld(world: World, id: string): World {
+  return {
+    ...world,
+    races: world.races.filter(race => race.id !== id),
+  }
+}
 
 export function useWorldStore(initialWorld?: World) {
   const [world, setWorld] = useState<World>(initialWorld ?? defaultWorld)
@@ -99,6 +123,18 @@ export function useWorldStore(initialWorld?: World) {
     }))
   }, [])
 
+  const addRace = useCallback((race: Race) => {
+    setWorld(prev => addRaceToWorld(prev, race))
+  }, [])
+
+  const updateRace = useCallback((id: string, updates: Partial<Race>) => {
+    setWorld(prev => updateRaceInWorld(prev, id, updates))
+  }, [])
+
+  const removeRace = useCallback((id: string) => {
+    setWorld(prev => removeRaceFromWorld(prev, id))
+  }, [])
+
   const addHandbookEntry = useCallback((entry: HandbookOverride) => {
     setWorld(prev => ({
       ...prev,
@@ -134,6 +170,9 @@ export function useWorldStore(initialWorld?: World) {
     updateRelationship,
     removeRelationship,
     updateSettingRules,
+    addRace,
+    updateRace,
+    removeRace,
     addHandbookEntry,
     updateHandbookEntry,
     removeHandbookEntry,

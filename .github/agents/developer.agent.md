@@ -116,6 +116,7 @@ Best design meeting requirements without over-engineering. Pragmatic craft (good
 10. NOT complete until tests pass. Verify all tests before handoff.
 11. Track deviations. Refuse to proceed without updated guidance.
 12. Validate implementation delivers value statement before complete.
+13. Before marking a story complete, map each acceptance criterion to at least one automated test or explicitly state why it is only covered by typechecking/build validation.
 
 
 ## Constraints

@@ -5,8 +5,12 @@ import type {
   WorldRelationship,
   WorldRelationshipType,
   SettingRules,
+  Race,
+  RacialAbilityRef,
 } from '@/world/types'
 import {
+  SWADE_SIZE_MAX,
+  SWADE_SIZE_MIN,
   WORLD_ENTITY_TYPES,
   WORLD_RELATIONSHIP_TYPES,
   WORLD_SCHEMA_VERSION,
@@ -115,6 +119,61 @@ function validateWorldHandbook(raw: unknown): HandbookOverride[] {
   return valid
 }
 
+function validateRacialAbilityRef(raw: unknown, raceId: string): RacialAbilityRef {
+  if (!isObject(raw)) {
+    throw new Error(`validation.world.racialAbilityRefNotObject:${raceId}`)
+  }
+  if (!isString(raw.id) || raw.id.trim() === '') {
+    throw new Error(`validation.world.racialAbilityRefMissingId:${raceId}`)
+  }
+  return { id: raw.id }
+}
+
+function validateRacialAbilityRefs(raw: unknown, raceId: string): RacialAbilityRef[] {
+  if (raw === undefined) return []
+  if (!Array.isArray(raw)) {
+    throw new Error(`validation.world.raceAbilitiesNotArray:${raceId}`)
+  }
+  return raw.map(item => validateRacialAbilityRef(item, raceId))
+}
+
+function validateRace(raw: unknown, index: number): Race {
+  if (!isObject(raw)) {
+    throw new Error(`validation.world.raceNotObject:${index}`)
+  }
+  if (!isString(raw.id) || raw.id.trim() === '') {
+    throw new Error(`validation.world.raceMissingId:${index}`)
+  }
+  if (!isString(raw.name) || raw.name.trim() === '') {
+    throw new Error(`validation.world.raceMissingName:${raw.id}`)
+  }
+  if (raw.description !== undefined && !isString(raw.description)) {
+    throw new Error(`validation.world.raceMissingDescription:${raw.id}`)
+  }
+  if (
+    raw.size !== undefined &&
+    (!isNumber(raw.size) || raw.size < SWADE_SIZE_MIN || raw.size > SWADE_SIZE_MAX)
+  ) {
+    throw new Error(`validation.world.raceInvalidSize:${raw.id}`)
+  }
+
+  return {
+    id: raw.id,
+    name: raw.name,
+    description: raw.description ?? '',
+    abilities: validateRacialAbilityRefs(raw.abilities, raw.id),
+    size: raw.size ?? 0,
+  }
+}
+
+function validateRaces(raw: unknown): Race[] {
+  if (raw === undefined) return []
+  if (!Array.isArray(raw)) {
+    throw new Error('validation.world.racesNotArray')
+  }
+  return raw.map(validateRace)
+}
+
 function validateRelationship(
   raw: unknown,
   index: number,
@@ -200,6 +259,7 @@ export function validateWorldImport(raw: unknown): World {
     name: raw.name,
     summary: raw.summary,
     settingRules: validateSettingRules(raw.settingRules),
+    races: validateRaces(raw.races),
     worldHandbook: validateWorldHandbook(raw.worldHandbook),
     entities,
     relationships,
