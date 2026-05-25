@@ -1,0 +1,63 @@
+const raceBuilder = {
+  title: 'Race Builder',
+  titleWithWorld: 'Race Builder - {{world}}',
+  chooseWorld: 'Select a world',
+  actions: {
+    addRace: 'Add Race',
+    edit: 'Edit',
+    delete: 'Delete',
+    save: 'Save',
+    cancel: 'Cancel',
+    addAbility: 'Add ability',
+    removeAbility: 'Remove ability',
+  },
+  list: {
+    emptyTitle: 'No races yet.',
+    emptyDescription: 'Add the first race for this world.',
+    noDescription: 'No description.',
+    abilityCount: 'Abilities: {{count}}',
+  },
+  form: {
+    createTitle: 'New Race',
+    editTitle: 'Edit Race',
+    name: 'Name',
+    namePlaceholder: 'Race name',
+    description: 'Description',
+    descriptionPlaceholder: 'Culture, physiology, and common traits.',
+    size: 'Size',
+    abilities: 'Racial Abilities',
+    nameRequired: 'Name is required.',
+    raceMissing: 'Race not found.',
+    sizeOptions: {
+      minus2: '-2 - Tiny (Toughness -2)',
+      minus1: '-1 - Small (Toughness -1)',
+      zero: '0 - Normal',
+      plus1: '+1 - Large (Toughness +1)',
+      plus2: '+2 - Big (Toughness +2)',
+      plus3: '+3 - Huge (Toughness +3)',
+      plus4: '+4 - Gigantic (Toughness +4)',
+    },
+  },
+  abilityPicker: {
+    available: 'Available',
+    selected: 'Selected',
+    positive: 'Positive',
+    negative: 'Negative',
+    points: '{{points}} pts',
+    sourceSystem: 'SWADE',
+    sourceWorld: 'World',
+    noneAvailable: 'No more abilities available.',
+    noneSelected: 'No abilities selected.',
+    unknownAbility: 'Unknown ability: {{id}}',
+  },
+  deleteDialog: {
+    title: 'Delete race "{{name}}"?',
+    description: 'This removes the race from the active world.',
+    inUseWarning:
+      'This race is used by {{count}} character(s). Deleting it will not affect already created characters.',
+    cancel: 'Cancel',
+    confirm: 'Delete',
+  },
+} as const
+
+export default raceBuilder

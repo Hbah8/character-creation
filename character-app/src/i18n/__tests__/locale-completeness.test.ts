@@ -7,6 +7,7 @@ import enForm from '../locales/en/form'
 import enPreview from '../locales/en/preview'
 import enValidation from '../locales/en/validation'
 import enLibrary from '../locales/en/library'
+import enRaceBuilder from '../locales/en/raceBuilder'
 
 import ruCommon from '../locales/ru/common'
 import ruHeader from '../locales/ru/header'
@@ -15,6 +16,7 @@ import ruForm from '../locales/ru/form'
 import ruPreview from '../locales/ru/preview'
 import ruValidation from '../locales/ru/validation'
 import ruLibrary from '../locales/ru/library'
+import ruRaceBuilder from '../locales/ru/raceBuilder'
 
 type AnyObject = Record<string, unknown>
 
@@ -43,6 +45,7 @@ const namespaces: Array<[string, AnyObject, AnyObject]> = [
   ['preview', enPreview as AnyObject, ruPreview as AnyObject],
   ['validation', enValidation as AnyObject, ruValidation as AnyObject],
   ['library', enLibrary as AnyObject, ruLibrary as AnyObject],
+  ['raceBuilder', enRaceBuilder as AnyObject, ruRaceBuilder as AnyObject],
 ]
 
 describe('locale completeness', () => {

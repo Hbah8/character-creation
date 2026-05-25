@@ -1,0 +1,63 @@
+const raceBuilder = {
+  title: 'Конструктор рас',
+  titleWithWorld: 'Конструктор рас — {{world}}',
+  chooseWorld: 'Выберите мир',
+  actions: {
+    addRace: 'Добавить расу',
+    edit: 'Редактировать',
+    delete: 'Удалить',
+    save: 'Сохранить',
+    cancel: 'Отмена',
+    addAbility: 'Добавить способность',
+    removeAbility: 'Убрать способность',
+  },
+  list: {
+    emptyTitle: 'Нет рас.',
+    emptyDescription: 'Добавьте первую расу для этого мира.',
+    noDescription: 'Нет описания.',
+    abilityCount: 'Способностей: {{count}}',
+  },
+  form: {
+    createTitle: 'Новая раса',
+    editTitle: 'Редактирование расы',
+    name: 'Название',
+    namePlaceholder: 'Название расы',
+    description: 'Описание',
+    descriptionPlaceholder: 'Культура, физиология и общие черты.',
+    size: 'Размер',
+    abilities: 'Расовые способности',
+    nameRequired: 'Название обязательно.',
+    raceMissing: 'Раса не найдена.',
+    sizeOptions: {
+      minus2: '-2 — Крошечный (Стойкость -2)',
+      minus1: '-1 — Маленький (Стойкость -1)',
+      zero: '0 — Обычный',
+      plus1: '+1 — Крупный (Стойкость +1)',
+      plus2: '+2 — Большой (Стойкость +2)',
+      plus3: '+3 — Огромный (Стойкость +3)',
+      plus4: '+4 — Гигантский (Стойкость +4)',
+    },
+  },
+  abilityPicker: {
+    available: 'Доступные',
+    selected: 'Выбранные',
+    positive: 'Положительные',
+    negative: 'Отрицательные',
+    points: '{{points}} очк.',
+    sourceSystem: 'SWADE',
+    sourceWorld: 'Мир',
+    noneAvailable: 'Больше доступных способностей нет.',
+    noneSelected: 'Способности не выбраны.',
+    unknownAbility: 'Неизвестная способность: {{id}}',
+  },
+  deleteDialog: {
+    title: 'Удалить расу «{{name}}»?',
+    description: 'Раса будет удалена из активного мира.',
+    inUseWarning:
+      'Эта раса используется {{count}} персонаж(ами). Удаление не повлияет на уже созданных персонажей.',
+    cancel: 'Отмена',
+    confirm: 'Удалить',
+  },
+} as const
+
+export default raceBuilder

@@ -1,4 +1,8 @@
-````instructions
+---
+name: swade-mastery
+description: Comprehensive Savage Worlds Adventure Edition rules reference for AI-assisted development. Source of truth: `swade-rules/` files. This skill distills all rules into structured concepts for code generation and validation. Detailed tables, examples, and situational rules live in `reference/` — see links below.
+---
+
 # SWADE Mastery — Game System Knowledge
 
 > Comprehensive Savage Worlds Adventure Edition rules reference for AI-assisted development.
@@ -270,5 +274,6 @@ All rules sourced from `docs/SWADE_RULES/`:
 | `05_ADDITIONAL_MECHANICS.md` | Bennies, Lighting, Recoil, Cover/Barriers, Support, Object destruction |
 | `CharacterCreationBlockGuide.md` | Full character creation spec with validation constraints C1-C8 |
 | `RULES_QUICK_REFERENCE.md` | Navigation index + summary tables + important reminders |
-| `SWADE_SIZE_SYSTEM.md` | Size/Silhouette system with combat effects and implementation examples |
+| `08_SWADE_SIZE_SYSTEM.md` | Size/Silhouette system with combat effects and implementation examples |
+| `07_TRANSPORT.md` | Vehicle rules, movement, and related mechanics |
 ````

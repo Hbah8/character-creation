@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, Globe2, LayoutDashboard, Swords, Users } from 'lucide-react'
+import { BookOpen, Globe2, LayoutDashboard, ShieldIcon, Swords, Users } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -10,21 +10,30 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { WorldPicker } from '@/components/layout/WorldPicker'
 import { changeLocale } from '@/i18n'
 import type { Locale } from '@/i18n/types'
+import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 
 const NAV_ITEMS = [
-  { labelKey: 'overview', href: '/', icon: LayoutDashboard },
-  { labelKey: 'characters', href: '/creator', icon: Users },
-  { labelKey: 'worlds', href: '/worlds', icon: Globe2 },
-  { labelKey: 'combat', href: '/combat', icon: Swords },
-  { labelKey: 'handbooks', href: '/handbooks', icon: BookOpen },
+  { labelKey: 'overview', href: '/', icon: LayoutDashboard, requiresWorld: false },
+  { labelKey: 'characters', href: '/creator', icon: Users, requiresWorld: false },
+  { labelKey: 'worlds', href: '/worlds', icon: Globe2, requiresWorld: false },
+  { labelKey: 'combat', href: '/combat', icon: Swords, requiresWorld: false },
+  { labelKey: 'handbooks', href: '/handbooks', icon: BookOpen, requiresWorld: false },
+  { labelKey: 'raceBuilder', href: '/races', icon: ShieldIcon, requiresWorld: true },
 ] as const
 
 export function AppSidebar() {
   const { pathname } = useLocation()
   const { t, i18n } = useTranslation('navigation')
+  const { t: tRaceBuilder } = useTranslation('raceBuilder')
+  const { activeWorldId } = useWorldLibrary()
   const currentLocale = i18n.language as Locale
   const nextLocale: Locale = currentLocale === 'ru' ? 'en' : 'ru'
 
@@ -36,15 +45,41 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="px-2 py-2">
-          {NAV_ITEMS.map(({ labelKey, href, icon: Icon }) => {
+          {NAV_ITEMS.map(({ labelKey, href, icon: Icon, requiresWorld }) => {
+            const isDisabled = Boolean(requiresWorld && !activeWorldId)
             const isActive =
               href === '/' ? pathname === '/' : pathname.startsWith(href)
+            const content = (
+              <>
+                <Icon className="size-4" />
+                <span>{t(labelKey)}</span>
+              </>
+            )
+
+            if (isDisabled) {
+              return (
+                <SidebarMenuItem key={href}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="block">
+                        <SidebarMenuButton type="button" disabled>
+                          {content}
+                        </SidebarMenuButton>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      {tRaceBuilder('chooseWorld')}
+                    </TooltipContent>
+                  </Tooltip>
+                </SidebarMenuItem>
+              )
+            }
+
             return (
               <SidebarMenuItem key={href}>
                 <SidebarMenuButton asChild isActive={isActive}>
                   <Link to={href}>
-                    <Icon className="size-4" />
-                    <span>{t(labelKey)}</span>
+                    {content}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

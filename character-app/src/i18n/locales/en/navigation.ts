@@ -4,6 +4,7 @@ const navigation = {
   worlds: 'Worlds',
   combat: 'Combat',
   handbooks: 'Handbooks',
+  raceBuilder: 'Race Builder',
   editForm: 'Edit Form',
   preview: 'Preview',
   data: 'Data',

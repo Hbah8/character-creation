@@ -7,6 +7,7 @@ import { CombatTrackerPage } from '@/combat/pages/CombatTrackerPage'
 import { WorldLibraryPage } from '@/world/pages/WorldLibraryPage'
 import { WorldBuilderPage } from '@/world/pages/WorldBuilderPage'
 import { HandbooksPage } from '@/handbooks/pages/HandbooksPage'
+import { RaceBuilderPage } from '@/racebuilder/pages/RaceBuilderPage'
 function App() {
   return (
     <BrowserRouter basename="/character-creation">
@@ -17,6 +18,9 @@ function App() {
             <Route path="combat" element={<CombatTrackerPage />} />
             <Route path="worlds" element={<WorldLibraryPage />} />
             <Route path="handbooks" element={<HandbooksPage />} />
+            <Route path="races" element={<RaceBuilderPage />} />
+            <Route path="races/new" element={<RaceBuilderPage mode="create" />} />
+            <Route path="races/:raceId" element={<RaceBuilderPage mode="edit" />} />
           </Route>
           <Route path="creator" element={<CharacterCreatorPage key="new" />} />
           <Route path="creator/:id" element={<CharacterCreatorPage key="edit" />} />

@@ -4,6 +4,7 @@ const navigation = {
   worlds: 'Миры',
   combat: 'Бой',
   handbooks: 'Справочники',
+  raceBuilder: 'Конструктор рас',
   editForm: 'Редактор',
   preview: 'Превью',
   data: 'Данные',

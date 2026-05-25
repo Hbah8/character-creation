@@ -12,6 +12,7 @@ import type enValidation from './locales/en/validation'
 import type enLibrary from './locales/en/library'
 import type enShare from './locales/en/share'
 import type enHandbooks from './locales/en/handbooks'
+import type enRaceBuilder from './locales/en/raceBuilder'
 
 declare module 'i18next' {
   interface CustomTypeOptions {
@@ -26,6 +27,7 @@ declare module 'i18next' {
       library: typeof enLibrary
       share: typeof enShare
       handbooks: typeof enHandbooks
+      raceBuilder: typeof enRaceBuilder
     }
   }
 }

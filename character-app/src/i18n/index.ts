@@ -12,6 +12,7 @@ import enValidation from './locales/en/validation'
 import enLibrary from './locales/en/library'
 import enShare from './locales/en/share'
 import enHandbooks from './locales/en/handbooks'
+import enRaceBuilder from './locales/en/raceBuilder'
 
 import ruCommon from './locales/ru/common'
 import ruHeader from './locales/ru/header'
@@ -22,6 +23,7 @@ import ruValidation from './locales/ru/validation'
 import ruLibrary from './locales/ru/library'
 import ruShare from './locales/ru/share'
 import ruHandbooks from './locales/ru/handbooks'
+import ruRaceBuilder from './locales/ru/raceBuilder'
 
 const LOCALE_STORAGE_KEY = 'swade-locale'
 
@@ -59,6 +61,7 @@ i18n
         library: enLibrary,
         share: enShare,
         handbooks: enHandbooks,
+        raceBuilder: enRaceBuilder,
       },
       ru: {
         common: ruCommon,
@@ -70,6 +73,7 @@ i18n
         library: ruLibrary,
         share: ruShare,
         handbooks: ruHandbooks,
+        raceBuilder: ruRaceBuilder,
       },
     },
     interpolation: {
