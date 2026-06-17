@@ -68,6 +68,7 @@ const preview = {
   },
   powers: {
     title: 'ARCANE POWERS',
+    nameCol: 'Name',
     ppCol: 'PP',
     rangeCol: 'Range',
     durationCol: 'Dur.',

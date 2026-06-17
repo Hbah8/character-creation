@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Character } from '@/types/character'
 
@@ -14,44 +15,41 @@ export function SheetPowers({ character }: Props) {
       <table className="table powers-table">
         <thead>
           <tr>
-            <th style={{ width: '40%' }}>Название</th>
-            <th className="text-center" style={{ width: '8%' }}>{t('powers.ppCol')}</th>
-            <th style={{ width: '22%' }}>{t('powers.rangeCol')}</th>
-            <th style={{ width: '20%' }}>{t('powers.durationCol')}</th>
+            <th>{t('powers.nameCol')}</th>
+            <th className="powers-center-col">{t('powers.ppCol')}</th>
+            <th>{t('powers.rangeCol')}</th>
+            <th>{t('powers.durationCol')}</th>
           </tr>
         </thead>
         <tbody>
           {character.powers.map(power => (
-            <>
-              <tr key={power.id}>
-                <td className="powers-name-cell">
-                  <strong>{power.name || '—'}</strong>
-                </td>
-                <td className="text-center">{power.ppCost || '—'}</td>
+            <Fragment key={power.id}>
+              {/* Main stats row */}
+              <tr>
+                <td className="powers-name-cell"><strong>{power.name || '—'}</strong></td>
+                <td className="powers-center-col">{power.ppCost || '—'}</td>
                 <td>{power.range || '—'}</td>
                 <td>{power.duration || '—'}</td>
               </tr>
-              {(power.description || power.modifiers.length > 0) && (
-                <tr key={`${power.id}-detail`} className="powers-detail-row">
-                  <td colSpan={4} className="powers-detail-cell">
-                    {power.description && (
-                      <span className="powers-desc">{power.description}</span>
-                    )}
-                    {power.modifiers.length > 0 && (
-                      <span className="powers-modifiers">
-                        {power.description ? ' ' : ''}
-                        {t('powers.modifiers')}{' '}
-                        {power.modifiers.map((m, i) => (
-                          <span key={m.id}>
-                            {m.name}{m.ppCost ? ` ${m.ppCost}` : ''}{i < power.modifiers.length - 1 ? ', ' : ''}
-                          </span>
-                        ))}
+              {/* Description — own row, pre-wrap to preserve line breaks */}
+              {power.description && (
+                <tr className="powers-detail-row">
+                  <td colSpan={4} className="powers-desc-cell">{power.description}</td>
+                </tr>
+              )}
+              {/* Modifiers — own row, each modifier on its own line */}
+              {power.modifiers.length > 0 && (
+                <tr className="powers-detail-row">
+                  <td colSpan={4} className="powers-modifiers-cell">
+                    {power.modifiers.map(m => (
+                      <span key={m.id} className="powers-modifier-line">
+                        ▸{m.ppCost && <strong className="powers-modifier-cost"> {m.ppCost}</strong>}{m.ppCost && m.name ? ' ' : ''}{m.name}
                       </span>
-                    )}
+                    ))}
                   </td>
                 </tr>
               )}
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>

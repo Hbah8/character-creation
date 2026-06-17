@@ -68,6 +68,7 @@ const preview = {
   },
   powers: {
     title: 'МИСТИЧЕСКИЕ СИЛЫ',
+    nameCol: 'Название',
     ppCol: 'ПС',
     rangeCol: 'Дист.',
     durationCol: 'Длит.',
