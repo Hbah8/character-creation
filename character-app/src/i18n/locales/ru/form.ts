@@ -145,6 +145,7 @@ const form = {
       title: 'Правила мира',
       skillPoints: 'Очки навыков',
       attributePoints: 'Очки характеристик',
+      racePoints: 'Очки расы',
       reset: 'Сбросить ({{default}})',
       hint: 'Стандарт SWADE: {{value}}',
     },

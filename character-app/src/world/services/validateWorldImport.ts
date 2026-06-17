@@ -38,7 +38,7 @@ function isRelationshipType(value: unknown): value is WorldRelationshipType {
 }
 
 function validateSettingRules(raw: unknown): SettingRules {
-  const defaults: SettingRules = { skillPointsBudget: 12, attributePointsBudget: 5 }
+  const defaults: SettingRules = { skillPointsBudget: 12, attributePointsBudget: 5, racePointsBudget: 2 }
   if (raw === undefined || raw === null) return defaults
   if (!isObject(raw)) {
     throw new Error('validation.world.settingRulesNotObject')
@@ -49,7 +49,10 @@ function validateSettingRules(raw: unknown): SettingRules {
   const attributePointsBudget = isNumber(raw.attributePointsBudget) && raw.attributePointsBudget > 0
     ? raw.attributePointsBudget
     : defaults.attributePointsBudget
-  return { skillPointsBudget, attributePointsBudget }
+  const racePointsBudget = isNumber(raw.racePointsBudget) && raw.racePointsBudget > 0
+    ? raw.racePointsBudget
+    : defaults.racePointsBudget
+  return { skillPointsBudget, attributePointsBudget, racePointsBudget }
 }
 
 function validateTags(value: unknown, id: string): string[] {
@@ -126,7 +129,20 @@ function validateRacialAbilityRef(raw: unknown, raceId: string): RacialAbilityRe
   if (!isString(raw.id) || raw.id.trim() === '') {
     throw new Error(`validation.world.racialAbilityRefMissingId:${raceId}`)
   }
-  return { id: raw.id }
+  const repeatCount = isNumber(raw.repeatCount) && raw.repeatCount > 0
+    ? Math.floor(raw.repeatCount)
+    : 1
+  const parameters = isObject(raw.parameters) ? { ...raw.parameters } : {}
+
+  if (raw.id === 'agile') {
+    return {
+      id: 'attribute-bonus',
+      repeatCount,
+      parameters: { attributeId: 'agility', ...parameters },
+    }
+  }
+
+  return { id: raw.id, repeatCount, parameters }
 }
 
 function validateRacialAbilityRefs(raw: unknown, raceId: string): RacialAbilityRef[] {

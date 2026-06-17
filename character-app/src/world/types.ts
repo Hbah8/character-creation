@@ -1,4 +1,4 @@
-import type { HandbookOverride } from '@/types/handbook'
+import type { FeatureParameters, HandbookOverride } from '@/types/handbook'
 
 export const WORLD_SCHEMA_VERSION = 1
 
@@ -30,11 +30,13 @@ export type WorldRelationshipType = typeof WORLD_RELATIONSHIP_TYPES[number]
 export interface SettingRules {
   skillPointsBudget: number
   attributePointsBudget: number
+  racePointsBudget?: number
 }
 
 export const SWADE_DEFAULTS: SettingRules = {
   skillPointsBudget: 12,
   attributePointsBudget: 5,
+  racePointsBudget: 2,
 }
 
 export const SWADE_SIZE_MIN = -4
@@ -47,6 +49,8 @@ export interface WorldPosition {
 
 export interface RacialAbilityRef {
   id: string
+  repeatCount?: number
+  parameters?: FeatureParameters
 }
 
 export interface Race {

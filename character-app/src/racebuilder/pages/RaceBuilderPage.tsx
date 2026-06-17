@@ -57,6 +57,10 @@ export function RaceBuilderPage({ mode = 'list' }: RaceBuilderPageProps) {
     setRaceToDelete(null)
   }
 
+  function abilityCount(race: Race): number {
+    return race.abilities.reduce((total, ability) => total + Math.max(1, ability.repeatCount ?? 1), 0)
+  }
+
   if (mode === 'create' || mode === 'edit') {
     return (
       <div className="h-full w-full min-h-0 overflow-y-auto">
@@ -137,7 +141,7 @@ export function RaceBuilderPage({ mode = 'list' }: RaceBuilderPageProps) {
                   <CardTitle className="flex items-center gap-2">
                     <span className="truncate">{race.name}</span>
                     <Badge variant="secondary" className="shrink-0">
-                      {t('list.abilityCount', { count: race.abilities.length })}
+                      {t('list.abilityCount', { count: abilityCount(race) })}
                     </Badge>
                   </CardTitle>
                   <CardDescription className="line-clamp-3">

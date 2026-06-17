@@ -1,33 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeftIcon, SaveIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
+import { RaceBudgetTracker } from '@/racebuilder/components/RaceBudgetTracker'
+import { RaceEffectSummary } from '@/racebuilder/components/RaceEffectSummary'
 import { RacialAbilityPicker } from '@/racebuilder/components/RacialAbilityPicker'
+import { computeSizeFromAbilities } from '@/racebuilder/services/raceBudget'
+import { resolveRacialAbilitiesForWorld } from '@/racebuilder/services/racialAbilityOptions'
 import { addRaceToWorld, updateRaceInWorld } from '@/world/store/useWorldStore'
 import type { Race, RacialAbilityRef, World } from '@/world/types'
 
-const RACE_SIZE_OPTIONS = [
-  { value: -2, labelKey: 'form.sizeOptions.minus2' },
-  { value: -1, labelKey: 'form.sizeOptions.minus1' },
-  { value: 0, labelKey: 'form.sizeOptions.zero' },
-  { value: 1, labelKey: 'form.sizeOptions.plus1' },
-  { value: 2, labelKey: 'form.sizeOptions.plus2' },
-  { value: 3, labelKey: 'form.sizeOptions.plus3' },
-  { value: 4, labelKey: 'form.sizeOptions.plus4' },
-] as const
+function normalizeAbilityRef(ref: RacialAbilityRef): RacialAbilityRef {
+  return {
+    id: ref.id === 'agile' ? 'attribute-bonus' : ref.id,
+    repeatCount: Math.max(1, ref.repeatCount ?? 1),
+    parameters: ref.id === 'agile'
+      ? { attributeId: 'agility', ...(ref.parameters ?? {}) }
+      : { ...(ref.parameters ?? {}) },
+  }
+}
 
 interface RaceFormBaseProps {
   worldId: string
@@ -45,15 +41,25 @@ export function RaceForm({ mode, race, worldId, world, onSaved, onCancel }: Race
   const { t } = useTranslation('raceBuilder')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [size, setSize] = useState(0)
   const [abilities, setAbilities] = useState<RacialAbilityRef[]>([])
   const [nameError, setNameError] = useState<string | null>(null)
+  const derivedSize = computeSizeFromAbilities(abilities)
+  const catalog = useMemo(
+    () => resolveRacialAbilitiesForWorld(world.worldHandbook ?? []),
+    [world.worldHandbook],
+  )
+  const draftRace = useMemo<Race>(() => ({
+    id: race?.id ?? 'draft-race',
+    name,
+    description,
+    size: derivedSize,
+    abilities,
+  }), [abilities, derivedSize, description, name, race?.id])
 
   useEffect(() => {
     setName(race?.name ?? '')
     setDescription(race?.description ?? '')
-    setSize(race?.size ?? 0)
-    setAbilities(race?.abilities.map(ability => ({ ...ability })) ?? [])
+    setAbilities(race?.abilities.map(normalizeAbilityRef) ?? [])
     setNameError(null)
   }, [race])
 
@@ -70,8 +76,8 @@ export function RaceForm({ mode, race, worldId, world, onSaved, onCancel }: Race
       id: mode === 'create' ? crypto.randomUUID() : race.id,
       name: trimmedName,
       description: description.trim(),
-      size,
-      abilities: abilities.map(ability => ({ ...ability })),
+      size: computeSizeFromAbilities(abilities),
+      abilities: abilities.map(normalizeAbilityRef),
     }
     const worldWithRaces: World = {
       ...world,
@@ -86,7 +92,7 @@ export function RaceForm({ mode, race, worldId, world, onSaved, onCancel }: Race
   }
 
   return (
-    <Card>
+    <Card className="overflow-visible">
       <CardHeader>
         <CardTitle>
           {mode === 'create' ? t('form.createTitle') : t('form.editTitle')}
@@ -94,7 +100,11 @@ export function RaceForm({ mode, race, worldId, world, onSaved, onCancel }: Race
       </CardHeader>
       <form onSubmit={handleSubmit} noValidate>
         <CardContent className="flex flex-col gap-5">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <RaceEffectSummary abilities={abilities} world={world} catalog={catalog} />
+
+          <Separator />
+
+          <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2" data-invalid={nameError ? true : undefined}>
               <Label htmlFor="race-name">{t('form.name')}</Label>
               <Input
@@ -110,24 +120,6 @@ export function RaceForm({ mode, race, worldId, world, onSaved, onCancel }: Race
               {nameError && (
                 <p className="text-sm text-destructive">{nameError}</p>
               )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="race-size">{t('form.size')}</Label>
-              <Select value={String(size)} onValueChange={value => setSize(Number(value))}>
-                <SelectTrigger id="race-size" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {RACE_SIZE_OPTIONS.map(option => (
-                      <SelectItem key={option.value} value={String(option.value)}>
-                        {t(option.labelKey)}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
@@ -151,6 +143,9 @@ export function RaceForm({ mode, race, worldId, world, onSaved, onCancel }: Race
               onChange={setAbilities}
               worldId={worldId}
             />
+            <div className="sticky bottom-0 z-10 -mx-4 bg-card/95 px-4 py-3 backdrop-blur">
+              <RaceBudgetTracker race={draftRace} world={world} catalog={catalog} />
+            </div>
           </section>
         </CardContent>
         <CardFooter className="mt-4 justify-end gap-2">

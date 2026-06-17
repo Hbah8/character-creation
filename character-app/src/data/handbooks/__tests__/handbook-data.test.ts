@@ -232,8 +232,8 @@ describe('SWADE_MOUNTS', () => {
 // --- RACIAL ABILITIES ---
 
 describe('SWADE_RACIAL_ABILITIES', () => {
-  it('is non-empty (min 5)', () => {
-    expect(SWADE_RACIAL_ABILITIES.length).toBeGreaterThanOrEqual(5)
+  it('contains the 46 canonical SWADE race designer features', () => {
+    expect(SWADE_RACIAL_ABILITIES).toHaveLength(46)
   })
 
   it('every entry has required fields', () => {
@@ -248,5 +248,20 @@ describe('SWADE_RACIAL_ABILITIES', () => {
     const types = new Set(SWADE_RACIAL_ABILITIES.map((r: RacialAbility) => r.type))
     expect(types).toContain('positive')
     expect(types).toContain('negative')
+  })
+
+  it('defines repeat and parameter metadata for every entry', () => {
+    SWADE_RACIAL_ABILITIES.forEach((ability: RacialAbility) => {
+      expect(ability.maxRepeat, `Racial ability "${ability.id}" must define maxRepeat`).toBeDefined()
+      expect(Array.isArray(ability.parameterSchema), `Racial ability "${ability.id}" parameterSchema must be array`).toBe(true)
+      expect(
+        ability.points !== undefined || Array.isArray(ability.pointCostOptions),
+        `Racial ability "${ability.id}" must define points or pointCostOptions`,
+      ).toBe(true)
+    })
+  })
+
+  it('does not include non-canonical keen-senses', () => {
+    expect(SWADE_RACIAL_ABILITIES.map(ability => ability.id)).not.toContain('keen-senses')
   })
 })

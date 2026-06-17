@@ -160,7 +160,7 @@ describe('validateWorldImport', () => {
   })
 
   describe('races', () => {
-    it('accepts valid races and preserves ability references', () => {
+    it('accepts valid races and normalizes ability references', () => {
       const raw = {
         ...validWorld(),
         races: [
@@ -183,7 +183,22 @@ describe('validateWorldImport', () => {
 
       const world = validateWorldImport(raw)
 
-      expect(world.races).toEqual(raw.races)
+      expect(world.races).toEqual([
+        {
+          id: 'human',
+          name: 'Human',
+          description: 'Versatile people.',
+          abilities: [{ id: 'free-edge', repeatCount: 1, parameters: {} }],
+          size: 0,
+        },
+        {
+          id: 'giant',
+          name: 'Giant',
+          description: '',
+          abilities: [],
+          size: 20,
+        },
+      ])
     })
 
     it('defaults missing races to an empty array', () => {

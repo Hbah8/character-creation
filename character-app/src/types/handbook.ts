@@ -33,6 +33,25 @@ export type ArcaneBackground =
   | 'SuperPowers'
   | 'WeirdScience'
 
+export type RacialAbilityMaxRepeat = number | 'unlimited'
+
+export type FeatureParameters = Record<string, unknown>
+
+interface BaseFeatureParameterSchema {
+  key: string
+  labelKey: string
+  required?: boolean
+}
+
+export type FeatureParameterSchema =
+  | (BaseFeatureParameterSchema & { type: 'attribute-picker' })
+  | (BaseFeatureParameterSchema & { type: 'skill-picker' })
+  | (BaseFeatureParameterSchema & { type: 'cost-tier' })
+  | (BaseFeatureParameterSchema & { type: 'freetext'; placeholderKey?: string })
+  | (BaseFeatureParameterSchema & { type: 'hindrance-ref' })
+  | (BaseFeatureParameterSchema & { type: 'edge-ref' })
+  | (BaseFeatureParameterSchema & { type: 'environment-type' })
+
 // ---------------------------------------------------------------------------
 // Base interface — shared by all handbook entry types
 // ---------------------------------------------------------------------------
@@ -102,6 +121,9 @@ export interface Mount extends HandbookEntry {
 export interface RacialAbility extends HandbookEntry {
   type: RacialAbilityType
   points?: number
+  pointCostOptions?: number[]
+  maxRepeat?: RacialAbilityMaxRepeat
+  parameterSchema?: FeatureParameterSchema[]
 }
 
 // ---------------------------------------------------------------------------

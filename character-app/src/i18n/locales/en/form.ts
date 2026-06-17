@@ -145,6 +145,7 @@ const form = {
       title: 'World Rules',
       skillPoints: 'Skill Points',
       attributePoints: 'Attribute Points',
+      racePoints: 'Race Points',
       reset: 'Reset ({{default}})',
       hint: 'SWADE default: {{value}}',
     },

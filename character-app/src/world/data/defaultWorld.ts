@@ -9,7 +9,10 @@ function cloneWorld(world: World): World {
     settingRules: { ...world.settingRules },
     races: world.races.map(race => ({
       ...race,
-      abilities: race.abilities.map(ability => ({ ...ability })),
+      abilities: race.abilities.map(ability => ({
+        ...ability,
+        parameters: { ...(ability.parameters ?? {}) },
+      })),
     })),
     worldHandbook: [...world.worldHandbook],
     entities: world.entities.map(entity => ({

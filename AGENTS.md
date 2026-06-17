@@ -115,9 +115,22 @@ Do not run multiple commands in parallel. Do not spam similar commands.
 
 The following agent skills are available under `.github/skills/`. Load the relevant SKILL.md before starting a task that falls in that domain.
 
+For SWADE rules work, load `swade-mastery` first as the baseline rules skill. Then load the smallest relevant specialized skill set:
+
+- `swade-battle` for combat tracker, action cards, turns, actions, attacks, damage, movement, combat options, support, free attacks, and mounted combat interactions.
+- `swade-equipment` for weapons, armor, shields, ammunition, gear traits, prices, explosives, heavy weapons, and encumbrance.
+- `swade-transport` for vehicles, mounts, transport stats, speed conversion, armor, mounted weapons, aircraft, watercraft, and vehicle combat interactions.
+- `swade-race-designer` for races, ancestries, species, racial feature costs, repeat limits, canonical race examples, and race builder balance.
+
+When a task spans multiple SWADE domains, load each matching specialized skill and explicitly state which domains were considered.
+
 | Skill | Path | When to use |
 |---|---|---|
 | **swade-mastery** | `.github/skills/swade-mastery/SKILL.md` | Any task that requires accurate SWADE rules knowledge: character creation math, combat mechanics, edges/hindrances/powers logic, size system, etc. |
+| **swade-battle** | `.github/skills/swade-battle/SKILL.md` | Combat tracker, initiative/action cards, turns, actions, melee/ranged attacks, range penalties, damage, area attacks, movement, support, free attacks, mounted combat, and transport interactions in combat. |
+| **swade-equipment** | `.github/skills/swade-equipment/SKILL.md` | Weapons, armor, shields, ammunition, equipment traits, prices, encumbrance, heavy weapons, explosives, and serializable gear data. |
+| **swade-transport** | `.github/skills/swade-transport/SKILL.md` | Vehicles, mounts, speed conversion, vehicle armor, heavy armor, crew/passenger capacity, mounted weapons, land vehicles, aircraft, and watercraft. |
+| **swade-race-designer** | `.github/skills/swade-race-designer/SKILL.md` | Race, ancestry, species, and cultural archetype design; racial feature costs; repeat limits; canonical race examples; race builder balance. |
 | **shadcn** | `.github/skills/shadcn/SKILL.md` | Adding, auditing, or styling shadcn/ui components; running `npx shadcn@latest add`; working with `components.json` or component registries. |
 | **localization** | `.github/skills/localization/SKILL.md` | Adding or extending i18n (i18next / react-i18next): locale namespaces, typed keys, locale selector, migrating hardcoded strings. |
 | **tauri-installer-setup** | `.github/skills/tauri-installer-setup/SKILL.md` | Setting up a Tauri v1 desktop build, MSI packaging, or proxy bundling for this app. |

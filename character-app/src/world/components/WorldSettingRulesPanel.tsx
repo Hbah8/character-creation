@@ -5,6 +5,8 @@ import { Label } from '@/components/ui/label'
 import type { SettingRules } from '@/world/types'
 import { SWADE_DEFAULTS } from '@/world/types'
 
+const DEFAULT_RACE_POINTS_BUDGET = SWADE_DEFAULTS.racePointsBudget ?? 2
+
 interface Props {
   settingRules: SettingRules
   onUpdate: (rules: Partial<SettingRules>) => void
@@ -21,6 +23,11 @@ export function WorldSettingRulesPanel({ settingRules, onUpdate }: Props) {
   function handleAttributePointsChange(e: React.ChangeEvent<HTMLInputElement>) {
     const n = parseInt(e.target.value, 10)
     if (n >= 1) onUpdate({ attributePointsBudget: n })
+  }
+
+  function handleRacePointsChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const n = parseInt(e.target.value, 10)
+    if (n >= 1) onUpdate({ racePointsBudget: n })
   }
 
   return (
@@ -80,6 +87,33 @@ export function WorldSettingRulesPanel({ settingRules, onUpdate }: Props) {
         </div>
         <p className="text-xs text-muted-foreground">
           {t('world.settingRules.hint', { value: SWADE_DEFAULTS.attributePointsBudget })}
+        </p>
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="setting-race-points" className="text-xs">
+          {t('world.settingRules.racePoints')}
+        </Label>
+        <div className="flex gap-2">
+          <Input
+            id="setting-race-points"
+            type="number"
+            min={1}
+            step={1}
+            value={settingRules.racePointsBudget ?? DEFAULT_RACE_POINTS_BUDGET}
+            onChange={handleRacePointsChange}
+            className="w-20"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs h-9 px-2 text-muted-foreground"
+            onClick={() => onUpdate({ racePointsBudget: DEFAULT_RACE_POINTS_BUDGET })}
+          >
+            {t('world.settingRules.reset', { default: DEFAULT_RACE_POINTS_BUDGET })}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t('world.settingRules.hint', { value: DEFAULT_RACE_POINTS_BUDGET })}
         </p>
       </div>
     </div>

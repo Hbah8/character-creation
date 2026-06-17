@@ -83,6 +83,7 @@ export const ruDefaultWorld: World = {
   settingRules: {
     skillPointsBudget: 12,
     attributePointsBudget: 5,
+    racePointsBudget: 2,
   },
   races: [],
   worldHandbook: [],
