@@ -1,4 +1,4 @@
-import type { Character, AttributeKey, HindranceSeverity, CharacterLayout, ColumnSide } from '@/types/character'
+import type { Character, AttributeKey, HindranceSeverity, CharacterLayout, ColumnSide, CharacterPower, PowerModifier } from '@/types/character'
 import { DEFAULT_LAYOUT } from '@/types/character'
 
 function isString(value: unknown): value is string {
@@ -82,7 +82,7 @@ export function validateCharacterImport(raw: unknown): Character {
   })
 
   const COLUMN_SIDES: ColumnSide[] = ['left', 'right']
-  const LAYOUT_KEYS: (keyof CharacterLayout)[] = ['weapons', 'edges', 'hindrances', 'gear', 'specialRules']
+  const LAYOUT_KEYS: (keyof CharacterLayout)[] = ['weapons', 'edges', 'hindrances', 'gear', 'specialRules', 'powers']
 
   let layout: CharacterLayout = { ...DEFAULT_LAYOUT }
   if (isObject(raw.layout)) {
@@ -94,5 +94,30 @@ export function validateCharacterImport(raw: unknown): Character {
     layout = partial as CharacterLayout
   }
 
-  return { ...(raw as unknown as Character), hindrances: hindrances as Character['hindrances'], skills: skills as Character['skills'], layout, worldId: isString(raw.worldId) ? raw.worldId : undefined }
+  const powers: CharacterPower[] = isArray(raw.powers)
+    ? (raw.powers as unknown[]).flatMap((p): CharacterPower[] => {
+        if (!isObject(p)) return []
+        const modifiers: PowerModifier[] = isArray(p.modifiers)
+          ? (p.modifiers as unknown[]).flatMap((m): PowerModifier[] => {
+              if (!isObject(m)) return []
+              return [{
+                id: isString(m.id) ? m.id : crypto.randomUUID(),
+                name: isString(m.name) ? m.name : '',
+                ppCost: isString(m.ppCost) ? m.ppCost : '',
+              }]
+            })
+          : []
+        return [{
+          id: isString(p.id) ? p.id : crypto.randomUUID(),
+          name: isString(p.name) ? p.name : '',
+          ppCost: isString(p.ppCost) ? p.ppCost : '',
+          range: isString(p.range) ? p.range : '',
+          duration: isString(p.duration) ? p.duration : '',
+          description: isString(p.description) ? p.description : '',
+          modifiers,
+        }]
+      })
+    : []
+
+  return { ...(raw as unknown as Character), hindrances: hindrances as Character['hindrances'], skills: skills as Character['skills'], layout, powers, worldId: isString(raw.worldId) ? raw.worldId : undefined }
 }

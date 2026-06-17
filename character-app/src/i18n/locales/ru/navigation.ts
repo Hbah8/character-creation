@@ -10,6 +10,7 @@ const navigation = {
   data: 'Данные',
   graph: 'Граф',
   edit: 'Правка',
+  powers: 'Силы',
 } as const
 
 export default navigation

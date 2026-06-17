@@ -71,6 +71,8 @@ export const ruDefaultCharacter: Character = {
     { id: '3', name: 'Сектор подавления', description: 'работает только при наличии боеприпасов и линии огня.' },
   ],
 
+  powers: [],
+
   notes: '',
 
   layout: DEFAULT_LAYOUT,

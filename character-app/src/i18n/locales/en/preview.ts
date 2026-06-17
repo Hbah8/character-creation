@@ -26,7 +26,7 @@ const preview = {
     parry: 'Parry',
     toughness: 'Tough.',
     bennies: 'Bennies',
-    mana: 'Mana',
+    mana: 'Power Points',
   },
   attributes: {
     agility: 'Agility',
@@ -65,6 +65,13 @@ const preview = {
   hindrances: {
     severityMinor: 'Minor',
     severityMajor: 'Major',
+  },
+  powers: {
+    title: 'ARCANE POWERS',
+    ppCol: 'PP',
+    rangeCol: 'Range',
+    durationCol: 'Dur.',
+    modifiers: 'Modifiers:',
   },
 } as const
 

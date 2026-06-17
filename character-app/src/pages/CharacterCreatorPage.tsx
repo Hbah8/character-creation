@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Eye, User, Zap, Shield, Target, Star, AlertTriangle, Crosshair, Package, Settings, FileText } from 'lucide-react'
+import { ArrowLeft, Eye, User, Zap, Shield, Target, Star, AlertTriangle, Crosshair, Package, Settings, FileText, Sparkles } from 'lucide-react'
 import { useCharacterStore } from '@/store/useCharacterStore'
 import { useCharacterLibrary } from '@/store/useCharacterLibrary'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
@@ -16,6 +16,7 @@ import { HindrancesForm } from '@/components/form/HindrancesForm'
 import { WeaponsForm } from '@/components/form/WeaponsForm'
 import { GearForm } from '@/components/form/GearForm'
 import { SpecialRulesForm } from '@/components/form/SpecialRulesForm'
+import { PowersForm } from '@/components/form/PowersForm'
 import { NotesForm } from '@/components/form/NotesForm'
 import { ExportDropdown } from '@/components/ExportDropdown'
 import { CharacterLibrary } from '@/components/CharacterLibrary'
@@ -42,7 +43,7 @@ const initialLocale = detectInitialLocale()
 
 const SECTIONS = [
   'identity', 'attributes', 'combat', 'skills',
-  'edges', 'hindrances', 'weapons', 'gear', 'specialRules', 'notes',
+  'edges', 'hindrances', 'weapons', 'powers', 'gear', 'specialRules', 'notes',
 ] as const
 
 type SectionKey = typeof SECTIONS[number]
@@ -55,6 +56,7 @@ const SECTION_ICONS: Record<SectionKey, React.ElementType> = {
   edges: Star,
   hindrances: AlertTriangle,
   weapons: Crosshair,
+  powers: Sparkles,
   gear: Package,
   specialRules: Settings,
   notes: FileText,
@@ -219,6 +221,7 @@ export function CharacterCreatorPage() {
     edges: tForm('sections.edges'),
     hindrances: tForm('sections.hindrances'),
     weapons: tForm('sections.weapons'),
+    powers: tForm('sections.powers'),
     gear: tForm('sections.gear'),
     specialRules: tForm('sections.specialRules'),
     notes: tForm('sections.notes'),
@@ -273,6 +276,20 @@ export function CharacterCreatorPage() {
             onRemove={store.removeWeapon}
             column={layout.weapons}
             onColumnChange={col => handleLayoutChange('weapons', col)}
+          />
+        )
+      case 'powers':
+        return (
+          <PowersForm
+            powers={character.powers}
+            onAdd={store.addPower}
+            onUpdate={store.updatePower}
+            onRemove={store.removePower}
+            onAddModifier={store.addPowerModifier}
+            onUpdateModifier={store.updatePowerModifier}
+            onRemoveModifier={store.removePowerModifier}
+            column={layout.powers}
+            onColumnChange={col => handleLayoutChange('powers', col)}
           />
         )
       case 'gear':

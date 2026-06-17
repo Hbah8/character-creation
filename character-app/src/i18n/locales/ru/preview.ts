@@ -26,7 +26,7 @@ const preview = {
     parry: 'Защита',
     toughness: 'Стойк.',
     bennies: 'Фишки',
-    mana: 'Мана',
+    mana: 'Пункты силы',
   },
   attributes: {
     agility: 'Ловкость',
@@ -65,6 +65,13 @@ const preview = {
   hindrances: {
     severityMinor: 'М',
     severityMajor: 'К',
+  },
+  powers: {
+    title: 'МИСТИЧЕСКИЕ СИЛЫ',
+    ppCol: 'ПС',
+    rangeCol: 'Дист.',
+    durationCol: 'Длит.',
+    modifiers: 'Преобразования:',
   },
 } as const
 

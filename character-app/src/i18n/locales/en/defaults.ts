@@ -71,6 +71,8 @@ export const enDefaultCharacter: Character = {
     { id: '3', name: 'Suppression Zone', description: 'Requires available ammunition and line of sight.' },
   ],
 
+  powers: [],
+
   notes: '',
 
   layout: DEFAULT_LAYOUT,

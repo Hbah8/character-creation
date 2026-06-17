@@ -10,6 +10,7 @@ import { SheetHindrances } from './SheetHindrances'
 import { SheetWeapons } from './SheetWeapons'
 import { SheetGear } from './SheetGear'
 import { SheetSpecialRules } from './SheetSpecialRules'
+import { SheetPowers } from './SheetPowers'
 import { SheetNotes } from './SheetNotes'
 
 // A4 at 96dpi: 210mm = ~794px
@@ -117,6 +118,7 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
                   {layout.hindrances === 'left' && <SheetHindrances character={character} />}
                   {layout.gear === 'left' && <SheetGear character={character} />}
                   {layout.specialRules === 'left' && <SheetSpecialRules character={character} />}
+                  {layout.powers === 'left' && <SheetPowers character={character} />}
                 </div>
                 <div className="column">
                   {layout.weapons === 'right' && <SheetWeapons character={character} />}
@@ -124,6 +126,7 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
                   {layout.hindrances === 'right' && <SheetHindrances character={character} />}
                   {layout.gear === 'right' && <SheetGear character={character} />}
                   {layout.specialRules === 'right' && <SheetSpecialRules character={character} />}
+                  {layout.powers === 'right' && <SheetPowers character={character} />}
                 </div>
               </section>
               <SheetNotes character={character} />
@@ -175,6 +178,7 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
                       {layout.hindrances === 'left' && <SheetHindrances character={character} />}
                       {layout.gear === 'left' && <SheetGear character={character} />}
                       {layout.specialRules === 'left' && <SheetSpecialRules character={character} />}
+                      {layout.powers === 'left' && <SheetPowers character={character} />}
                     </div>
                     <div className="column">
                       {layout.weapons === 'right' && <SheetWeapons character={character} />}
@@ -182,6 +186,7 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
                       {layout.hindrances === 'right' && <SheetHindrances character={character} />}
                       {layout.gear === 'right' && <SheetGear character={character} />}
                       {layout.specialRules === 'right' && <SheetSpecialRules character={character} />}
+                      {layout.powers === 'right' && <SheetPowers character={character} />}
                     </div>
                   </>
                 )

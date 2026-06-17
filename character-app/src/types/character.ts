@@ -41,6 +41,22 @@ export interface SpecialRule {
   description: string
 }
 
+export interface PowerModifier {
+  id: string
+  name: string
+  ppCost: string
+}
+
+export interface CharacterPower {
+  id: string
+  name: string
+  ppCost: string
+  range: string
+  duration: string
+  description: string
+  modifiers: PowerModifier[]
+}
+
 export type ColumnSide = 'left' | 'right'
 
 export interface CharacterLayout {
@@ -49,6 +65,7 @@ export interface CharacterLayout {
   hindrances: ColumnSide
   gear: ColumnSide
   specialRules: ColumnSide
+  powers: ColumnSide
 }
 
 export const DEFAULT_LAYOUT: CharacterLayout = {
@@ -57,6 +74,7 @@ export const DEFAULT_LAYOUT: CharacterLayout = {
   hindrances: 'right',
   gear: 'right',
   specialRules: 'right',
+  powers: 'right',
 }
 
 export interface Character {
@@ -102,6 +120,9 @@ export interface Character {
 
   // Special Rules
   specialRules: SpecialRule[]
+
+  // Arcane Powers
+  powers: CharacterPower[]
 
   // Notes
   notes: string
