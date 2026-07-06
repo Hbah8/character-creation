@@ -239,6 +239,36 @@ html, body {
   border-bottom: 1.1pt solid var(--line);
 }
 
+.racial-abilities-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.racial-ability-line {
+  display: grid;
+  grid-template-columns: 2.2mm 1fr;
+  column-gap: 1mm;
+  align-items: start;
+  min-height: 4mm;
+  padding: 0.85mm 1.4mm 0.8mm;
+  border-bottom: 0.7pt solid rgba(30, 30, 30, 0.22);
+  font-size: 6.8pt;
+  line-height: 1.18;
+}
+
+.racial-ability-line:last-child {
+  border-bottom: 0;
+}
+
+.racial-ability-marker {
+  width: 1.3mm;
+  height: 1.3mm;
+  margin-top: 0.55mm;
+  border: 0.45pt solid var(--red);
+  background: rgba(176, 0, 0, 0.12);
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

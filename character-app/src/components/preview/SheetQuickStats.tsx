@@ -33,6 +33,15 @@ export function SheetQuickStats({ character }: Props) {
         <span className="qs-label">{t('quickStats.mana')}</span>
         <span className="qs-value">{character.mana || '—'}</span>
       </div>
+      {!!character.size && (
+        <>
+          <span className="qs-sep">/</span>
+          <div className="quick-stat">
+            <span className="qs-label">{t('quickStats.size')}</span>
+            <span className="qs-value">{character.size > 0 ? `+${character.size}` : character.size}</span>
+          </div>
+        </>
+      )}
     </div>
   )
 }

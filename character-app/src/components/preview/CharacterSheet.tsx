@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import type { Character } from '@/types/character'
 import { DEFAULT_LAYOUT } from '@/types/character'
 import '@/styles/sheet.css'
+import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import { SheetHeader } from './SheetHeader'
 import { SheetQuickStats } from './SheetQuickStats'
 import { SheetAttributesSkills } from './SheetAttributesSkills'
@@ -12,6 +13,7 @@ import { SheetGear } from './SheetGear'
 import { SheetSpecialRules } from './SheetSpecialRules'
 import { SheetPowers } from './SheetPowers'
 import { SheetNotes } from './SheetNotes'
+import { SheetRacialAbilities } from './SheetRacialAbilities'
 
 // A4 at 96dpi: 210mm = ~794px
 const SHEET_WIDTH_PX = 794
@@ -31,6 +33,10 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
   const sheetRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const [sheetHeight, setSheetHeight] = useState(0)
+
+  const { entries } = useWorldLibrary()
+  const world = entries.find(e => e.id === character.worldId)?.world ?? null
+  const race = character.raceId ? (world?.races.find(r => r.id === character.raceId) ?? null) : null
 
   // fitToContainer mode: measure actual viewport width via visualViewport to avoid DOM layout
   // jitter (e.g. iOS Safari address bar animation when tapping buttons) from triggering rescales.
@@ -127,6 +133,7 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
                   {layout.gear === 'right' && <SheetGear character={character} />}
                   {layout.specialRules === 'right' && <SheetSpecialRules character={character} />}
                   {layout.powers === 'right' && <SheetPowers character={character} />}
+                  <SheetRacialAbilities race={race} world={world} />
                 </div>
               </section>
               <SheetNotes character={character} />
@@ -187,6 +194,7 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
                       {layout.gear === 'right' && <SheetGear character={character} />}
                       {layout.specialRules === 'right' && <SheetSpecialRules character={character} />}
                       {layout.powers === 'right' && <SheetPowers character={character} />}
+                      <SheetRacialAbilities race={race} world={world} />
                     </div>
                   </>
                 )

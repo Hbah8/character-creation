@@ -119,5 +119,5 @@ export function validateCharacterImport(raw: unknown): Character {
       })
     : []
 
-  return { ...(raw as unknown as Character), hindrances: hindrances as Character['hindrances'], skills: skills as Character['skills'], layout, powers, worldId: isString(raw.worldId) ? raw.worldId : undefined }
+  return { ...(raw as unknown as Character), hindrances: hindrances as Character['hindrances'], skills: skills as Character['skills'], layout, powers, armor: isString(raw.armor) ? raw.armor : '', worldId: isString(raw.worldId) ? raw.worldId : undefined, raceId: isString(raw.raceId) ? raw.raceId : undefined, raceName: isString(raw.raceName) ? raw.raceName : undefined, size: typeof raw.size === 'number' ? raw.size : 0 }
 }

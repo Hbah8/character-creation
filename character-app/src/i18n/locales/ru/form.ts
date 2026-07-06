@@ -26,6 +26,13 @@ const form = {
     portraitSizeNote: 'Портрет увеличивает размер файла',
     portraitErrorType: 'Поддерживаются только JPEG, PNG и WebP',
     portraitErrorSize: 'Файл должен быть не более 2 МБ',
+    race: {
+      label: 'Раса',
+      placeholder: 'Выберите расу…',
+      noRace: 'Без расы',
+      abilitiesTitle: 'Расовые способности',
+      noAbilities: 'Нет расовых способностей.',
+    },
   },
   attributes: {
     agility: 'Ловкость',
@@ -39,6 +46,7 @@ const form = {
     pace: 'Шаг',
     parry: 'Защита',
     toughness: 'Стойкость',
+    armor: 'Броня',
     bennies: 'Фишки',
     wounds: 'Раны',
     fatigue: 'Усталость',

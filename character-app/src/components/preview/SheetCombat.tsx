@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import type { Character } from '@/types/character'
 
-type CombatKey = 'pace' | 'parry' | 'toughness' | 'bennies' | 'wounds' | 'fatigue'
-const COMBAT_KEYS: CombatKey[] = ['pace', 'parry', 'toughness', 'bennies', 'wounds', 'fatigue']
+type CombatKey = 'pace' | 'parry' | 'toughness' | 'armor' | 'bennies' | 'wounds' | 'fatigue'
+const COMBAT_KEYS: CombatKey[] = ['pace', 'parry', 'toughness', 'armor', 'bennies', 'wounds', 'fatigue']
 
 interface Props {
   character: Character

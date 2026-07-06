@@ -9,6 +9,7 @@ const preview = {
     weapons: 'Weapons',
     gear: 'Gear',
     specialRules: 'Special Rules',
+    racialAbilities: 'Racial Abilities',
     notes: 'Notes',
   },
   header: {
@@ -27,6 +28,7 @@ const preview = {
     toughness: 'Tough.',
     bennies: 'Bennies',
     mana: 'Power Points',
+    size: 'Size',
   },
   attributes: {
     agility: 'Agility',
@@ -39,6 +41,7 @@ const preview = {
     pace: 'Pace',
     parry: 'Parry',
     toughness: 'Toughness',
+    armor: 'Armor',
     bennies: 'Bennies',
     wounds: 'Wounds',
     fatigue: 'Fatigue',

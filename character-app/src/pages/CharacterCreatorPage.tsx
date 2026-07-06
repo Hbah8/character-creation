@@ -18,6 +18,8 @@ import { GearForm } from '@/components/form/GearForm'
 import { SpecialRulesForm } from '@/components/form/SpecialRulesForm'
 import { PowersForm } from '@/components/form/PowersForm'
 import { NotesForm } from '@/components/form/NotesForm'
+import { RacialAbilitiesSection } from '@/components/form/RacialAbilitiesSection'
+import { useEffectiveCharacter } from '@/hooks/useEffectiveCharacter'
 import { ExportDropdown } from '@/components/ExportDropdown'
 import { CharacterLibrary } from '@/components/CharacterLibrary'
 import { ImportErrorDialog } from '@/components/ImportErrorDialog'
@@ -77,6 +79,7 @@ export function CharacterCreatorPage() {
     : { ...getDefaultCharacter(initialLocale), worldId: activeWorldId ?? undefined }
   const store = useCharacterStore(initialCharacter)
   const { character } = store
+  const effectiveCharacter = useEffectiveCharacter(character)
 
   const { t: tNav } = useTranslation('navigation')
   const { t: tHeader } = useTranslation('header')
@@ -230,7 +233,12 @@ export function CharacterCreatorPage() {
   function renderFormSection(section: string) {
     switch (section) {
       case 'identity':
-        return <IdentityForm character={character} onChange={store.updateField} />
+        return (
+          <div className="flex flex-col gap-4">
+            <IdentityForm character={character} onChange={store.updateField} />
+            <RacialAbilitiesSection raceId={character.raceId} worldId={character.worldId} />
+          </div>
+        )
       case 'attributes':
         return <AttributesForm character={character} onChange={store.updateField} />
       case 'combat':
@@ -471,7 +479,7 @@ export function CharacterCreatorPage() {
             </ToggleGroup>
           </div>
           <div className="flex-1 min-h-0 bg-[#d0d0d0] overflow-hidden print:overflow-visible">
-            <CharacterSheet character={character} scaleMode={scaleMode} />
+            <CharacterSheet character={effectiveCharacter} scaleMode={scaleMode} />
           </div>
         </div>
       </div>
@@ -510,7 +518,7 @@ export function CharacterCreatorPage() {
                 </ToggleGroup>
               </div>
             </div>
-            <CharacterSheet character={character} fitToContainer />
+            <CharacterSheet character={effectiveCharacter} fitToContainer />
           </div>
         </TabsContent>
       </Tabs>

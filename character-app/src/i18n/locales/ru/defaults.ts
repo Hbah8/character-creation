@@ -21,6 +21,7 @@ export const ruDefaultCharacter: Character = {
   pace: '6',
   parry: '6',
   toughness: '8 (2)',
+  armor: '2',
   bennies: '3',
   wounds: '0 / 3',
   fatigue: '0 / 2',

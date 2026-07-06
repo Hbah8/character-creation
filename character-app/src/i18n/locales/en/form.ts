@@ -26,6 +26,13 @@ const form = {
     portraitSizeNote: 'Portrait increases file size',
     portraitErrorType: 'Only JPEG, PNG, and WebP are supported',
     portraitErrorSize: 'File must be under 2 MB',
+    race: {
+      label: 'Race',
+      placeholder: 'Select race…',
+      noRace: 'No race',
+      abilitiesTitle: 'Racial Abilities',
+      noAbilities: 'No racial abilities.',
+    },
   },
   attributes: {
     agility: 'Agility',
@@ -39,6 +46,7 @@ const form = {
     pace: 'Pace',
     parry: 'Parry',
     toughness: 'Toughness',
+    armor: 'Armor',
     bennies: 'Bennies',
     wounds: 'Wounds',
     fatigue: 'Fatigue',

@@ -175,7 +175,7 @@ describe('validateWorldImport', () => {
             id: 'giant',
             name: 'Giant',
             description: '',
-            abilities: [],
+            abilities: [{ id: 'size-plus-1', repeatCount: 2 }],
             size: 20,
           },
         ],
@@ -195,8 +195,8 @@ describe('validateWorldImport', () => {
           id: 'giant',
           name: 'Giant',
           description: '',
-          abilities: [],
-          size: 20,
+          abilities: [{ id: 'size-plus-1', repeatCount: 2, parameters: {} }],
+          size: 2,
         },
       ])
     })
@@ -276,7 +276,7 @@ describe('validateWorldImport', () => {
       expect(() => validateWorldImport(raw)).toThrow('validation.world.racialAbilityRefMissingId:human')
     })
 
-    it('rejects null optional race fields when they are present', () => {
+    it('rejects null optional race fields when they are present, except legacy size', () => {
       const nullDescription = {
         ...validWorld(),
         races: [{ id: 'human', name: 'Human', description: null, abilities: [], size: 0 }],
@@ -292,21 +292,27 @@ describe('validateWorldImport', () => {
 
       expect(() => validateWorldImport(nullDescription)).toThrow('validation.world.raceMissingDescription:human')
       expect(() => validateWorldImport(nullAbilities)).toThrow('validation.world.raceAbilitiesNotArray:human')
-      expect(() => validateWorldImport(nullSize)).toThrow('validation.world.raceInvalidSize:human')
+      expect(validateWorldImport(nullSize).races[0].size).toBe(0)
     })
 
-    it('rejects race size outside -4 to 20', () => {
-      const tooSmall = {
+    it('ignores legacy race size values and derives size from ability references', () => {
+      const staleSmall = {
         ...validWorld(),
         races: [{ id: 'tiny', name: 'Tiny', description: '', abilities: [], size: -5 }],
       }
-      const tooLarge = {
+      const staleLarge = {
         ...validWorld(),
-        races: [{ id: 'massive', name: 'Massive', description: '', abilities: [], size: 21 }],
+        races: [{
+          id: 'massive',
+          name: 'Massive',
+          description: '',
+          abilities: [{ id: 'size-plus-1', repeatCount: 3 }],
+          size: 21,
+        }],
       }
 
-      expect(() => validateWorldImport(tooSmall)).toThrow('validation.world.raceInvalidSize:tiny')
-      expect(() => validateWorldImport(tooLarge)).toThrow('validation.world.raceInvalidSize:massive')
+      expect(validateWorldImport(staleSmall).races[0].size).toBe(0)
+      expect(validateWorldImport(staleLarge).races[0].size).toBe(3)
     })
   })
 })

@@ -3,8 +3,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { Character } from '@/types/character'
 
-type CombatKey = 'pace' | 'parry' | 'toughness' | 'bennies' | 'wounds' | 'fatigue' | 'mana'
-const COMBAT_KEYS: CombatKey[] = ['pace', 'parry', 'toughness', 'bennies', 'wounds', 'fatigue', 'mana']
+type CombatKey = 'pace' | 'parry' | 'toughness' | 'armor' | 'bennies' | 'wounds' | 'fatigue' | 'mana'
+const COMBAT_KEYS: CombatKey[] = ['pace', 'parry', 'toughness', 'armor', 'bennies', 'wounds', 'fatigue', 'mana']
 
 interface Props {
   character: Character

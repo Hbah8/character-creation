@@ -9,12 +9,11 @@ import type {
   RacialAbilityRef,
 } from '@/world/types'
 import {
-  SWADE_SIZE_MAX,
-  SWADE_SIZE_MIN,
   WORLD_ENTITY_TYPES,
   WORLD_RELATIONSHIP_TYPES,
   WORLD_SCHEMA_VERSION,
 } from '@/world/types'
+import { computeSizeFromAbilities } from '@/racebuilder/services/raceBudget'
 import type { HandbookOverride, HandbookCategory } from '@/types/handbook'
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -166,19 +165,14 @@ function validateRace(raw: unknown, index: number): Race {
   if (raw.description !== undefined && !isString(raw.description)) {
     throw new Error(`validation.world.raceMissingDescription:${raw.id}`)
   }
-  if (
-    raw.size !== undefined &&
-    (!isNumber(raw.size) || raw.size < SWADE_SIZE_MIN || raw.size > SWADE_SIZE_MAX)
-  ) {
-    throw new Error(`validation.world.raceInvalidSize:${raw.id}`)
-  }
+  const abilities = validateRacialAbilityRefs(raw.abilities, raw.id)
 
   return {
     id: raw.id,
     name: raw.name,
     description: raw.description ?? '',
-    abilities: validateRacialAbilityRefs(raw.abilities, raw.id),
-    size: raw.size ?? 0,
+    abilities,
+    size: computeSizeFromAbilities(abilities),
   }
 }
 

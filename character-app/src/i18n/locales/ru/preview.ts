@@ -9,6 +9,7 @@ const preview = {
     weapons: 'Оружие',
     gear: 'Снаряжение',
     specialRules: 'Особые правила персонажа',
+    racialAbilities: 'Расовые особенности',
     notes: 'Отметки',
   },
   header: {
@@ -27,6 +28,7 @@ const preview = {
     toughness: 'Стойк.',
     bennies: 'Фишки',
     mana: 'Пункты силы',
+    size: 'Размер',
   },
   attributes: {
     agility: 'Ловкость',
@@ -39,6 +41,7 @@ const preview = {
     pace: 'Шаг',
     parry: 'Защита',
     toughness: 'Стойкость',
+    armor: 'Броня',
     bennies: 'Фишки',
     wounds: 'Раны',
     fatigue: 'Усталость',

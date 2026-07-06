@@ -21,8 +21,8 @@ function validWorld(): World {
         id: 'giant',
         name: 'Giant',
         description: '',
-        abilities: [],
-        size: 20,
+        abilities: [{ id: 'size-plus-1', repeatCount: 2 }],
+        size: 2,
       },
     ],
     worldHandbook: [],
@@ -72,7 +72,10 @@ describe('worldImportExportService', () => {
     expect(importedWorld.races[0].abilities).toEqual([
       { id: 'free-edge', repeatCount: 1, parameters: {} },
     ])
-    expect(importedWorld.races[1].abilities).toEqual([])
+    expect(importedWorld.races[1].abilities).toEqual([
+      { id: 'size-plus-1', repeatCount: 2, parameters: {} },
+    ])
+    expect(importedWorld.races[1].size).toBe(2)
   })
 
   it('normalizes legacy racial ability references and missing race budget on import', () => {

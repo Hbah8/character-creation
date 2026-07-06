@@ -1,4 +1,7 @@
-export type DieName = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | ''
+// d12+1 and d12+2 represent above-maximum attribute values granted by racial bonuses.
+// The app hard-caps display at d12+2. These values are only used in the effective character
+// model (preview/PDF) — they are never stored in the base character or shown in form pickers.
+export type DieName = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd12+1' | 'd12+2' | ''
 
 export type AttributeKey = 'agility' | 'strength' | 'smarts' | 'spirit' | 'vigor'
 
@@ -98,6 +101,7 @@ export interface Character {
   pace: string
   parry: string
   toughness: string
+  armor: string
   bennies: string
   wounds: string
   fatigue: string
@@ -126,6 +130,11 @@ export interface Character {
 
   // Notes
   notes: string
+
+  // Race
+  raceId?: string
+  raceName?: string
+  size?: number
 
   // World
   worldId?: string
