@@ -2,9 +2,11 @@ import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Character } from '@/types/character'
+import type { ResolvedCombatStats } from '@/services/resolveEffectiveCharacter'
 
 interface Props {
   character: Character
+  combat: Pick<ResolvedCombatStats, 'maxWounds' | 'maxFatigue'>
 }
 
 function boxes(count: number) {
@@ -13,10 +15,8 @@ function boxes(count: number) {
   ))
 }
 
-export function SheetNotes({ character }: Props) {
+export function SheetNotes({ character, combat }: Props) {
   const { t } = useTranslation('preview')
-  const woundCount = parseInt(character.wounds) || 3
-  const fatigueCount = parseInt(character.fatigue) || 2
 
   return (
     <section className="markers">
@@ -27,10 +27,10 @@ export function SheetNotes({ character }: Props) {
           <span className="marker-box">□</span>
           <span className="marker-gap" />
           <span className="marker-label">{t('notes.wounds')}</span>
-          {boxes(woundCount)}
+          {boxes(combat.maxWounds)}
           <span className="marker-gap" />
           <span className="marker-label">{t('notes.fatigue')}</span>
-          {boxes(fatigueCount)}
+          {boxes(combat.maxFatigue)}
         </div>
         <div className="markers-effects">
           <span className="marker-label">{t('notes.tempEffects')}</span>

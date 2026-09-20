@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
-import type { Character } from '@/types/character'
 import { DEFAULT_LAYOUT } from '@/types/character'
+import type { ResolvedCharacter } from '@/services/resolveEffectiveCharacter'
 import '@/styles/sheet.css'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import { SheetHeader } from './SheetHeader'
@@ -21,18 +21,19 @@ const SHEET_WIDTH_PX = 794
 export type ScaleMode = 'fit-width' | 'full-page' | '100%'
 
 interface Props {
-  character: Character
+  resolvedCharacter: ResolvedCharacter
   /** Scale to fit both width and height of the container (mobile preview). Default: scale by width only. */
   fitToContainer?: boolean
   /** Controls how the desktop preview scales. Default: 'fit-width'. Ignored when fitToContainer=true. */
   scaleMode?: ScaleMode
 }
 
-export function CharacterSheet({ character, fitToContainer = false, scaleMode = 'fit-width' }: Props) {
+export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scaleMode = 'fit-width' }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const [sheetHeight, setSheetHeight] = useState(0)
+  const { source: character, attributes, combat } = resolvedCharacter
 
   const { entries } = useWorldLibrary()
   const world = entries.find(e => e.id === character.worldId)?.world ?? null
@@ -115,10 +116,10 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
           <main className="sheet sheet--mobile">
             <div className="content">
               <SheetHeader character={character} />
-              <SheetQuickStats character={character} />
+              <SheetQuickStats combat={combat} />
               <section className="columns">
                 <div className="column">
-                  <SheetAttributesSkills character={character} />
+                  <SheetAttributesSkills character={character} attributes={attributes} />
                   {layout.weapons === 'left' && <SheetWeapons character={character} />}
                   {layout.edges === 'left' && <SheetEdges character={character} />}
                   {layout.hindrances === 'left' && <SheetHindrances character={character} />}
@@ -136,7 +137,7 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
                   <SheetRacialAbilities race={race} world={world} />
                 </div>
               </section>
-              <SheetNotes character={character} />
+              <SheetNotes character={character} combat={combat} />
             </div>
           </main>
         </div>
@@ -172,14 +173,14 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
         <main className="sheet">
           <div className="content">
             <SheetHeader character={character} />
-            <SheetQuickStats character={character} />
+            <SheetQuickStats combat={combat} />
             <section className="columns">
               {(() => {
                 const layout = character.layout ?? DEFAULT_LAYOUT
                 return (
                   <>
                     <div className="column">
-                      <SheetAttributesSkills character={character} />
+                      <SheetAttributesSkills character={character} attributes={attributes} />
                       {layout.weapons === 'left' && <SheetWeapons character={character} />}
                       {layout.edges === 'left' && <SheetEdges character={character} />}
                       {layout.hindrances === 'left' && <SheetHindrances character={character} />}
@@ -200,7 +201,7 @@ export function CharacterSheet({ character, fitToContainer = false, scaleMode = 
                 )
               })()}
             </section>
-            <SheetNotes character={character} />
+            <SheetNotes character={character} combat={combat} />
           </div>
         </main>
       </div>

@@ -61,6 +61,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     points: 1,
     maxRepeat: 3,
     parameterSchema: [],
+    effects: [{ type: 'armor', amount: 2 }],
     description: 'Каждый выбор дает +2 брони от толстой кожи, панциря, чешуи или похожей защиты.',
   },
   {
@@ -79,6 +80,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     points: 2,
     maxRepeat: 'unlimited',
     parameterSchema: [ATTRIBUTE_PICKER],
+    effects: [{ type: 'attribute-die-step', attributeParameter: 'attributeId', amount: 1 }],
     description: 'Выбранная характеристика повышается на одну ступень, как и ее максимум.',
   },
   {
@@ -97,6 +99,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     points: 1,
     maxRepeat: 3,
     parameterSchema: [],
+    effects: [{ type: 'parry', amount: 1 }],
     description: 'Защита персонажа увеличивается на 1 за каждый выбор особенности.',
   },
   {
@@ -232,6 +235,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     points: 1,
     maxRepeat: 3,
     parameterSchema: [],
+    effects: [{ type: 'recommended-size', amount: 1 }],
     description: 'Каждый выбор увеличивает Размер и Стойкость на 1 и повышает максимум Силы на одну ступень.',
   },
   {
@@ -268,6 +272,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     points: 1,
     maxRepeat: 3,
     parameterSchema: [],
+    effects: [{ type: 'toughness', amount: 1 }],
     description: 'Прочная кожа, чешуя или слой жира увеличивает Стойкость на 1 за каждый выбор.',
   },
   {
@@ -331,6 +336,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     points: 2,
     maxRepeat: 2,
     parameterSchema: [],
+    effects: [{ type: 'pace', amount: 2, runningDieSteps: 1 }],
     description: 'Шаг увеличивается на 2, а бег - на одну ступень.',
   },
   {
@@ -378,6 +384,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     pointCostOptions: [-1, -2],
     maxRepeat: 1,
     parameterSchema: [COST_TIER],
+    effects: [{ type: 'pace', amount: -1, amountByCost: { '-2': -3 }, runningDieSteps: -1 }],
     description: 'Шаг и бег снижены; за 2 пункта штрафы к связанным с перемещением проверкам сильнее.',
   },
   {
@@ -414,6 +421,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     points: -1,
     maxRepeat: 1,
     parameterSchema: [],
+    effects: [{ type: 'recommended-size', amount: -1 }],
     description: 'Размер и Стойкость народа уменьшены на 1.',
   },
   {
@@ -423,6 +431,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     points: -1,
     maxRepeat: 3,
     parameterSchema: [],
+    effects: [{ type: 'parry', amount: -1 }],
     description: 'Защита в ближнем бою уменьшается на 1 за каждый выбор.',
   },
   {
@@ -441,6 +450,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     points: -1,
     maxRepeat: 2,
     parameterSchema: [],
+    effects: [{ type: 'toughness', amount: -1 }],
     description: 'Стойкость уменьшается на 1 за каждый выбор.',
   },
   {
@@ -459,6 +469,7 @@ export const SWADE_RACIAL_ABILITIES: readonly RacialAbility[] = [
     pointCostOptions: [-2, -3],
     maxRepeat: 'unlimited',
     parameterSchema: [ATTRIBUTE_PICKER, COST_TIER],
+    effects: [{ type: 'attribute-check-penalty', attributeParameter: 'attributeId', amount: -1, amountByCost: { '-3': -2 } }],
     description: 'Дает штраф к проверкам выбранной характеристики; за -3 пункта штраф увеличивается до -2.',
   },
 ]

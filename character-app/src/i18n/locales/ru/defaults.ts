@@ -22,14 +22,11 @@ export const ruDefaultCharacter: Character = {
   parry: '6',
   toughness: '8 (2)',
   armor: '2',
-  bennies: '3',
-  wounds: '0 / 3',
-  fatigue: '0 / 2',
-  mana: '-',
+  combatModifiers: [{ id: 'default-armor', source: 'equipment', name: 'Body armor', armor: 2 }],
 
   skills: [
     { id: '1', name: 'Стрельба', die: 'd10', linkedAttribute: 'agility', isStarter: false },
-    { id: '2', name: 'Драка', die: 'd8', linkedAttribute: 'agility', isStarter: false },
+    { id: '2', skillKey: 'fighting', name: 'Драка', die: 'd8', linkedAttribute: 'agility', isStarter: false },
     { id: '3', name: 'Атлетика', die: 'd8', linkedAttribute: 'agility', isStarter: false },
     { id: '4', name: 'Внимание', die: 'd8', linkedAttribute: 'smarts', isStarter: false },
     { id: '5', name: 'Скрытность', die: 'd6', linkedAttribute: 'agility', isStarter: false },

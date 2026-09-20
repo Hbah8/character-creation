@@ -1,20 +1,39 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { computeRacialModifiers } from '@/services/computeRacialModifiers'
 import type { ResolvedRacialAbility } from '@/racebuilder/services/racialAbilityOptions'
+
+describe('computeRacialModifiers', () => {
+  it('uses declarative catalog effects instead of an ability identifier', () => {
+    const catalog: ResolvedRacialAbility[] = [{
+      id: 'custom-guarded',
+      name: 'Guarded',
+      description: '',
+      type: 'positive',
+      points: 1,
+      effects: [{ type: 'parry', amount: 2 }],
+      source: 'world',
+    }]
+
+    const result = computeRacialModifiers([{ id: 'custom-guarded', repeatCount: 1, parameters: {} }], catalog)
+
+    expect(result.parryBonus).toBe(2)
+  })
+})
+
 import type { RacialAbilityRef } from '@/world/types'
 
 // Minimal catalog entries for testing
 const CATALOG: ResolvedRacialAbility[] = [
-  { id: 'pace', name: 'Pace', description: '', type: 'positive', source: 'system', points: 2, maxRepeat: 'unlimited', parameterSchema: [] },
-  { id: 'parry', name: 'Parry', description: '', type: 'positive', source: 'system', points: 1, maxRepeat: 'unlimited', parameterSchema: [] },
-  { id: 'weak-parry', name: 'Weak Parry', description: '', type: 'negative', source: 'system', points: -1, maxRepeat: 'unlimited', parameterSchema: [] },
-  { id: 'tough', name: 'Tough', description: '', type: 'positive', source: 'system', points: 1, maxRepeat: 'unlimited', parameterSchema: [] },
-  { id: 'fragile', name: 'Fragile', description: '', type: 'negative', source: 'system', points: -1, maxRepeat: 'unlimited', parameterSchema: [] },
-  { id: 'armor', name: 'Armor', description: '', type: 'positive', source: 'system', points: 2, maxRepeat: 'unlimited', parameterSchema: [] },
-  { id: 'size-plus-1', name: 'Size +1', description: '', type: 'positive', source: 'system', points: 1, maxRepeat: 'unlimited', parameterSchema: [] },
-  { id: 'size-minus-1', name: 'Size -1', description: '', type: 'negative', source: 'system', points: -1, maxRepeat: 'unlimited', parameterSchema: [] },
-  { id: 'attribute-bonus', name: 'Attribute Bonus', description: '', type: 'positive', source: 'system', points: 2, maxRepeat: 'unlimited', parameterSchema: [] },
-  { id: 'attribute-penalty', name: 'Attribute Penalty', description: '', type: 'negative', source: 'system', points: -2, maxRepeat: 'unlimited', parameterSchema: [] },
+  { id: 'pace', name: 'Pace', description: '', type: 'positive', source: 'system', points: 2, maxRepeat: 'unlimited', parameterSchema: [], effects: [{ type: 'pace', amount: 2 }] },
+  { id: 'parry', name: 'Parry', description: '', type: 'positive', source: 'system', points: 1, maxRepeat: 'unlimited', parameterSchema: [], effects: [{ type: 'parry', amount: 1 }] },
+  { id: 'weak-parry', name: 'Weak Parry', description: '', type: 'negative', source: 'system', points: -1, maxRepeat: 'unlimited', parameterSchema: [], effects: [{ type: 'parry', amount: -1 }] },
+  { id: 'tough', name: 'Tough', description: '', type: 'positive', source: 'system', points: 1, maxRepeat: 'unlimited', parameterSchema: [], effects: [{ type: 'toughness', amount: 1 }] },
+  { id: 'fragile', name: 'Fragile', description: '', type: 'negative', source: 'system', points: -1, maxRepeat: 'unlimited', parameterSchema: [], effects: [{ type: 'toughness', amount: -1 }] },
+  { id: 'armor', name: 'Armor', description: '', type: 'positive', source: 'system', points: 2, maxRepeat: 'unlimited', parameterSchema: [], effects: [{ type: 'armor', amount: 2 }] },
+  { id: 'size-plus-1', name: 'Size +1', description: '', type: 'positive', source: 'system', points: 1, maxRepeat: 'unlimited', parameterSchema: [], effects: [{ type: 'recommended-size', amount: 1 }] },
+  { id: 'size-minus-1', name: 'Size -1', description: '', type: 'negative', source: 'system', points: -1, maxRepeat: 'unlimited', parameterSchema: [], effects: [{ type: 'recommended-size', amount: -1 }] },
+  { id: 'attribute-bonus', name: 'Attribute Bonus', description: '', type: 'positive', source: 'system', points: 2, maxRepeat: 'unlimited', parameterSchema: [], effects: [{ type: 'attribute-die-step', attributeParameter: 'attributeId', amount: 1 }] },
+  { id: 'attribute-penalty', name: 'Attribute Penalty', description: '', type: 'negative', source: 'system', points: -2, maxRepeat: 'unlimited', parameterSchema: [], effects: [{ type: 'attribute-check-penalty', attributeParameter: 'attributeId', amount: -1, amountByCost: { '-3': -2 } }] },
 ]
 
 describe('computeRacialModifiers', () => {
@@ -99,21 +118,22 @@ describe('computeRacialModifiers', () => {
     expect(result.attributeSteps.get('strength')).toBe(2)
   })
 
-  it('computes attribute-penalty of -1 step with default cost (-2)', () => {
+  it('computes an attribute-check penalty without changing the attribute die', () => {
     const refs: RacialAbilityRef[] = [
       { id: 'attribute-penalty', repeatCount: 1, parameters: { attributeId: 'smarts' } },
     ]
     const result = computeRacialModifiers(refs, CATALOG)
-    // cost = ability.points = -2, which is > -3, so penalty = 1 step
-    expect(result.attributeSteps.get('smarts')).toBe(-1)
+    expect(result.attributeSteps.get('smarts')).toBeUndefined()
+    expect(result.attributeCheckPenalties.get('smarts')).toBe(-1)
   })
 
-  it('computes attribute-penalty of -2 steps when costTier is -3', () => {
+  it('computes a -2 attribute-check penalty when costTier is -3', () => {
     const refs: RacialAbilityRef[] = [
       { id: 'attribute-penalty', repeatCount: 1, parameters: { attributeId: 'spirit', costTier: -3 } },
     ]
     const result = computeRacialModifiers(refs, CATALOG)
-    expect(result.attributeSteps.get('spirit')).toBe(-2)
+    expect(result.attributeSteps.get('spirit')).toBeUndefined()
+    expect(result.attributeCheckPenalties.get('spirit')).toBe(-2)
   })
 
   it('produces zero contribution for unknown ability ids', () => {
@@ -143,5 +163,29 @@ describe('computeRacialModifiers', () => {
     expect(result.parryBonus).toBe(1)
     expect(result.armorBonus).toBe(2)
     expect(result.toughnessBonus).toBe(1)
+  })
+
+  it('applies the minor short-pace Pace and running-die penalties', () => {
+    const catalog: ResolvedRacialAbility[] = [{
+      id: 'short-pace', name: 'Short pace', description: '', type: 'negative', points: -1,
+      effects: [{ type: 'pace', amount: -1, amountByCost: { '-2': -3 }, runningDieSteps: -1 }], source: 'system',
+    }]
+
+    const result = computeRacialModifiers([{ id: 'short-pace', repeatCount: 1, parameters: { costTier: -1 } }], catalog)
+
+    expect(result.paceBonus).toBe(-1)
+    expect(result.runningDieSteps).toBe(-1)
+  })
+
+  it('applies the major short-pace Pace and running-die penalties', () => {
+    const catalog: ResolvedRacialAbility[] = [{
+      id: 'short-pace', name: 'Short pace', description: '', type: 'negative', points: -1,
+      effects: [{ type: 'pace', amount: -1, amountByCost: { '-2': -3 }, runningDieSteps: -1 }], source: 'system',
+    }]
+
+    const result = computeRacialModifiers([{ id: 'short-pace', repeatCount: 1, parameters: { costTier: -2 } }], catalog)
+
+    expect(result.paceBonus).toBe(-3)
+    expect(result.runningDieSteps).toBe(-1)
   })
 })

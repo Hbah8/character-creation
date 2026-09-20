@@ -13,7 +13,6 @@ import {
   WORLD_RELATIONSHIP_TYPES,
   WORLD_SCHEMA_VERSION,
 } from '@/world/types'
-import { computeSizeFromAbilities } from '@/racebuilder/services/raceBudget'
 import type { HandbookOverride, HandbookCategory } from '@/types/handbook'
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -172,7 +171,7 @@ function validateRace(raw: unknown, index: number): Race {
     name: raw.name,
     description: raw.description ?? '',
     abilities,
-    size: computeSizeFromAbilities(abilities),
+    size: isNumber(raw.size) ? raw.size : 0,
   }
 }
 

@@ -52,6 +52,15 @@ export type FeatureParameterSchema =
   | (BaseFeatureParameterSchema & { type: 'edge-ref' })
   | (BaseFeatureParameterSchema & { type: 'environment-type' })
 
+export type RacialAbilityMechanicalEffect =
+  | { type: 'attribute-die-step'; attributeParameter: string; amount: number }
+  | { type: 'attribute-check-penalty'; attributeParameter: string; amount: number; amountByCost?: Record<number, number> }
+  | { type: 'pace'; amount: number; amountByCost?: Record<number, number>; runningDieSteps?: number }
+  | { type: 'parry'; amount: number }
+  | { type: 'toughness'; amount: number }
+  | { type: 'armor'; amount: number }
+  | { type: 'recommended-size'; amount: number }
+
 // ---------------------------------------------------------------------------
 // Base interface — shared by all handbook entry types
 // ---------------------------------------------------------------------------
@@ -124,6 +133,7 @@ export interface RacialAbility extends HandbookEntry {
   pointCostOptions?: number[]
   maxRepeat?: RacialAbilityMaxRepeat
   parameterSchema?: FeatureParameterSchema[]
+  effects?: RacialAbilityMechanicalEffect[]
 }
 
 // ---------------------------------------------------------------------------

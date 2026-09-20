@@ -196,7 +196,7 @@ describe('validateWorldImport', () => {
           name: 'Giant',
           description: '',
           abilities: [{ id: 'size-plus-1', repeatCount: 2, parameters: {} }],
-          size: 2,
+          size: 20,
         },
       ])
     })
@@ -295,7 +295,7 @@ describe('validateWorldImport', () => {
       expect(validateWorldImport(nullSize).races[0].size).toBe(0)
     })
 
-    it('ignores legacy race size values and derives size from ability references', () => {
+    it('preserves an explicit race size override instead of deriving it from ability references', () => {
       const staleSmall = {
         ...validWorld(),
         races: [{ id: 'tiny', name: 'Tiny', description: '', abilities: [], size: -5 }],
@@ -311,8 +311,8 @@ describe('validateWorldImport', () => {
         }],
       }
 
-      expect(validateWorldImport(staleSmall).races[0].size).toBe(0)
-      expect(validateWorldImport(staleLarge).races[0].size).toBe(3)
+      expect(validateWorldImport(staleSmall).races[0].size).toBe(-5)
+      expect(validateWorldImport(staleLarge).races[0].size).toBe(21)
     })
   })
 })

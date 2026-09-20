@@ -36,18 +36,21 @@ export function useCombatStore() {
       pace?: number
       parry?: number
       toughness?: number
+      armor?: number
+      bennies?: number
       maxWounds?: number
+      maxFatigue?: number
       powerPoints?: number
       maxPowerPoints?: number
     }) => {
       const defaultMaxWounds = params.type === 'wildcard' ? 3 : 1
+      const defaultMaxFatigue = params.type === 'wildcard' ? 2 : 0
       setCombatants(prev => [
         ...prev,
         {
           id: crypto.randomUUID(),
           wounds: 0,
           fatigue: 0,
-          bennies: params.type === 'wildcard' ? 3 : 0,
           eliminated: false,
           card: undefined,
           pendingCard: undefined,
@@ -58,10 +61,13 @@ export function useCombatStore() {
           pace: params.pace ?? 6,
           parry: params.parry ?? 4,
           toughness: params.toughness ?? 5,
+          armor: params.armor ?? 0,
           maxWounds: params.maxWounds ?? defaultMaxWounds,
+          maxFatigue: params.maxFatigue ?? defaultMaxFatigue,
           powerPoints: params.powerPoints ?? 0,
           maxPowerPoints: params.maxPowerPoints ?? 0,
           ...params,
+          bennies: params.type === 'wildcard' ? params.bennies ?? 3 : 0,
         },
       ])
     },

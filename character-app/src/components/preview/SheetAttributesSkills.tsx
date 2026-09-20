@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next'
-import type { Character, AttributeKey } from '@/types/character'
+import type { Character, AttributeKey, DieName } from '@/types/character'
 
 const ATTRIBUTE_KEYS: AttributeKey[] = ['agility', 'smarts', 'spirit', 'strength', 'vigor']
 
 interface Props {
   character: Character
+  attributes: Record<AttributeKey, DieName>
 }
 
-export function SheetAttributesSkills({ character }: Props) {
+export function SheetAttributesSkills({ character, attributes }: Props) {
   const { t } = useTranslation('preview')
   return (
     <section className="section">
@@ -20,7 +21,7 @@ export function SheetAttributesSkills({ character }: Props) {
               <>
                 <tr key={`${attrKey}-header`} className="attr-header-row">
                   <td className="attr-header-cell">
-                    {t(`attributes.${attrKey}`).toUpperCase()} {character[attrKey]}
+                    {t(`attributes.${attrKey}`).toUpperCase()} {attributes[attrKey]}
                   </td>
                 </tr>
                 {skills.length > 0 && (
