@@ -28,6 +28,7 @@ const preview = {
     toughness: 'Tough.',
     bennies: 'Bennies',
     mana: 'Power Points',
+    runningDie: 'Running',
     size: 'Size',
   },
   attributes: {
@@ -42,6 +43,7 @@ const preview = {
     parry: 'Parry',
     toughness: 'Toughness',
     armor: 'Armor',
+    runningDie: 'Running die',
     bennies: 'Bennies',
     wounds: 'Wounds',
     fatigue: 'Fatigue',

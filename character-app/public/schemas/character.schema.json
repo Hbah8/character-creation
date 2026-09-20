@@ -18,9 +18,6 @@
     "smarts",
     "spirit",
     "vigor",
-    "pace",
-    "parry",
-    "toughness",
     "bennies",
     "wounds",
     "fatigue",
@@ -90,18 +87,6 @@
       "description": "Vigor attribute die."
     },
 
-    "pace": {
-      "type": "string",
-      "description": "Movement pace (e.g. '6', '8+d6'). Stored as a free-form string."
-    },
-    "parry": {
-      "type": "string",
-      "description": "Parry derived stat. Free-form string."
-    },
-    "toughness": {
-      "type": "string",
-      "description": "Toughness derived stat, optionally including armor (e.g. '10 (2)'). Free-form string."
-    },
     "bennies": {
       "type": "string",
       "description": "Benny count or notation. Free-form string."
@@ -117,6 +102,13 @@
     "mana": {
       "type": "string",
       "description": "Power Points (mana) available. Free-form string."
+    },
+    "combatModifiers": {
+      "type": "array",
+      "description": "Named permanent additions to calculated Pace, Parry, Toughness, Armor, and running die.",
+      "items": {
+        "$ref": "#/$defs/combatModifier"
+      }
     },
 
     "skills": {
@@ -171,6 +163,25 @@
       "type": "string",
       "description": "Optional ID of the World this character belongs to. When set, setting rules (point budgets, etc.) are resolved from that world."
     },
+    "raceId": {
+      "type": "string",
+      "description": "Optional ID of the selected world race."
+    },
+    "raceName": {
+      "type": "string",
+      "description": "Optional display name of the selected race."
+    },
+    "size": {
+      "type": "number",
+      "description": "Character-specific Size adjustment. The selected race Size is resolved separately."
+    },
+    "powers": {
+      "type": "array",
+      "description": "Arcane powers known by the character.",
+      "items": {
+        "$ref": "#/$defs/characterPower"
+      }
+    },
 
     "layout": {
       "$ref": "#/$defs/characterLayout",
@@ -213,6 +224,10 @@
           "type": "string",
           "description": "Unique identifier for this skill entry (UUID or similar)."
         },
+        "skillKey": {
+          "type": "string",
+          "description": "Optional stable canonical identity for a system skill, for example 'fighting'."
+        },
         "name": {
           "type": "string",
           "description": "Skill name (e.g. 'Athletics', 'Shooting', 'Notice')."
@@ -229,6 +244,43 @@
           "type": "boolean",
           "description": "True if this is a free starter skill. Omit or false otherwise.",
           "default": false
+        }
+      }
+    },
+
+    "combatModifier": {
+      "type": "object",
+      "description": "A named additive permanent combat contribution. Derived totals are never stored here.",
+      "additionalProperties": false,
+      "required": ["id", "source", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique modifier identifier."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["edge", "hindrance", "equipment", "manual"],
+          "description": "The non-racial rules source of this modifier. Racial effects are resolved from the selected race catalog."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name explaining the modifier."
+        },
+        "pace": {
+          "type": "number"
+        },
+        "parry": {
+          "type": "number"
+        },
+        "toughness": {
+          "type": "number"
+        },
+        "armor": {
+          "type": "number"
+        },
+        "runningDieSteps": {
+          "type": "number"
         }
       }
     },
@@ -337,11 +389,42 @@
       }
     },
 
+    "powerModifier": {
+      "type": "object",
+      "description": "A selected power modifier.",
+      "additionalProperties": false,
+      "required": ["id", "name", "ppCost"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "ppCost": { "type": "string" }
+      }
+    },
+
+    "characterPower": {
+      "type": "object",
+      "description": "A character arcane power and its selected modifiers.",
+      "additionalProperties": false,
+      "required": ["id", "name", "ppCost", "range", "duration", "description", "modifiers"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "ppCost": { "type": "string" },
+        "range": { "type": "string" },
+        "duration": { "type": "string" },
+        "description": { "type": "string" },
+        "modifiers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/powerModifier" }
+        }
+      }
+    },
+
     "characterLayout": {
       "type": "object",
       "description": "Per-collection column placement on the print sheet.",
       "additionalProperties": false,
-      "required": ["weapons", "edges", "hindrances", "gear", "specialRules"],
+      "required": ["weapons", "edges", "hindrances", "gear", "specialRules", "powers"],
       "properties": {
         "weapons": {
           "$ref": "#/$defs/columnSide"
@@ -356,6 +439,9 @@
           "$ref": "#/$defs/columnSide"
         },
         "specialRules": {
+          "$ref": "#/$defs/columnSide"
+        },
+        "powers": {
           "$ref": "#/$defs/columnSide"
         }
       }

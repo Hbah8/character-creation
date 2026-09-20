@@ -1,7 +1,17 @@
 import type { Character } from '@/types/character'
 
+export type CharacterExportPayload = Omit<
+  Character,
+  'pace' | 'parry' | 'toughness' | 'armor' | 'importWarnings'
+>
+
+export function createCharacterExportPayload(character: Character): CharacterExportPayload {
+  const { pace: _pace, parry: _parry, toughness: _toughness, armor: _armor, importWarnings: _importWarnings, ...payload } = character
+  return payload
+}
+
 export function exportToJson(character: Character): void {
-  const json = JSON.stringify(character, null, 2)
+  const json = JSON.stringify(createCharacterExportPayload(character), null, 2)
   const blob = new Blob([json], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')

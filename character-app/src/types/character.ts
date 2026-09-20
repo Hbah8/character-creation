@@ -5,8 +5,23 @@ export type DieName = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd12+1' | 'd12+2' | '
 
 export type AttributeKey = 'agility' | 'strength' | 'smarts' | 'spirit' | 'vigor'
 
+/** Racial combat effects are derived from the selected race catalog, not stored on Character. */
+export type CombatModifierSource = 'edge' | 'hindrance' | 'equipment' | 'manual'
+
+export interface CombatModifier {
+  id: string
+  source: CombatModifierSource
+  name: string
+  pace?: number
+  parry?: number
+  toughness?: number
+  armor?: number
+  runningDieSteps?: number
+}
+
 export interface Skill {
   id: string
+  skillKey?: string
   name: string
   die: DieName
   linkedAttribute: AttributeKey
@@ -97,11 +112,13 @@ export interface Character {
   spirit: DieName
   vigor: DieName
 
-  // Combat Parameters (all manual)
+  // Legacy final-stat values. New characters use combatModifiers as their source input.
   pace: string
   parry: string
   toughness: string
   armor: string
+  combatModifiers?: CombatModifier[]
+  importWarnings?: string[]
   bennies: string
   wounds: string
   fatigue: string

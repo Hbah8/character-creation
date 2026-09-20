@@ -8,7 +8,7 @@ const CHARACTER = {
   pace: '6',
   parry: '5',
   toughness: '8 (2)',
-  armor: '2',
+  armor: '99',
   bennies: '3',
   wounds: '0',
   fatigue: '0',
@@ -32,7 +32,10 @@ describe('SheetCombat', () => {
     const i18n = (await import('@/i18n')).default
     await i18n.changeLanguage('en')
 
-    const html = renderToStaticMarkup(createElement(SheetCombat, { character: CHARACTER }))
+    const html = renderToStaticMarkup(createElement(SheetCombat, {
+      character: CHARACTER,
+      combat: { pace: 6, parry: 5, toughness: 8, armor: 2, runningDie: 'd6', size: 0 },
+    }))
 
     expect(html).toContain('Armor')
     expect(html).toContain('<td>2</td>')

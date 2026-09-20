@@ -42,6 +42,7 @@ export interface Combatant {
   pace: number
   parry: number
   toughness: number
+  armor: number
   maxWounds: number
   powerPoints: number
   maxPowerPoints: number

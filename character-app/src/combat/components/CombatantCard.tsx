@@ -169,7 +169,7 @@ export function CombatantCard({
   const [dmgInput, setDmgInput] = useState('')
   const [targetId, setTargetId] = useState<string | null>(null)
 
-  const { wounds, fatigue, maxWounds, statuses, pace, parry, toughness, powerPoints, maxPowerPoints, bennies } =
+  const { wounds, fatigue, maxWounds, statuses, pace, parry, toughness, armor, powerPoints, maxPowerPoints, bennies } =
     combatant
 
   const penalty = -(Math.min(3, wounds) + Math.min(3, fatigue))
@@ -312,6 +312,7 @@ export function CombatantCard({
               <StatBlock label="Шаг" value={pace} min={1} onChange={v => onUpdate({ pace: v })} />
               <StatBlock label="Защита" value={parry} onChange={v => onUpdate({ parry: v })} />
               <StatBlock label="Стойкость" value={toughness} onChange={v => onUpdate({ toughness: v })} />
+              <StatBlock label="Броня" value={armor} min={0} onChange={v => onUpdate({ armor: v })} />
               <StatBlock label="Макс. ран" value={maxWounds} min={1} onChange={v => onUpdate({ maxWounds: v })} />
               {maxPowerPoints > 0 && (
                 <StatBlock

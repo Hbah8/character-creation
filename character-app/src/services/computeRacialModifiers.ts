@@ -1,6 +1,6 @@
 import type { AttributeKey } from '@/types/character'
-import { resolveRacialAbilityPointCost } from '@/racebuilder/services/raceBudget'
 import type { ResolvedRacialAbility } from '@/racebuilder/services/racialAbilityOptions'
+import type { RacialAbilityMechanicalEffect } from '@/types/handbook'
 import type { RacialAbilityRef } from '@/world/types'
 
 export interface RacialModifiers {
@@ -12,16 +12,28 @@ export interface RacialModifiers {
   toughnessBonus: number
   /** Total armor bonus from `armor` ability (+2 per repeatCount). Applied to both total and parentheses. */
   armorBonus: number
+  /** Running-die changes from permanent racial effects. */
+  runningDieSteps: number
   /**
    * Per-attribute die step adjustments.
    * Positive = advance die; negative = recess die.
    * `size-plus-1` / `size-minus-1` are intentionally excluded; size is derived separately.
    */
   attributeSteps: Map<AttributeKey, number>
+  /** Penalties that apply only to attribute checks, never to a derived stat. */
+  attributeCheckPenalties: Map<AttributeKey, number>
 }
 
 function repeatCount(ref: RacialAbilityRef): number {
   return Math.max(1, ref.repeatCount ?? 1)
+}
+
+function effectAmount(effect: RacialAbilityMechanicalEffect, ref: RacialAbilityRef): number {
+  const costTier = ref.parameters?.costTier
+  if (typeof costTier === 'number' && 'amountByCost' in effect) {
+    return effect.amountByCost?.[costTier] ?? effect.amount
+  }
+  return effect.amount
 }
 
 /**
@@ -40,7 +52,9 @@ export function computeRacialModifiers(
     parryBonus: 0,
     toughnessBonus: 0,
     armorBonus: 0,
+    runningDieSteps: 0,
     attributeSteps: new Map(),
+    attributeCheckPenalties: new Map(),
   }
 
   const catalogById = new Map(catalog.map(a => [a.id, a]))
@@ -48,44 +62,39 @@ export function computeRacialModifiers(
   for (const ref of abilityRefs) {
     const ability = catalogById.get(ref.id)
     const count = repeatCount(ref)
-    const cost = resolveRacialAbilityPointCost(ref, ability)
-
-    switch (ref.id) {
-      case 'pace':
-        modifiers.paceBonus += 2 * count
-        break
-      case 'parry':
-        modifiers.parryBonus += count
-        break
-      case 'weak-parry':
-        modifiers.parryBonus -= count
-        break
-      case 'tough':
-        modifiers.toughnessBonus += count
-        break
-      case 'fragile':
-        modifiers.toughnessBonus -= count
-        break
-      case 'armor':
-        modifiers.armorBonus += 2 * count
-        break
-      case 'attribute-bonus': {
-        const attrId = (ref.parameters?.attributeId ?? '') as AttributeKey
-        if (attrId) {
-          modifiers.attributeSteps.set(attrId, (modifiers.attributeSteps.get(attrId) ?? 0) + count)
+    for (const effect of ability?.effects ?? []) {
+      const amount = effectAmount(effect, ref) * count
+      switch (effect.type) {
+        case 'pace':
+          modifiers.paceBonus += amount
+          modifiers.runningDieSteps += (effect.runningDieSteps ?? 0) * count
+          break
+        case 'parry':
+          modifiers.parryBonus += amount
+          break
+        case 'toughness':
+          modifiers.toughnessBonus += amount
+          break
+        case 'armor':
+          modifiers.armorBonus += amount
+          break
+        case 'attribute-die-step': {
+          const attribute = ref.parameters?.[effect.attributeParameter] as AttributeKey | undefined
+          if (attribute) {
+            modifiers.attributeSteps.set(attribute, (modifiers.attributeSteps.get(attribute) ?? 0) + amount)
+          }
+          break
         }
-        break
-      }
-      case 'attribute-penalty': {
-        const attrId = (ref.parameters?.attributeId ?? '') as AttributeKey
-        if (attrId) {
-          // cost <= -3 means a severe penalty (-2 die steps), otherwise -1 die step
-          const penalty = cost <= -3 ? 2 : 1
-          modifiers.attributeSteps.set(attrId, (modifiers.attributeSteps.get(attrId) ?? 0) - penalty)
+        case 'attribute-check-penalty': {
+          const attribute = ref.parameters?.[effect.attributeParameter] as AttributeKey | undefined
+          if (attribute) {
+            modifiers.attributeCheckPenalties.set(attribute, (modifiers.attributeCheckPenalties.get(attribute) ?? 0) + amount)
+          }
+          break
         }
-        break
+        case 'recommended-size':
+          break
       }
-      // size-plus-1 and size-minus-1: intentionally not handled; see module docstring.
     }
   }
 

@@ -1,82 +1,97 @@
-import type { Character, AttributeKey } from '@/types/character'
+import type { Character, AttributeKey, CombatModifier, DieName } from '@/types/character'
 import type { World } from '@/world/types'
 import { resolveRacialAbilitiesForWorld } from '@/racebuilder/services/racialAbilityOptions'
-import { computeSizeFromAbilities } from '@/racebuilder/services/raceBudget'
 import { computeRacialModifiers } from './computeRacialModifiers'
 import { advanceDie, recessDie } from '@/utils/dieUtils'
-import { parseToughness, formatToughness } from '@/utils/toughnessUtils'
 
 const ATTRIBUTE_KEYS: AttributeKey[] = ['agility', 'strength', 'smarts', 'spirit', 'vigor']
 
+export interface ResolvedCombatStats {
+  pace: number
+  parry: number
+  toughness: number
+  armor: number
+  runningDie: DieName
+  size: number
+}
+
+export interface ResolvedCharacter {
+  source: Character
+  attributes: Record<AttributeKey, DieName>
+  combat: ResolvedCombatStats
+}
+
 /**
- * Builds an effective `Character` for preview and PDF rendering by applying racial stat modifiers
- * to the base character values.
+ * Separates persisted Character source data from effective attributes and derived combat values.
  *
  * CONTRACT:
  * - The input `character` is never mutated.
- * - The base `character` must be used for JSON export; only the result of this function
- *   should be passed to the preview/PDF pipeline.
- * - Returns the base `character` reference unchanged when there is no world or no valid race.
- * - Unparseable string fields (pace, parry, toughness) are left verbatim.
+ * - Callers must export `source`, never resolved output.
  */
-export function resolveEffectiveCharacter(character: Character, world: World | null): Character {
-  if (!world || !character.raceId) return character
-
-  const race = world.races.find(r => r.id === character.raceId)
-  if (!race) return character
-
-  const catalog = resolveRacialAbilitiesForWorld(world.worldHandbook)
-  const modifiers = computeRacialModifiers(race.abilities, catalog)
-  const raceSize = computeSizeFromAbilities(race.abilities)
-  const effectiveSize = (character.size ?? 0) + raceSize
-
-  let result: Character = { ...character }
-
-  // ── Pace ──────────────────────────────────────────────────────────────────
-  if (modifiers.paceBonus !== 0) {
-    const basePace = parseInt(character.pace, 10)
-    if (!isNaN(basePace)) {
-      result = { ...result, pace: String(basePace + modifiers.paceBonus) }
-    }
+export function resolveCharacter(character: Character, world: World | null): ResolvedCharacter {
+  const race = world && character.raceId
+    ? world.races.find(candidate => candidate.id === character.raceId)
+    : undefined
+  const catalog = world ? resolveRacialAbilitiesForWorld(world.worldHandbook) : []
+  const modifiers = race ? computeRacialModifiers(race.abilities, catalog) : {
+    paceBonus: 0,
+    parryBonus: 0,
+    toughnessBonus: 0,
+    armorBonus: 0,
+    runningDieSteps: 0,
+    attributeSteps: new Map<AttributeKey, number>(),
   }
 
-  // ── Parry ─────────────────────────────────────────────────────────────────
-  if (modifiers.parryBonus !== 0) {
-    const baseParry = parseInt(character.parry, 10)
-    if (!isNaN(baseParry)) {
-      result = { ...result, parry: String(baseParry + modifiers.parryBonus) }
-    }
+  const attributes: Record<AttributeKey, DieName> = {
+    agility: character.agility,
+    strength: character.strength,
+    smarts: character.smarts,
+    spirit: character.spirit,
+    vigor: character.vigor,
   }
-
-  // ── Toughness + Armor ─────────────────────────────────────────────────────
-  // Formula:
-  //   total += effectiveSize + toughnessBonus + armorBonus
-  //   armor += armorBonus only
-  if (effectiveSize !== 0 || modifiers.toughnessBonus !== 0 || modifiers.armorBonus !== 0) {
-    const parsed = parseToughness(character.toughness)
-    if (parsed !== null) {
-      const newBase = parsed.base + effectiveSize + modifiers.toughnessBonus + modifiers.armorBonus
-      const newArmor = parsed.armor + modifiers.armorBonus
-      result = { ...result, toughness: formatToughness(newBase, newArmor) }
-    }
-    // If unparseable, leave toughness as-is
-  }
-
-  // ── Effective Size ────────────────────────────────────────────────────────
-  // effectiveSize = character.size (non-racial size modifiers, default 0) + size derived from racial abilities.
-  result = { ...result, size: effectiveSize }
-
-  // ── Attribute Die Steps ───────────────────────────────────────────────────
   for (const attrKey of ATTRIBUTE_KEYS) {
     const steps = modifiers.attributeSteps.get(attrKey) ?? 0
-    if (steps !== 0) {
-      const currentDie = character[attrKey]
-      const newDie = steps > 0
-        ? advanceDie(currentDie, steps)
-        : recessDie(currentDie, -steps)
-      result = { ...result, [attrKey]: newDie }
+    if (steps > 0) {
+      attributes[attrKey] = advanceDie(character[attrKey], steps)
     }
   }
 
-  return result
+  const fighting = character.skills.find(skill => skill.skillKey === 'fighting' || skill.id === 'fighting')
+  const fightingDieValue = dieValue(fighting?.die ?? '')
+  const vigorDieValue = dieValue(attributes.vigor)
+  const effectiveSize = (character.size ?? 0) + (race?.size ?? 0)
+  const characterModifiers = sumCombatModifiers(character.combatModifiers ?? [])
+  const armor = characterModifiers.armor + modifiers.armorBonus
+  const pace = 6 + characterModifiers.pace + modifiers.paceBonus
+  const parry = 2 + Math.floor(fightingDieValue / 2) + characterModifiers.parry + modifiers.parryBonus
+  const toughness = 2 + Math.floor(vigorDieValue / 2) + effectiveSize + characterModifiers.toughness + modifiers.toughnessBonus + armor
+  const runningDieSteps = characterModifiers.runningDieSteps + modifiers.runningDieSteps
+  const runningDie = runningDieSteps >= 0
+    ? advanceDie('d6', runningDieSteps)
+    : recessDie('d6', Math.abs(runningDieSteps))
+
+  return {
+    source: character,
+    attributes,
+    combat: { pace, parry, toughness, armor, runningDie, size: effectiveSize },
+  }
+}
+
+function dieValue(die: Character[AttributeKey]): number {
+  const match = /^d(4|6|8|10|12)(?:\+(1|2))?$/.exec(die)
+  if (!match) return 0
+  return Number(match[1]) + Number(match[2] ?? 0)
+}
+
+function sumCombatModifiers(modifiers: CombatModifier[]) {
+  return modifiers.reduce(
+    (total, modifier) => ({
+      pace: total.pace + (modifier.pace ?? 0),
+      parry: total.parry + (modifier.parry ?? 0),
+      toughness: total.toughness + (modifier.toughness ?? 0),
+      armor: total.armor + (modifier.armor ?? 0),
+      runningDieSteps: total.runningDieSteps + (modifier.runningDieSteps ?? 0),
+    }),
+    { pace: 0, parry: 0, toughness: 0, armor: 0, runningDieSteps: 0 },
+  )
 }

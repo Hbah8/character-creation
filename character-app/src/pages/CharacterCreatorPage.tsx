@@ -23,6 +23,7 @@ import { useEffectiveCharacter } from '@/hooks/useEffectiveCharacter'
 import { ExportDropdown } from '@/components/ExportDropdown'
 import { CharacterLibrary } from '@/components/CharacterLibrary'
 import { ImportErrorDialog } from '@/components/ImportErrorDialog'
+import { ImportWarningsDialog } from '@/components/ImportWarningsDialog'
 import { ShareConfirmDialog } from '@/components/ShareConfirmDialog'
 import { WelcomeDialog, hasSeenWelcome, markWelcomeSeen } from '@/components/WelcomeDialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -79,7 +80,7 @@ export function CharacterCreatorPage() {
     : { ...getDefaultCharacter(initialLocale), worldId: activeWorldId ?? undefined }
   const store = useCharacterStore(initialCharacter)
   const { character } = store
-  const effectiveCharacter = useEffectiveCharacter(character)
+  const resolvedCharacter = useEffectiveCharacter(character)
 
   const { t: tNav } = useTranslation('navigation')
   const { t: tHeader } = useTranslation('header')
@@ -87,6 +88,7 @@ export function CharacterCreatorPage() {
   const { t: tForm } = useTranslation('form')
 
   const [importError, setImportError] = useState<string | null>(null)
+  const [importWarnings, setImportWarnings] = useState<string[]>([])
   const [locale, setLocale] = useState<Locale>(initialLocale)
   const [cleanSnapshot, setCleanSnapshot] = useState<string>(
     () => JSON.stringify(initialCharacter)
@@ -171,6 +173,7 @@ export function CharacterCreatorPage() {
       const imported = await importFromJson(file)
       const withWorld = { ...imported, worldId: activeWorldId ?? undefined }
       store.replaceCharacter(withWorld)
+      setImportWarnings(imported.importWarnings ?? [])
       setCleanSnapshot(JSON.stringify(withWorld))
       setSavedAt(null)
       library.markNew()
@@ -193,6 +196,7 @@ export function CharacterCreatorPage() {
     if (!pendingShareChar) return
     const withWorld = { ...pendingShareChar, worldId: activeWorldId ?? undefined }
     store.replaceCharacter(withWorld)
+    setImportWarnings(pendingShareChar.importWarnings ?? [])
     setCleanSnapshot(JSON.stringify(withWorld))
     setSavedAt(null)
     library.markNew()
@@ -242,7 +246,7 @@ export function CharacterCreatorPage() {
       case 'attributes':
         return <AttributesForm character={character} onChange={store.updateField} />
       case 'combat':
-        return <CombatForm character={character} onChange={store.updateField} />
+        return <CombatForm character={character} resolvedCombat={resolvedCharacter.combat} onChange={store.updateField} />
       case 'skills':
         return (
           <SkillsForm
@@ -479,7 +483,7 @@ export function CharacterCreatorPage() {
             </ToggleGroup>
           </div>
           <div className="flex-1 min-h-0 bg-[#d0d0d0] overflow-hidden print:overflow-visible">
-            <CharacterSheet character={effectiveCharacter} scaleMode={scaleMode} />
+            <CharacterSheet resolvedCharacter={resolvedCharacter} scaleMode={scaleMode} />
           </div>
         </div>
       </div>
@@ -518,7 +522,7 @@ export function CharacterCreatorPage() {
                 </ToggleGroup>
               </div>
             </div>
-            <CharacterSheet character={effectiveCharacter} fitToContainer />
+            <CharacterSheet resolvedCharacter={resolvedCharacter} fitToContainer />
           </div>
         </TabsContent>
       </Tabs>
@@ -528,6 +532,10 @@ export function CharacterCreatorPage() {
         open={importError !== null}
         message={importError ?? ''}
         onClose={() => setImportError(null)}
+      />
+      <ImportWarningsDialog
+        warnings={importWarnings}
+        onClose={() => setImportWarnings([])}
       />
       <ShareConfirmDialog
         open={pendingShareChar !== null}

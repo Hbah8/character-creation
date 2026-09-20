@@ -36,6 +36,7 @@ export function useCombatStore() {
       pace?: number
       parry?: number
       toughness?: number
+      armor?: number
       maxWounds?: number
       powerPoints?: number
       maxPowerPoints?: number
@@ -58,6 +59,7 @@ export function useCombatStore() {
           pace: params.pace ?? 6,
           parry: params.parry ?? 4,
           toughness: params.toughness ?? 5,
+          armor: params.armor ?? 0,
           maxWounds: params.maxWounds ?? defaultMaxWounds,
           powerPoints: params.powerPoints ?? 0,
           maxPowerPoints: params.maxPowerPoints ?? 0,

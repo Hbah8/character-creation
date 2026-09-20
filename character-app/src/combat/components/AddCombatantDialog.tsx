@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { loadLibrary } from '@/services/libraryService'
+import { loadWorldLibrary } from '@/world/services/worldLibraryService'
+import { createCharacterCombatantDraft } from '@/combat/services/combatantDraft'
 import type { CombatantType } from '../types'
 
 interface AddCombatantDialogProps {
@@ -33,6 +35,7 @@ interface AddCombatantDialogProps {
     pace: number
     parry: number
     toughness: number
+    armor: number
     maxWounds: number
     powerPoints: number
     maxPowerPoints: number
@@ -47,15 +50,10 @@ interface DraftEntry {
   pace: number
   parry: number
   toughness: number
+  armor: number
   maxWounds: number
   powerPoints: number
   maxPowerPoints: number
-}
-
-function parseIntOr(val: string | undefined, fallback: number): number {
-  if (val === undefined) return fallback
-  const n = parseInt(val, 10)
-  return isNaN(n) ? fallback : n
 }
 
 function DraftEntryRow({
@@ -111,6 +109,7 @@ function DraftEntryRow({
         ['pace', 1, (v: number) => onChange({ pace: v || 6 })],
         ['parry', 0, (v: number) => onChange({ parry: v || 4 })],
         ['toughness', 0, (v: number) => onChange({ toughness: v || 5 })],
+        ['armor', 0, (v: number) => onChange({ armor: v || 0 })],
         ['maxWounds', 1, (v: number) => onChange({ maxWounds: Math.max(1, v || 3) })],
         ['maxPowerPoints', 0, (v: number) => onChange({ maxPowerPoints: v || 0 })],
       ] as const).map(([field, min, handler]) => (
@@ -136,6 +135,7 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
   const [pace, setPace] = useState(6)
   const [parry, setParry] = useState(4)
   const [toughness, setToughness] = useState(5)
+  const [armor, setArmor] = useState(0)
   const [maxWounds, setMaxWounds] = useState(3)
   const [powerPoints, setPowerPoints] = useState(0)
   const [maxPowerPoints, setMaxPowerPoints] = useState(0)
@@ -151,17 +151,13 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
     const entry = libraryEntries.find(e => e.id === id)
     if (!entry) return null
     const char = entry.character
+    const world = char.worldId
+      ? loadWorldLibrary().find(entry => entry.id === char.worldId)?.world ?? null
+      : null
+    const resolved = createCharacterCombatantDraft(char, world)
     return {
       libraryId: id,
-      name: char.callsign || char.name || 'Без имени',
-      type: 'wildcard',
-      isPlayer: true,
-      pace: parseIntOr(char.pace, 6),
-      parry: parseIntOr(char.parry, 4),
-      toughness: parseIntOr(char.toughness, 5),
-      maxWounds: 3,
-      powerPoints: 0,
-      maxPowerPoints: 0,
+      ...resolved,
     }
   }
 
@@ -182,6 +178,7 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
           setPace(draft.pace)
           setParry(draft.parry)
           setToughness(draft.toughness)
+          setArmor(draft.armor)
           setMaxWounds(draft.maxWounds)
           setPowerPoints(draft.powerPoints)
           setMaxPowerPoints(draft.maxPowerPoints)
@@ -202,6 +199,7 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
         setPace(draft.pace)
         setParry(draft.parry)
         setToughness(draft.toughness)
+        setArmor(draft.armor)
         setMaxWounds(draft.maxWounds)
         setPowerPoints(draft.powerPoints)
         setMaxPowerPoints(draft.maxPowerPoints)
@@ -223,6 +221,7 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
     setPace(6)
     setParry(4)
     setToughness(5)
+    setArmor(0)
     setMaxWounds(3)
     setPowerPoints(0)
     setMaxPowerPoints(0)
@@ -239,6 +238,7 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
           pace: d.pace,
           parry: d.parry,
           toughness: d.toughness,
+          armor: d.armor,
           maxWounds: d.maxWounds,
           powerPoints: d.powerPoints,
           maxPowerPoints: d.maxPowerPoints,
@@ -255,6 +255,7 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
         pace,
         parry,
         toughness,
+        armor,
         maxWounds,
         powerPoints,
         maxPowerPoints,
@@ -322,6 +323,7 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
                 <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">Шаг</span>
                 <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">Защита</span>
                 <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">Стойк.</span>
+                <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">Броня</span>
                 <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">Ран</span>
                 <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">МаксОС</span>
               </div>
@@ -439,6 +441,17 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
                       min={0}
                       value={toughness}
                       onChange={e => setToughness(parseInt(e.target.value, 10) || 5)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="stat-armor" className="text-xs">Броня</Label>
+                    <Input
+                      id="stat-armor"
+                      type="number"
+                      min={0}
+                      value={armor}
+                      onChange={e => setArmor(parseInt(e.target.value, 10) || 0)}
                       className="h-8 text-sm"
                     />
                   </div>

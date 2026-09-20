@@ -1,6 +1,7 @@
 import LZString from 'lz-string'
 import { validateCharacterImport } from '@/services/validateImport'
 import type { Character } from '@/types/character'
+import { createCharacterExportPayload } from '@/services/exportService'
 
 function isBase64Portrait(url: string): boolean {
   return url.startsWith('data:')
@@ -13,10 +14,10 @@ export interface EncodeResult {
 
 export function encodeCharacterToHash(character: Character): EncodeResult {
   const portraitStripped = isBase64Portrait(character.portraitUrl)
-  const payload: Character = portraitStripped
+  const payload = portraitStripped
     ? { ...character, portraitUrl: '' }
     : character
-  const hash = LZString.compressToEncodedURIComponent(JSON.stringify(payload))
+  const hash = LZString.compressToEncodedURIComponent(JSON.stringify(createCharacterExportPayload(payload)))
   return { hash, portraitStripped }
 }
 

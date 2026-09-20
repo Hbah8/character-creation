@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { resolveEffectiveCharacter } from '@/services/resolveEffectiveCharacter'
+import { resolveCharacter } from '@/services/resolveEffectiveCharacter'
 import { validateCharacterImport } from '@/services/validateImport'
+import { createCharacterExportPayload } from '@/services/exportService'
 import type { Character } from '@/types/character'
 import type { World } from '@/world/types'
 import { WORLD_SCHEMA_VERSION } from '@/world/types'
@@ -66,7 +67,7 @@ describe('race effective character flow', () => {
         id: 'giant-kin',
         name: 'Giant Kin',
         description: 'Mock race with several numeric effects.',
-        size: 0,
+        size: 2,
         abilities: [
           { id: 'size-plus-1', repeatCount: 2 },
           { id: 'pace', repeatCount: 1 },
@@ -83,16 +84,20 @@ describe('race effective character flow', () => {
       }],
     })
 
-    const character = createCharacter({ raceId: 'giant-kin', raceName: 'Giant Kin' })
-    const effective = resolveEffectiveCharacter(character, world)
+    const character = createCharacter({
+      raceId: 'giant-kin',
+      raceName: 'Giant Kin',
+      skills: [{ id: 'fighting', skillKey: 'fighting', name: 'Fighting', die: 'd8', linkedAttribute: 'agility' }],
+    })
+    const effective = resolveCharacter(character, world)
 
-    expect(effective.size).toBe(2)
-    expect(effective.pace).toBe('8')
-    expect(effective.parry).toBe('6')
-    expect(effective.toughness).toBe('13 (4)')
-    expect(effective.agility).toBe('d12+1')
-    expect(effective.strength).toBe('d12+1')
-    expect(effective.smarts).toBe('d4')
+    expect(effective.combat.size).toBe(2)
+    expect(effective.combat.pace).toBe(8)
+    expect(effective.combat.parry).toBe(7)
+    expect(effective.combat).toMatchObject({ toughness: 10, armor: 2 })
+    expect(effective.attributes.agility).toBe('d12+1')
+    expect(effective.attributes.strength).toBe('d12+1')
+    expect(effective.attributes.smarts).toBe('d8')
 
     expect(character.size).toBe(0)
     expect(character.pace).toBe('6')
@@ -114,6 +119,31 @@ describe('race effective character flow', () => {
     expect(imported.raceId).toBeUndefined()
     expect(imported.raceName).toBeUndefined()
     expect(imported.size).toBe(0)
-    expect(resolveEffectiveCharacter(imported, makeWorld())).toBe(imported)
+    expect(resolveCharacter(imported, makeWorld()).combat).toMatchObject({ pace: 6, parry: 5, toughness: 8, armor: 2 })
+  })
+
+  it('preserves resolved combat values through source-only export and import', () => {
+    const source = createCharacter({
+      pace: 'ignored',
+      parry: 'ignored',
+      toughness: 'ignored',
+      armor: 'ignored',
+      vigor: 'd8',
+      skills: [{ id: 'fighting', skillKey: 'fighting', name: 'Fighting', die: 'd8', linkedAttribute: 'agility' }],
+      combatModifiers: [
+        { id: 'staff', source: 'equipment', name: 'Staff held in two hands', parry: 1 },
+        { id: 'armor', source: 'equipment', name: 'Worn armor', armor: 2 },
+      ],
+    })
+    const exported = createCharacterExportPayload(source)
+    const imported = validateCharacterImport(exported)
+
+    expect(resolveCharacter(imported, null).combat).toMatchObject({
+      pace: 6,
+      parry: 7,
+      toughness: 8,
+      armor: 2,
+    })
+    expect(imported.importWarnings).toBeUndefined()
   })
 })

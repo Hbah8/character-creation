@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { resolveEffectiveCharacter } from '@/services/resolveEffectiveCharacter'
+import { resolveCharacter } from '@/services/resolveEffectiveCharacter'
 import type { Character } from '@/types/character'
 import type { World } from '@/world/types'
 import { WORLD_SCHEMA_VERSION } from '@/world/types'
+import { formatToughness } from '@/utils/toughnessUtils'
 
 const BASE_CHARACTER: Character = {
   sheetTitle: 'Test',
@@ -20,12 +21,13 @@ const BASE_CHARACTER: Character = {
   pace: '6',
   parry: '5',
   toughness: '5',
+  armor: '0',
   bennies: '3',
   wounds: '0',
   fatigue: '0',
   mana: '0',
   notes: '',
-  skills: [],
+  skills: [{ id: 'fighting', name: 'Fighting', die: 'd6', linkedAttribute: 'agility' }],
   edges: [],
   hindrances: [],
   weapons: [],
@@ -50,25 +52,98 @@ function makeWorld(overrides: Partial<World> = {}): World {
   }
 }
 
+function resolveEffectiveCharacter(character: Character, world: World | null): Character {
+  const resolved = resolveCharacter(character, world)
+  return {
+    ...resolved.source,
+    ...resolved.attributes,
+    pace: String(resolved.combat.pace),
+    parry: String(resolved.combat.parry),
+    toughness: formatToughness(resolved.combat.toughness, resolved.combat.armor),
+    armor: String(resolved.combat.armor),
+    size: resolved.combat.size,
+  }
+}
+
 describe('resolveEffectiveCharacter', () => {
-  it('returns base character unchanged when world is null', () => {
-    const char = { ...BASE_CHARACTER, raceId: 'elf' }
-    const result = resolveEffectiveCharacter(char, null)
-    expect(result).toBe(char)
+  it('separates source data, effective attributes, and resolved combat values', () => {
+    const character = {
+      ...BASE_CHARACTER,
+      combatModifiers: [{ id: 'fast-runner', source: 'manual' as const, name: 'Fast runner', runningDieSteps: 1 }],
+    }
+
+    const result = resolveCharacter(character, null)
+
+    expect(result.source).toBe(character)
+    expect(result.attributes).toEqual({
+      agility: 'd6', strength: 'd6', smarts: 'd6', spirit: 'd6', vigor: 'd6',
+    })
+    expect(result.combat).toEqual({
+      pace: 6,
+      parry: 5,
+      toughness: 5,
+      armor: 0,
+      runningDie: 'd8',
+      size: 0,
+    })
   })
 
-  it('returns base character unchanged when no raceId', () => {
+  it('derives core combat statistics from Fighting and Vigor instead of stored totals', () => {
+    const char = {
+      ...BASE_CHARACTER,
+      pace: '99',
+      parry: '99',
+      toughness: '99 (99)',
+      armor: '3',
+      vigor: 'd8' as const,
+      skills: [{ id: 'fighting', name: 'Fighting', die: 'd8' as const, linkedAttribute: 'agility' as const }],
+      combatModifiers: [{ id: 'legacy-armor', source: 'manual' as const, name: 'Armor', armor: 3 }],
+    }
+
+    const result = resolveEffectiveCharacter(char, null)
+
+    expect(result.pace).toBe('6')
+    expect(result.parry).toBe('6')
+    expect(result.toughness).toBe('9 (3)')
+  })
+
+  it('applies named equipment and manual combat modifiers after deriving base statistics', () => {
+    const char = {
+      ...BASE_CHARACTER,
+      armor: '99',
+      combatModifiers: [
+        { id: 'staff-two-hands', source: 'equipment', name: 'Staff held in two hands', parry: 1 },
+        { id: 'campaign-pace', source: 'manual', name: 'Campaign pace', pace: 1 },
+        { id: 'natural-armor', source: 'manual', name: 'Natural armor', armor: 2 },
+        { id: 'hardy', source: 'manual', name: 'Hardy', toughness: 1 },
+      ] satisfies Character['combatModifiers'],
+    }
+
+    const result = resolveEffectiveCharacter(char, null)
+
+    expect(result.pace).toBe('7')
+    expect(result.parry).toBe('6')
+    expect(result.toughness).toBe('8 (2)')
+  })
+
+  it('derives combat statistics when world is null', () => {
+    const char = { ...BASE_CHARACTER, raceId: 'elf' }
+    const result = resolveEffectiveCharacter(char, null)
+    expect(result).toMatchObject({ pace: '6', parry: '5', toughness: '5' })
+  })
+
+  it('derives combat statistics when no raceId', () => {
     const world = makeWorld({ races: [{ id: 'elf', name: 'Elf', description: '', abilities: [], size: 1 }] })
     const char = { ...BASE_CHARACTER, raceId: undefined }
     const result = resolveEffectiveCharacter(char, world)
-    expect(result).toBe(char)
+    expect(result).toMatchObject({ pace: '6', parry: '5', toughness: '5' })
   })
 
-  it('returns base character unchanged when raceId not found in world', () => {
+  it('derives combat statistics when raceId is not found in world', () => {
     const world = makeWorld({ races: [{ id: 'elf', name: 'Elf', description: '', abilities: [], size: 1 }] })
     const char = { ...BASE_CHARACTER, raceId: 'dwarf' }
     const result = resolveEffectiveCharacter(char, world)
-    expect(result).toBe(char)
+    expect(result).toMatchObject({ pace: '6', parry: '5', toughness: '5' })
   })
 
   it('returns base character unchanged when race has no ability modifiers', () => {
@@ -147,7 +222,7 @@ describe('resolveEffectiveCharacter', () => {
     expect(result.toughness).toBe('7 (2)')
   })
 
-  it('preserves existing armor in parentheses when adding racial armor', () => {
+  it('stacks stored armor with racial armor', () => {
     const world = makeWorld({
       races: [{
         id: 'armored', name: 'Armored', description: '',
@@ -155,13 +230,17 @@ describe('resolveEffectiveCharacter', () => {
         size: 0,
       }],
     })
-    const char = { ...BASE_CHARACTER, raceId: 'armored', toughness: '8 (2)' }
+    const char = {
+      ...BASE_CHARACTER,
+      raceId: 'armored',
+      combatModifiers: [{ id: 'worn-armor', source: 'equipment' as const, name: 'Worn armor', armor: 2 }],
+    }
     const result = resolveEffectiveCharacter(char, world)
-    // base 8, armor 2; racial armor +2 → total 10, armor 4 → "10 (4)"
-    expect(result.toughness).toBe('10 (4)')
+    // Vigor d6 gives 5 base Toughness; armor 2 + racial armor 2 gives 9 (4).
+    expect(result.toughness).toBe('9 (4)')
   })
 
-  it('leaves unparseable toughness untouched when armor/tough bonus applied', () => {
+  it('derives Toughness when legacy toughness is unparseable', () => {
     const world = makeWorld({
       races: [{
         id: 'armored', name: 'Armored', description: '',
@@ -171,17 +250,17 @@ describe('resolveEffectiveCharacter', () => {
     })
     const char = { ...BASE_CHARACTER, raceId: 'armored', toughness: 'unknown' }
     const result = resolveEffectiveCharacter(char, world)
-    expect(result.toughness).toBe('unknown')
+    expect(result.toughness).toBe('7 (2)')
   })
 
-  it('computes effective size as character.size + size derived from racial abilities', () => {
+  it('computes effective size as character.size plus stored race.size', () => {
     const world = makeWorld({
       races: [{
         id: 'big',
         name: 'Big',
         description: '',
         abilities: [{ id: 'size-plus-1', repeatCount: 2 }],
-        size: 0,
+        size: 2,
       }],
     })
     const char = { ...BASE_CHARACTER, raceId: 'big', size: 1 }
@@ -190,17 +269,17 @@ describe('resolveEffectiveCharacter', () => {
     expect(result.toughness).toBe('8')
   })
 
-  it('ignores stored race.size when size abilities are absent', () => {
+  it('uses stored race.size when size abilities are absent', () => {
     const world = makeWorld({
       races: [{ id: 'stale-big', name: 'Stale Big', description: '', abilities: [], size: 2 }],
     })
     const char = { ...BASE_CHARACTER, raceId: 'stale-big', size: 0 }
     const result = resolveEffectiveCharacter(char, world)
-    expect(result.size).toBe(0)
-    expect(result.toughness).toBe('5')
+    expect(result.size).toBe(2)
+    expect(result.toughness).toBe('7')
   })
 
-  it('applies size bonus to toughness total (not to armor parentheses)', () => {
+  it('does not resolve size ability references a second time', () => {
     const world = makeWorld({
       races: [{
         id: 'big', name: 'Big', description: '',
@@ -210,9 +289,8 @@ describe('resolveEffectiveCharacter', () => {
     })
     const char = { ...BASE_CHARACTER, raceId: 'big', toughness: '5', size: 0 }
     const result = resolveEffectiveCharacter(char, world)
-    // size-plus-1 is excluded from the generic modifier bag and applied once as effective size.
-    expect(result.size).toBe(1)
-    expect(result.toughness).toBe('6')
+    expect(result.size).toBe(0)
+    expect(result.toughness).toBe('5')
   })
 
   it('advances attribute die for attribute-bonus', () => {
@@ -226,6 +304,19 @@ describe('resolveEffectiveCharacter', () => {
     const char = { ...BASE_CHARACTER, raceId: 'nimble', agility: 'd6' as const }
     const result = resolveEffectiveCharacter(char, world)
     expect(result.agility).toBe('d8')
+  })
+
+  it('derives Toughness after applying a racial Vigor die increase', () => {
+    const world = makeWorld({
+      races: [{
+        id: 'hardy', name: 'Hardy', description: '', size: 0,
+        abilities: [{ id: 'attribute-bonus', repeatCount: 1, parameters: { attributeId: 'vigor' } }],
+      }],
+    })
+    const result = resolveEffectiveCharacter({ ...BASE_CHARACTER, raceId: 'hardy', vigor: 'd6' }, world)
+
+    expect(result.vigor).toBe('d8')
+    expect(result.toughness).toBe('6')
   })
 
   it('advances attribute die past d12 to d12+1', () => {
@@ -263,7 +354,7 @@ describe('resolveEffectiveCharacter', () => {
     expect(result.pace).toBe('6')
   })
 
-  it('leaves pace unchanged when pace string is not a number', () => {
+  it('derives Pace when legacy pace is not a number', () => {
     const world = makeWorld({
       races: [{
         id: 'fast', name: 'Fast', description: '',
@@ -273,6 +364,6 @@ describe('resolveEffectiveCharacter', () => {
     })
     const char = { ...BASE_CHARACTER, raceId: 'fast', pace: 'unknown' }
     const result = resolveEffectiveCharacter(char, world)
-    expect(result.pace).toBe('unknown')
+    expect(result.pace).toBe('8')
   })
 })
