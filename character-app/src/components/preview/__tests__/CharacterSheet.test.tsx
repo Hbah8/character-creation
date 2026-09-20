@@ -28,7 +28,18 @@ describe('CharacterSheet', () => {
       resolvedCharacter: {
         source: SOURCE_CHARACTER,
         attributes: { agility: 'd8', strength: 'd6', smarts: 'd6', spirit: 'd6', vigor: 'd6' },
-        combat: { pace: 6, parry: 5, toughness: 7, armor: 2, runningDie: 'd8', size: 0 },
+        combat: {
+          pace: 6,
+          parry: 5,
+          toughness: 7,
+          armor: 2,
+          runningDie: 'd8',
+          size: 0,
+          bennies: 3,
+          maxWounds: 3,
+          maxFatigue: 2,
+          powerPoints: 0,
+        },
       },
     }))
 

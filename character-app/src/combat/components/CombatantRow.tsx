@@ -191,8 +191,8 @@ export function CombatantRow({
               <StatCounter
                 label="Уст."
                 value={combatant.fatigue}
-                max={3}
-                danger={combatant.fatigue >= 2}
+                max={combatant.maxFatigue}
+                danger={combatant.fatigue >= combatant.maxFatigue}
                 onChange={v => onUpdate({ fatigue: v })}
               />
               <StatCounter

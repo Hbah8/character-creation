@@ -45,8 +45,9 @@ const preview = {
     armor: 'Броня',
     runningDie: 'Кость бега',
     bennies: 'Фишки',
-    wounds: 'Раны',
-    fatigue: 'Усталость',
+    maxWounds: 'Максимум ран',
+    maxFatigue: 'Максимум усталости',
+    powerPoints: 'Пункты силы',
   },
   skills: {
     columnSkill: 'Навык',

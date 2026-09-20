@@ -27,6 +27,29 @@ describe('createCharacterCombatantDraft', () => {
     })
   })
 
+  it('uses resolved resource limits when making an encounter snapshot', () => {
+    const resourceCharacter: Character = {
+      ...character,
+      combatModifiers: [{
+        id: 'arcane-veteran',
+        source: 'manual',
+        name: 'Arcane veteran',
+        bennies: 1,
+        maxWounds: 1,
+        maxFatigue: 1,
+        powerPoints: 10,
+      }],
+    }
+
+    expect(createCharacterCombatantDraft(resourceCharacter, null)).toMatchObject({
+      bennies: 4,
+      maxWounds: 4,
+      maxFatigue: 3,
+      powerPoints: 10,
+      maxPowerPoints: 10,
+    })
+  })
+
   it('returns an independent snapshot when the character changes later', () => {
     const draft = createCharacterCombatantDraft(character, null)
     character.combatModifiers = [{ id: 'slow', source: 'manual', name: 'Slow', pace: -2 }]

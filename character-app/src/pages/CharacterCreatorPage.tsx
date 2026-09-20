@@ -246,7 +246,7 @@ export function CharacterCreatorPage() {
       case 'attributes':
         return <AttributesForm character={character} onChange={store.updateField} />
       case 'combat':
-        return <CombatForm character={character} resolvedCombat={resolvedCharacter.combat} onChange={store.updateField} />
+        return <CombatForm character={character} onChange={store.updateField} />
       case 'skills':
         return (
           <SkillsForm

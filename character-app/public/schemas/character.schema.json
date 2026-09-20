@@ -18,10 +18,6 @@
     "smarts",
     "spirit",
     "vigor",
-    "bennies",
-    "wounds",
-    "fatigue",
-    "mana",
     "skills",
     "edges",
     "hindrances",
@@ -87,25 +83,9 @@
       "description": "Vigor attribute die."
     },
 
-    "bennies": {
-      "type": "string",
-      "description": "Benny count or notation. Free-form string."
-    },
-    "wounds": {
-      "type": "string",
-      "description": "Current wound count. Free-form string."
-    },
-    "fatigue": {
-      "type": "string",
-      "description": "Current fatigue level. Free-form string."
-    },
-    "mana": {
-      "type": "string",
-      "description": "Power Points (mana) available. Free-form string."
-    },
     "combatModifiers": {
       "type": "array",
-      "description": "Named permanent additions to calculated Pace, Parry, Toughness, Armor, and running die.",
+      "description": "Named permanent additions to calculated combat and resource parameters.",
       "items": {
         "$ref": "#/$defs/combatModifier"
       }
@@ -280,6 +260,18 @@
           "type": "number"
         },
         "runningDieSteps": {
+          "type": "number"
+        },
+        "bennies": {
+          "type": "number"
+        },
+        "maxWounds": {
+          "type": "number"
+        },
+        "maxFatigue": {
+          "type": "number"
+        },
+        "powerPoints": {
           "type": "number"
         }
       }

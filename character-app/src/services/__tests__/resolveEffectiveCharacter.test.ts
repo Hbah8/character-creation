@@ -85,6 +85,34 @@ describe('resolveEffectiveCharacter', () => {
       armor: 0,
       runningDie: 'd8',
       size: 0,
+      bennies: 3,
+      maxWounds: 3,
+      maxFatigue: 2,
+      powerPoints: 0,
+    })
+  })
+
+  it('derives resource limits from additive combat modifiers', () => {
+    const character = {
+      ...BASE_CHARACTER,
+      combatModifiers: [{
+        id: 'arcane-veteran',
+        source: 'manual' as const,
+        name: 'Arcane veteran',
+        bennies: 1,
+        maxWounds: 1,
+        maxFatigue: 2,
+        powerPoints: 10,
+      }],
+    }
+
+    const result = resolveCharacter(character, null)
+
+    expect(result.combat).toMatchObject({
+      bennies: 4,
+      maxWounds: 4,
+      maxFatigue: 4,
+      powerPoints: 10,
     })
   })
 

@@ -36,7 +36,9 @@ interface AddCombatantDialogProps {
     parry: number
     toughness: number
     armor: number
+    bennies: number
     maxWounds: number
+    maxFatigue: number
     powerPoints: number
     maxPowerPoints: number
   }) => void
@@ -51,7 +53,9 @@ interface DraftEntry {
   parry: number
   toughness: number
   armor: number
+  bennies: number
   maxWounds: number
+  maxFatigue: number
   powerPoints: number
   maxPowerPoints: number
 }
@@ -82,6 +86,7 @@ function DraftEntryRow({
             type: t,
             isPlayer: t !== 'wildcard' ? false : draft.isPlayer,
             maxWounds: t === 'wildcard' ? 3 : 1,
+            maxFatigue: t === 'wildcard' ? 2 : 0,
           })
         }}
       >
@@ -111,6 +116,7 @@ function DraftEntryRow({
         ['toughness', 0, (v: number) => onChange({ toughness: v || 5 })],
         ['armor', 0, (v: number) => onChange({ armor: v || 0 })],
         ['maxWounds', 1, (v: number) => onChange({ maxWounds: Math.max(1, v || 3) })],
+        ['maxFatigue', 0, (v: number) => onChange({ maxFatigue: Math.max(0, v || 0) })],
         ['maxPowerPoints', 0, (v: number) => onChange({ maxPowerPoints: v || 0 })],
       ] as const).map(([field, min, handler]) => (
         <Input
@@ -136,7 +142,9 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
   const [parry, setParry] = useState(4)
   const [toughness, setToughness] = useState(5)
   const [armor, setArmor] = useState(0)
+  const [bennies, setBennies] = useState(3)
   const [maxWounds, setMaxWounds] = useState(3)
+  const [maxFatigue, setMaxFatigue] = useState(2)
   const [powerPoints, setPowerPoints] = useState(0)
   const [maxPowerPoints, setMaxPowerPoints] = useState(0)
 
@@ -179,7 +187,9 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
           setParry(draft.parry)
           setToughness(draft.toughness)
           setArmor(draft.armor)
+          setBennies(draft.bennies)
           setMaxWounds(draft.maxWounds)
+          setMaxFatigue(draft.maxFatigue)
           setPowerPoints(draft.powerPoints)
           setMaxPowerPoints(draft.maxPowerPoints)
         }
@@ -200,7 +210,9 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
         setParry(draft.parry)
         setToughness(draft.toughness)
         setArmor(draft.armor)
+        setBennies(draft.bennies)
         setMaxWounds(draft.maxWounds)
+        setMaxFatigue(draft.maxFatigue)
         setPowerPoints(draft.powerPoints)
         setMaxPowerPoints(draft.maxPowerPoints)
       }
@@ -222,7 +234,9 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
     setParry(4)
     setToughness(5)
     setArmor(0)
+    setBennies(3)
     setMaxWounds(3)
+    setMaxFatigue(2)
     setPowerPoints(0)
     setMaxPowerPoints(0)
   }
@@ -239,7 +253,9 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
           parry: d.parry,
           toughness: d.toughness,
           armor: d.armor,
+          bennies: d.bennies,
           maxWounds: d.maxWounds,
+          maxFatigue: d.maxFatigue,
           powerPoints: d.powerPoints,
           maxPowerPoints: d.maxPowerPoints,
         })
@@ -256,7 +272,9 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
         parry,
         toughness,
         armor,
+        bennies,
         maxWounds,
+        maxFatigue,
         powerPoints,
         maxPowerPoints,
       })
@@ -325,6 +343,7 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
                 <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">Стойк.</span>
                 <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">Броня</span>
                 <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">Ран</span>
+                <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">Уст.</span>
                 <span className="text-xs text-muted-foreground w-12 shrink-0 text-center">МаксОС</span>
               </div>
               <ScrollArea className="max-h-[320px]">
@@ -365,6 +384,7 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
                     setType(t)
                     if (t !== 'wildcard') setIsPlayer(false)
                     setMaxWounds(t === 'wildcard' ? 3 : 1)
+                    setMaxFatigue(t === 'wildcard' ? 2 : 0)
                   }}
                 >
                   <SelectTrigger>
@@ -463,6 +483,17 @@ export function AddCombatantDialog({ open, onOpenChange, onAdd }: AddCombatantDi
                       min={1}
                       value={maxWounds}
                       onChange={e => setMaxWounds(Math.max(1, parseInt(e.target.value, 10) || 3))}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="stat-maxfatigue" className="text-xs">Макс. уст.</Label>
+                    <Input
+                      id="stat-maxfatigue"
+                      type="number"
+                      min={0}
+                      value={maxFatigue}
+                      onChange={e => setMaxFatigue(Math.max(0, parseInt(e.target.value, 10) || 0))}
                       className="h-8 text-sm"
                     />
                   </div>

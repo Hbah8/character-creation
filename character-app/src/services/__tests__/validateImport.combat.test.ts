@@ -69,6 +69,24 @@ describe('validateCharacterImport - combat fields backward compatibility', () =>
     ]))
   })
 
+  it('migrates legacy resource limits into manual modifier deltas and removes the fields', () => {
+    const result = validateCharacterImport({
+      ...BASE,
+      bennies: '4',
+      wounds: '0 / 4',
+      fatigue: '0 / 3',
+      mana: '10',
+    })
+
+    expect(result.combatModifiers).toEqual(expect.arrayContaining([
+      expect.objectContaining({ bennies: 1, maxWounds: 1, maxFatigue: 1, powerPoints: 10 }),
+    ]))
+    expect(result).not.toHaveProperty('bennies')
+    expect(result).not.toHaveProperty('wounds')
+    expect(result).not.toHaveProperty('fatigue')
+    expect(result).not.toHaveProperty('mana')
+  })
+
   it('retains a warning instead of double-counting conflicting legacy armor', () => {
     const result = validateCharacterImport({ ...BASE, toughness: '7 (2)', armor: '4' })
 
@@ -91,6 +109,7 @@ describe('validateCharacterImport - combat fields backward compatibility', () =>
   it('drops imported racial modifier records because race effects are resolved from the selected race', () => {
     const result = validateCharacterImport({
       ...BASE,
+      mana: '-',
       combatModifiers: [
         { id: 'race-parry', source: 'racial', name: 'Race Parry', parry: 1 },
         { id: 'staff', source: 'equipment', name: 'Staff', parry: 1 },

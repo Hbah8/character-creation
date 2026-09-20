@@ -1,14 +1,12 @@
 import { useTranslation } from 'react-i18next'
-import type { Character } from '@/types/character'
 import type { ResolvedCombatStats } from '@/services/resolveEffectiveCharacter'
 import { formatToughness } from '@/utils/toughnessUtils'
 
 interface Props {
-  character: Character
   combat: ResolvedCombatStats
 }
 
-export function SheetQuickStats({ character, combat }: Props) {
+export function SheetQuickStats({ combat }: Props) {
   const { t } = useTranslation('preview')
   return (
     <div className="quick-stats">
@@ -34,12 +32,12 @@ export function SheetQuickStats({ character, combat }: Props) {
       <span className="qs-sep">/</span>
       <div className="quick-stat">
         <span className="qs-label">{t('quickStats.bennies')}</span>
-        <span className="qs-value">{character.bennies}</span>
+        <span className="qs-value">{combat.bennies}</span>
       </div>
       <span className="qs-sep">/</span>
       <div className="quick-stat">
         <span className="qs-label">{t('quickStats.mana')}</span>
-        <span className="qs-value">{character.mana || '—'}</span>
+        <span className="qs-value">{combat.powerPoints || '—'}</span>
       </div>
       {!!combat.size && (
         <>

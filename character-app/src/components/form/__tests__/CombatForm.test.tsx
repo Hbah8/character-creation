@@ -29,19 +29,19 @@ describe('CombatForm', () => {
     vi.unstubAllGlobals()
   })
 
-  it('renders resolved armor as a calculated output and exposes an additive armor modifier input', async () => {
+  it('renders only modifier inputs and no standalone calculated fields', async () => {
     const i18n = (await import('@/i18n')).default
     await i18n.changeLanguage('en')
 
     const html = renderToStaticMarkup(createElement(CombatForm, {
       character: CHARACTER,
-      resolvedCombat: { pace: 6, parry: 5, toughness: 8, armor: 2, runningDie: 'd6', size: 0 },
       onChange: () => {},
     }))
 
-    expect(html).toContain('<output id="resolved-armor"')
-    expect(html).toContain('>2</output>')
-    expect(html).not.toContain('<input id="resolved-armor"')
+    expect(html).not.toContain('id="resolved-pace"')
+    expect(html).not.toContain('id="resolved-parry"')
+    expect(html).not.toContain('id="resolved-toughness"')
+    expect(html).not.toContain('id="resolved-armor"')
     expect(html).toContain('id="modifier-manual-combat-adjustment-armor"')
   })
 
@@ -54,7 +54,6 @@ describe('CombatForm', () => {
         ...CHARACTER,
         combatModifiers: [{ id: 'staff', source: 'equipment', name: 'Staff held in two hands', parry: 1 }],
       },
-      resolvedCombat: { pace: 6, parry: 6, toughness: 6, armor: 2, runningDie: 'd6', size: 0 },
       onChange: () => {},
     }))
 
@@ -63,5 +62,43 @@ describe('CombatForm', () => {
     expect(html).toContain('for="modifier-staff-parry"')
     expect(html).toContain('id="modifier-staff-parry"')
     expect(html).toContain('id="modifier-staff-runningDieSteps"')
+  })
+
+  it('edits resource limits through modifiers instead of separate resource inputs', async () => {
+    const i18n = (await import('@/i18n')).default
+    await i18n.changeLanguage('en')
+
+    const html = renderToStaticMarkup(createElement(CombatForm, {
+      character: {
+        ...CHARACTER,
+        combatModifiers: [{ id: 'arcane', source: 'manual', name: 'Arcane background', powerPoints: 10 }],
+      },
+      onChange: () => {},
+    }))
+
+    expect(html).not.toContain('id="bennies"')
+    expect(html).not.toContain('id="wounds"')
+    expect(html).not.toContain('id="fatigue"')
+    expect(html).not.toContain('id="mana"')
+    expect(html).toContain('id="modifier-arcane-bennies"')
+    expect(html).toContain('id="modifier-arcane-maxWounds"')
+    expect(html).toContain('id="modifier-arcane-maxFatigue"')
+    expect(html).toContain('id="modifier-arcane-powerPoints"')
+  })
+
+  it('uses compact resource labels and a container-aware grid for narrow form panels', async () => {
+    const i18n = (await import('@/i18n')).default
+    await i18n.changeLanguage('en')
+
+    const html = renderToStaticMarkup(createElement(CombatForm, {
+      character: CHARACTER,
+      onChange: () => {},
+    }))
+
+    expect(html).toContain('Max. Wounds')
+    expect(html).toContain('Max. Fatigue')
+    expect(html).toContain('>PP</label>')
+    expect(html).toContain('title="Maximum Fatigue"')
+    expect(html).toContain('combat-resource-grid')
   })
 })

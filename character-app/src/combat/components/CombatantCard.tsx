@@ -62,8 +62,6 @@ const MANEUVERS: { label: string; status: CombatantStatus }[] = [
   { label: 'Оглушить', status: 'stunned' },
 ]
 
-const FATIGUE_MAX = 3
-
 /** Colored square pip track for wounds / fatigue */
 function PipTrack({
   filled,
@@ -169,7 +167,7 @@ export function CombatantCard({
   const [dmgInput, setDmgInput] = useState('')
   const [targetId, setTargetId] = useState<string | null>(null)
 
-  const { wounds, fatigue, maxWounds, statuses, pace, parry, toughness, armor, powerPoints, maxPowerPoints, bennies } =
+  const { wounds, fatigue, maxWounds, maxFatigue, statuses, pace, parry, toughness, armor, powerPoints, maxPowerPoints, bennies } =
     combatant
 
   const penalty = -(Math.min(3, wounds) + Math.min(3, fatigue))
@@ -346,7 +344,7 @@ export function CombatantCard({
                 </div>
                 <PipTrack
                   filled={fatigue}
-                  total={FATIGUE_MAX}
+                  total={maxFatigue}
                   variant="fatigue"
                   onSetCount={v => onUpdate({ fatigue: v })}
                 />

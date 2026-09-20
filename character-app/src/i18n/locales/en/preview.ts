@@ -45,8 +45,9 @@ const preview = {
     armor: 'Armor',
     runningDie: 'Running die',
     bennies: 'Bennies',
-    wounds: 'Wounds',
-    fatigue: 'Fatigue',
+    maxWounds: 'Maximum Wounds',
+    maxFatigue: 'Maximum Fatigue',
+    powerPoints: 'Power Points',
   },
   skills: {
     columnSkill: 'Skill',

@@ -23,10 +23,6 @@ export const ruDefaultCharacter: Character = {
   toughness: '8 (2)',
   armor: '2',
   combatModifiers: [{ id: 'default-armor', source: 'equipment', name: 'Body armor', armor: 2 }],
-  bennies: '3',
-  wounds: '0 / 3',
-  fatigue: '0 / 2',
-  mana: '-',
 
   skills: [
     { id: '1', name: 'Стрельба', die: 'd10', linkedAttribute: 'agility', isStarter: false },

@@ -11,7 +11,9 @@ export interface CharacterCombatantDraft {
   parry: number
   toughness: number
   armor: number
+  bennies: number
   maxWounds: number
+  maxFatigue: number
   powerPoints: number
   maxPowerPoints: number
 }
@@ -26,8 +28,10 @@ export function createCharacterCombatantDraft(character: Character, world: World
     parry: resolved.combat.parry,
     toughness: resolved.combat.toughness,
     armor: resolved.combat.armor,
-    maxWounds: 3,
-    powerPoints: 0,
-    maxPowerPoints: 0,
+    bennies: resolved.combat.bennies,
+    maxWounds: resolved.combat.maxWounds,
+    maxFatigue: resolved.combat.maxFatigue,
+    powerPoints: resolved.combat.powerPoints,
+    maxPowerPoints: resolved.combat.powerPoints,
   }
 }

@@ -1,5 +1,5 @@
 import type { Character, AttributeKey, HindranceSeverity, CharacterLayout, ColumnSide, CharacterPower, PowerModifier, CombatModifier, CombatModifierSource } from '@/types/character'
-import { DEFAULT_LAYOUT } from '@/types/character'
+import { DEFAULT_CHARACTER_RESOURCE_LIMITS, DEFAULT_LAYOUT } from '@/types/character'
 import { parseToughness } from '@/utils/toughnessUtils'
 
 function isString(value: unknown): value is string {
@@ -73,13 +73,44 @@ function validateCombatModifiers(value: unknown): CombatModifier[] | undefined {
       toughness: numberOrZero(item.toughness),
       armor: numberOrZero(item.armor),
       runningDieSteps: numberOrZero(item.runningDieSteps),
+      bennies: numberOrZero(item.bennies),
+      maxWounds: numberOrZero(item.maxWounds),
+      maxFatigue: numberOrZero(item.maxFatigue),
+      powerPoints: numberOrZero(item.powerPoints),
     }]
   })
 }
 
+function legacyMaximum(value: unknown, defaultValue: number): number {
+  if (!isString(value)) return defaultValue
+  const match = /\/\s*(\d+)/.exec(value)
+  return match ? Number(match[1]) : defaultValue
+}
+
+function migrateLegacyResourceModifier(raw: Record<string, unknown>): CombatModifier | undefined {
+  const bennies = Number.parseInt(String(raw.bennies), 10)
+  const powerPoints = Number.parseInt(String(raw.mana), 10)
+  const modifier = {
+    bennies: Number.isFinite(bennies) ? bennies - DEFAULT_CHARACTER_RESOURCE_LIMITS.bennies : 0,
+    maxWounds: legacyMaximum(raw.wounds, DEFAULT_CHARACTER_RESOURCE_LIMITS.maxWounds) - DEFAULT_CHARACTER_RESOURCE_LIMITS.maxWounds,
+    maxFatigue: legacyMaximum(raw.fatigue, DEFAULT_CHARACTER_RESOURCE_LIMITS.maxFatigue) - DEFAULT_CHARACTER_RESOURCE_LIMITS.maxFatigue,
+    powerPoints: Number.isFinite(powerPoints) ? powerPoints - DEFAULT_CHARACTER_RESOURCE_LIMITS.powerPoints : 0,
+  }
+  if (!Object.values(modifier).some(value => value !== 0)) return undefined
+  return {
+    id: 'legacy-resource-values',
+    source: 'manual',
+    name: 'Legacy resource values',
+    ...modifier,
+  }
+}
+
 function migrateLegacyCombatModifiers(raw: Record<string, unknown>, skills: Character['skills']): Pick<Character, 'combatModifiers' | 'importWarnings'> {
   const existing = validateCombatModifiers(raw.combatModifiers)
-  if (existing) return { combatModifiers: existing }
+  const resourceModifier = migrateLegacyResourceModifier(raw)
+  if (existing) {
+    return { combatModifiers: resourceModifier ? [...existing, resourceModifier] : existing }
+  }
 
   const pace = Number.parseInt(String(raw.pace), 10)
   const fighting = skills.find(skill => skill.skillKey === 'fighting')
@@ -96,15 +127,18 @@ function migrateLegacyCombatModifiers(raw: Record<string, unknown>, skills: Char
     : undefined
 
   return {
-    combatModifiers: [{
-      id: 'legacy-combat-values',
-      source: 'manual',
-      name: 'Legacy combat values',
-      pace: Number.isFinite(pace) ? pace - basePace : 0,
-      parry: Number.isFinite(parry) ? parry - baseParry : 0,
-      toughness: displayedToughness - baseToughness - armor,
-      armor,
-    }],
+    combatModifiers: [
+      {
+        id: 'legacy-combat-values',
+        source: 'manual',
+        name: 'Legacy combat values',
+        pace: Number.isFinite(pace) ? pace - basePace : 0,
+        parry: Number.isFinite(parry) ? parry - baseParry : 0,
+        toughness: displayedToughness - baseToughness - armor,
+        armor,
+      },
+      ...(resourceModifier ? [resourceModifier] : []),
+    ],
     importWarnings,
   }
 }
@@ -116,7 +150,7 @@ export function validateCharacterImport(raw: unknown): Character {
 
   const requiredStrings: (keyof Character)[] = [
     'callsign', 'name', 'rank', 'role', 'fileNo', 'portraitUrl', 'sheetTitle',
-    'bennies', 'wounds', 'fatigue', 'mana', 'notes',
+    'notes',
   ]
 
   for (const key of requiredStrings) {
@@ -201,9 +235,10 @@ export function validateCharacterImport(raw: unknown): Character {
 
   const normalizedSkills = skills as Character['skills']
   const legacyCombat = migrateLegacyCombatModifiers(raw, normalizedSkills)
+  const { bennies: _bennies, wounds: _wounds, fatigue: _fatigue, mana: _mana, ...source } = raw
 
   return {
-    ...(raw as unknown as Character),
+    ...(source as unknown as Character),
     hindrances: hindrances as Character['hindrances'],
     skills: normalizedSkills,
     layout,

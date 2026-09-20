@@ -2,18 +2,6 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { SheetCombat } from '@/components/preview/SheetCombat'
-import type { Character } from '@/types/character'
-
-const CHARACTER = {
-  pace: '6',
-  parry: '5',
-  toughness: '8 (2)',
-  armor: '99',
-  bennies: '3',
-  wounds: '0',
-  fatigue: '0',
-} as Character
-
 describe('SheetCombat', () => {
   beforeAll(() => {
     vi.stubGlobal('localStorage', {
@@ -33,8 +21,18 @@ describe('SheetCombat', () => {
     await i18n.changeLanguage('en')
 
     const html = renderToStaticMarkup(createElement(SheetCombat, {
-      character: CHARACTER,
-      combat: { pace: 6, parry: 5, toughness: 8, armor: 2, runningDie: 'd6', size: 0 },
+      combat: {
+        pace: 6,
+        parry: 5,
+        toughness: 8,
+        armor: 2,
+        runningDie: 'd6',
+        size: 0,
+        bennies: 3,
+        maxWounds: 3,
+        maxFatigue: 2,
+        powerPoints: 0,
+      },
     }))
 
     expect(html).toContain('Armor')

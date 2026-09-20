@@ -116,7 +116,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
           <main className="sheet sheet--mobile">
             <div className="content">
               <SheetHeader character={character} />
-              <SheetQuickStats character={character} combat={combat} />
+              <SheetQuickStats combat={combat} />
               <section className="columns">
                 <div className="column">
                   <SheetAttributesSkills character={character} attributes={attributes} />
@@ -137,7 +137,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
                   <SheetRacialAbilities race={race} world={world} />
                 </div>
               </section>
-              <SheetNotes character={character} />
+              <SheetNotes character={character} combat={combat} />
             </div>
           </main>
         </div>
@@ -173,7 +173,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
         <main className="sheet">
           <div className="content">
             <SheetHeader character={character} />
-            <SheetQuickStats character={character} combat={combat} />
+            <SheetQuickStats combat={combat} />
             <section className="columns">
               {(() => {
                 const layout = character.layout ?? DEFAULT_LAYOUT
@@ -201,7 +201,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
                 )
               })()}
             </section>
-            <SheetNotes character={character} />
+            <SheetNotes character={character} combat={combat} />
           </div>
         </main>
       </div>

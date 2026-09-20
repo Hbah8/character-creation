@@ -2,11 +2,22 @@ import type { Character } from '@/types/character'
 
 export type CharacterExportPayload = Omit<
   Character,
-  'pace' | 'parry' | 'toughness' | 'armor' | 'importWarnings'
+  'pace' | 'parry' | 'toughness' | 'armor' | 'bennies' | 'wounds' | 'fatigue' | 'mana' | 'importWarnings'
 >
 
 export function createCharacterExportPayload(character: Character): CharacterExportPayload {
-  const { pace: _pace, parry: _parry, toughness: _toughness, armor: _armor, importWarnings: _importWarnings, ...payload } = character
+  const {
+    pace: _pace,
+    parry: _parry,
+    toughness: _toughness,
+    armor: _armor,
+    bennies: _bennies,
+    wounds: _wounds,
+    fatigue: _fatigue,
+    mana: _mana,
+    importWarnings: _importWarnings,
+    ...payload
+  } = character
   return payload
 }
 

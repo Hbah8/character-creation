@@ -13,14 +13,18 @@ const character: Character = {
 }
 
 describe('createCharacterExportPayload', () => {
-  it('serializes combat sources and excludes derived and import-only fields', () => {
+  it('serializes combat sources and excludes derived, legacy, and import-only fields', () => {
     const payload = createCharacterExportPayload(character)
 
-    expect(payload).toMatchObject({ combatModifiers: character.combatModifiers, bennies: '3' })
+    expect(payload).toMatchObject({ combatModifiers: character.combatModifiers })
     expect(payload).not.toHaveProperty('pace')
     expect(payload).not.toHaveProperty('parry')
     expect(payload).not.toHaveProperty('toughness')
     expect(payload).not.toHaveProperty('armor')
+    expect(payload).not.toHaveProperty('bennies')
+    expect(payload).not.toHaveProperty('wounds')
+    expect(payload).not.toHaveProperty('fatigue')
+    expect(payload).not.toHaveProperty('mana')
     expect(payload).not.toHaveProperty('importWarnings')
   })
 })

@@ -8,6 +8,13 @@ export type AttributeKey = 'agility' | 'strength' | 'smarts' | 'spirit' | 'vigor
 /** Racial combat effects are derived from the selected race catalog, not stored on Character. */
 export type CombatModifierSource = 'edge' | 'hindrance' | 'equipment' | 'manual'
 
+export const DEFAULT_CHARACTER_RESOURCE_LIMITS = {
+  bennies: 3,
+  maxWounds: 3,
+  maxFatigue: 2,
+  powerPoints: 0,
+} as const
+
 export interface CombatModifier {
   id: string
   source: CombatModifierSource
@@ -17,6 +24,10 @@ export interface CombatModifier {
   toughness?: number
   armor?: number
   runningDieSteps?: number
+  bennies?: number
+  maxWounds?: number
+  maxFatigue?: number
+  powerPoints?: number
 }
 
 export interface Skill {
@@ -119,10 +130,11 @@ export interface Character {
   armor: string
   combatModifiers?: CombatModifier[]
   importWarnings?: string[]
-  bennies: string
-  wounds: string
-  fatigue: string
-  mana: string
+  // Legacy resource strings are accepted only while importing existing JSON.
+  bennies?: string
+  wounds?: string
+  fatigue?: string
+  mana?: string
 
   // Skills
   skills: Skill[]

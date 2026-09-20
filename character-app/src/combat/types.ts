@@ -44,6 +44,7 @@ export interface Combatant {
   toughness: number
   armor: number
   maxWounds: number
+  maxFatigue: number
   powerPoints: number
   maxPowerPoints: number
   /** True while the combatant has declared "on hold" (Наготове) */

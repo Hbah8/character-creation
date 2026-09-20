@@ -1,17 +1,15 @@
 import { useTranslation } from 'react-i18next'
-import type { Character } from '@/types/character'
 import type { ResolvedCombatStats } from '@/services/resolveEffectiveCharacter'
 import { formatToughness } from '@/utils/toughnessUtils'
 
-type CombatKey = 'pace' | 'parry' | 'toughness' | 'armor' | 'runningDie' | 'bennies' | 'wounds' | 'fatigue'
-const COMBAT_KEYS: CombatKey[] = ['pace', 'parry', 'toughness', 'armor', 'runningDie', 'bennies', 'wounds', 'fatigue']
+type CombatKey = 'pace' | 'parry' | 'toughness' | 'armor' | 'runningDie' | 'bennies' | 'maxWounds' | 'maxFatigue' | 'powerPoints'
+const COMBAT_KEYS: CombatKey[] = ['pace', 'parry', 'toughness', 'armor', 'runningDie', 'bennies', 'maxWounds', 'maxFatigue', 'powerPoints']
 
 interface Props {
-  character: Character
   combat: ResolvedCombatStats
 }
 
-export function SheetCombat({ character, combat }: Props) {
+export function SheetCombat({ combat }: Props) {
   const { t } = useTranslation('preview')
   const combatValues: Record<CombatKey, string | number> = {
     pace: combat.pace,
@@ -19,9 +17,10 @@ export function SheetCombat({ character, combat }: Props) {
     toughness: formatToughness(combat.toughness, combat.armor),
     armor: combat.armor,
     runningDie: combat.runningDie,
-    bennies: character.bennies,
-    wounds: character.wounds,
-    fatigue: character.fatigue,
+    bennies: combat.bennies,
+    maxWounds: combat.maxWounds,
+    maxFatigue: combat.maxFatigue,
+    powerPoints: combat.powerPoints,
   }
   return (
     <section className="section">

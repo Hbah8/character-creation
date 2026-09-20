@@ -4,23 +4,45 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Character, CombatModifier } from '@/types/character'
-import type { ResolvedCombatStats } from '@/services/resolveEffectiveCharacter'
-import { formatToughness } from '@/utils/toughnessUtils'
 import { Plus, Trash2 } from 'lucide-react'
 
 type DerivedCombatKey = 'pace' | 'parry' | 'toughness' | 'armor'
-type ResourceCombatKey = 'bennies' | 'wounds' | 'fatigue' | 'mana'
-type ModifierCombatKey = DerivedCombatKey | 'runningDieSteps'
+type ResourceModifierKey = 'bennies' | 'maxWounds' | 'maxFatigue' | 'powerPoints'
+type CombatModifierKey = DerivedCombatKey | 'runningDieSteps'
 
 const DERIVED_COMBAT_KEYS: DerivedCombatKey[] = ['pace', 'parry', 'toughness', 'armor']
-const RESOURCE_COMBAT_KEYS: ResourceCombatKey[] = ['bennies', 'wounds', 'fatigue', 'mana']
-const MODIFIER_COMBAT_KEYS: ModifierCombatKey[] = [...DERIVED_COMBAT_KEYS, 'runningDieSteps']
+const COMBAT_MODIFIER_KEYS: CombatModifierKey[] = [...DERIVED_COMBAT_KEYS, 'runningDieSteps']
+const RESOURCE_MODIFIER_KEYS: ResourceModifierKey[] = ['bennies', 'maxWounds', 'maxFatigue', 'powerPoints']
+const COMBAT_MODIFIER_LABEL_KEYS = {
+  pace: 'combat.paceModifier',
+  parry: 'combat.parryModifier',
+  toughness: 'combat.toughnessModifier',
+  armor: 'combat.armorModifier',
+  runningDieSteps: 'combat.runningDieStepsModifier',
+} as const
+const RESOURCE_MODIFIER_LABEL_KEYS = {
+  bennies: 'combat.benniesModifier',
+  maxWounds: 'combat.maxWoundsModifier',
+  maxFatigue: 'combat.maxFatigueModifier',
+  powerPoints: 'combat.powerPointsModifier',
+} as const
+const RESOURCE_MODIFIER_DISPLAY_LABEL_KEYS = {
+  bennies: 'combat.bennies',
+  maxWounds: 'combat.maxWoundsShort',
+  maxFatigue: 'combat.maxFatigueShort',
+  powerPoints: 'combat.powerPointsShort',
+} as const
+const RESOURCE_MODIFIER_FULL_LABEL_KEYS = {
+  bennies: 'combat.bennies',
+  maxWounds: 'combat.maxWounds',
+  maxFatigue: 'combat.maxFatigue',
+  powerPoints: 'combat.powerPoints',
+} as const
 type EditableModifierSource = Exclude<CombatModifier['source'], 'racial'>
 const MODIFIER_SOURCES: EditableModifierSource[] = ['manual', 'equipment', 'edge', 'hindrance']
 
 interface Props {
   character: Character
-  resolvedCombat: ResolvedCombatStats
   onChange: <K extends keyof Character>(key: K, value: Character[K]) => void
 }
 
@@ -33,7 +55,7 @@ function getModifiers(modifiers: CombatModifier[] | undefined): CombatModifier[]
   }]
 }
 
-export function CombatForm({ character, resolvedCombat, onChange }: Props) {
+export function CombatForm({ character, onChange }: Props) {
   const { t } = useTranslation('form')
   const modifiers = getModifiers(character.combatModifiers)
 
@@ -64,27 +86,6 @@ export function CombatForm({ character, resolvedCombat, onChange }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.combat')}</h2>
-      <div className="grid grid-cols-2 gap-3">
-        {DERIVED_COMBAT_KEYS.map(key => (
-          <div key={key} className="flex flex-col gap-1">
-            <Label htmlFor={`resolved-${key}`}>{t(`combat.${key}`)}</Label>
-            <output
-              id={`resolved-${key}`}
-              className="flex h-8 items-center rounded-lg border border-input bg-muted/40 px-2.5 py-1 text-sm tabular-nums"
-            >
-              {key === 'toughness'
-                ? formatToughness(resolvedCombat.toughness, resolvedCombat.armor)
-                : String(resolvedCombat[key])}
-            </output>
-          </div>
-        ))}
-        {RESOURCE_COMBAT_KEYS.map(key => (
-          <div key={key} className="flex flex-col gap-1">
-            <Label htmlFor={key}>{t(`combat.${key}`)}</Label>
-            <Input id={key} value={character[key]} onChange={event => onChange(key, event.target.value)} />
-          </div>
-        ))}
-      </div>
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-medium">{t('combat.modifiers')}</h3>
@@ -128,21 +129,46 @@ export function CombatForm({ character, resolvedCombat, onChange }: Props) {
                 <Trash2 />
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-              {MODIFIER_COMBAT_KEYS.map(key => (
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium text-muted-foreground">{t('combat.combatModifiers')}</span>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                {COMBAT_MODIFIER_KEYS.map(key => (
+                  <div key={key} className="flex flex-col gap-1">
+                    <Label htmlFor={`modifier-${modifier.id}-${key}`}>
+                      {key === 'runningDieSteps' ? t('combat.runningDie') : t(`combat.${key}`)}
+                    </Label>
+                    <Input
+                      id={`modifier-${modifier.id}-${key}`}
+                      type="number"
+                      value={modifier[key] ?? 0}
+                      onChange={event => updateModifier(modifier.id, key, event.target.value)}
+                      aria-label={t(COMBAT_MODIFIER_LABEL_KEYS[key])}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="combat-resource-section flex flex-col gap-2">
+              <span className="text-xs font-medium text-muted-foreground">{t('combat.resourceModifiers')}</span>
+              <div className="combat-resource-grid grid grid-cols-2 gap-3">
+                {RESOURCE_MODIFIER_KEYS.map(key => (
                 <div key={key} className="flex flex-col gap-1">
-                  <Label htmlFor={`modifier-${modifier.id}-${key}`}>
-                    {key === 'runningDieSteps' ? t('combat.runningDie') : t(`combat.${key}`)}
+                  <Label
+                    htmlFor={`modifier-${modifier.id}-${key}`}
+                    title={t(RESOURCE_MODIFIER_FULL_LABEL_KEYS[key])}
+                  >
+                    {t(RESOURCE_MODIFIER_DISPLAY_LABEL_KEYS[key])}
                   </Label>
                   <Input
                     id={`modifier-${modifier.id}-${key}`}
                     type="number"
                     value={modifier[key] ?? 0}
                     onChange={event => updateModifier(modifier.id, key, event.target.value)}
-                    aria-label={t(`combat.${key === 'runningDieSteps' ? 'runningDieStepsModifier' : `${key}Modifier`}`)}
+                    aria-label={t(RESOURCE_MODIFIER_LABEL_KEYS[key])}
                   />
                 </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         ))}

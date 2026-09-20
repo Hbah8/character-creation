@@ -1,3 +1,4 @@
+import { DEFAULT_CHARACTER_RESOURCE_LIMITS } from '@/types/character'
 import type { Character, AttributeKey, CombatModifier, DieName } from '@/types/character'
 import type { World } from '@/world/types'
 import { resolveRacialAbilitiesForWorld } from '@/racebuilder/services/racialAbilityOptions'
@@ -13,6 +14,10 @@ export interface ResolvedCombatStats {
   armor: number
   runningDie: DieName
   size: number
+  bennies: number
+  maxWounds: number
+  maxFatigue: number
+  powerPoints: number
 }
 
 export interface ResolvedCharacter {
@@ -69,11 +74,15 @@ export function resolveCharacter(character: Character, world: World | null): Res
   const runningDie = runningDieSteps >= 0
     ? advanceDie('d6', runningDieSteps)
     : recessDie('d6', Math.abs(runningDieSteps))
+  const bennies = DEFAULT_CHARACTER_RESOURCE_LIMITS.bennies + characterModifiers.bennies
+  const maxWounds = DEFAULT_CHARACTER_RESOURCE_LIMITS.maxWounds + characterModifiers.maxWounds
+  const maxFatigue = DEFAULT_CHARACTER_RESOURCE_LIMITS.maxFatigue + characterModifiers.maxFatigue
+  const powerPoints = DEFAULT_CHARACTER_RESOURCE_LIMITS.powerPoints + characterModifiers.powerPoints
 
   return {
     source: character,
     attributes,
-    combat: { pace, parry, toughness, armor, runningDie, size: effectiveSize },
+    combat: { pace, parry, toughness, armor, runningDie, size: effectiveSize, bennies, maxWounds, maxFatigue, powerPoints },
   }
 }
 
@@ -91,7 +100,21 @@ function sumCombatModifiers(modifiers: CombatModifier[]) {
       toughness: total.toughness + (modifier.toughness ?? 0),
       armor: total.armor + (modifier.armor ?? 0),
       runningDieSteps: total.runningDieSteps + (modifier.runningDieSteps ?? 0),
+      bennies: total.bennies + (modifier.bennies ?? 0),
+      maxWounds: total.maxWounds + (modifier.maxWounds ?? 0),
+      maxFatigue: total.maxFatigue + (modifier.maxFatigue ?? 0),
+      powerPoints: total.powerPoints + (modifier.powerPoints ?? 0),
     }),
-    { pace: 0, parry: 0, toughness: 0, armor: 0, runningDieSteps: 0 },
+    {
+      pace: 0,
+      parry: 0,
+      toughness: 0,
+      armor: 0,
+      runningDieSteps: 0,
+      bennies: 0,
+      maxWounds: 0,
+      maxFatigue: 0,
+      powerPoints: 0,
+    },
   )
 }
