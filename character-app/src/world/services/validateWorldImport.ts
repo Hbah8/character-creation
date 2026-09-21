@@ -102,7 +102,7 @@ function validateEntity(raw: unknown, index: number): WorldEntity {
 }
 
 const HANDBOOK_CATEGORIES: readonly HandbookCategory[] = [
-  'edge', 'hindrance', 'weapon', 'gear', 'power', 'mount', 'racialAbility',
+  'edge', 'hindrance', 'skill', 'weapon', 'gear', 'power', 'mount', 'racialAbility',
 ]
 
 function isHandbookCategory(value: unknown): value is HandbookCategory {

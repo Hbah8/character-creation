@@ -39,4 +39,26 @@ describe('validateHandbookEntrySchema', () => {
       damage: 'Str+d6',
     })).toEqual([])
   })
+
+  it('accepts a complete custom skill and rejects an invalid linked attribute', () => {
+    expect(validateHandbookEntrySchema({
+      mode: 'custom',
+      id: 'spellcasting',
+      handbookCategory: 'skill',
+      name: 'Spellcasting',
+      description: 'Cast spells.',
+      linkedAttribute: 'smarts',
+      isCore: false,
+    })).toEqual([])
+
+    expect(validateHandbookEntrySchema({
+      mode: 'custom',
+      id: 'invalid-skill',
+      handbookCategory: 'skill',
+      name: 'Invalid',
+      description: '',
+      linkedAttribute: 'luck',
+      isCore: false,
+    })).not.toEqual([])
+  })
 })

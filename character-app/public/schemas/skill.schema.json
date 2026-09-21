@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/character-creation/schemas/skill.schema.json",
+  "title": "SWADE Skill Handbook Entry",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "id", "handbookCategory", "name", "description", "linkedAttribute", "isCore"],
+      "properties": {
+        "mode": { "const": "custom" },
+        "id": { "type": "string", "minLength": 1 },
+        "handbookCategory": { "const": "skill" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "linkedAttribute": { "enum": ["agility", "smarts", "spirit", "strength", "vigor"] },
+        "isCore": { "type": "boolean" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "id", "handbookCategory"],
+      "properties": {
+        "mode": { "const": "override" },
+        "id": { "type": "string", "minLength": 1 },
+        "handbookCategory": { "const": "skill" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "linkedAttribute": { "enum": ["agility", "smarts", "spirit", "strength", "vigor"] },
+        "isCore": { "type": "boolean" }
+      }
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import type { ResolvedEntry } from '@/types/handbook'
 
 interface Props {
   entries: AnyHandbookEntry[]
+  skillReferences?: readonly { id: string; name: string }[]
   hasActiveFilters: boolean
   activeWorldName?: string
   onOverride?: (entry: AnyHandbookEntry) => void
@@ -12,7 +13,7 @@ interface Props {
   onDeleteOverride?: (entry: AnyHandbookEntry) => void
 }
 
-export function HandbookList({ entries, hasActiveFilters, activeWorldName, onOverride, onEditOverride, onDeleteOverride }: Props) {
+export function HandbookList({ entries, skillReferences, hasActiveFilters, activeWorldName, onOverride, onEditOverride, onDeleteOverride }: Props) {
   const { t } = useTranslation('handbooks')
 
   return (
@@ -27,6 +28,7 @@ export function HandbookList({ entries, hasActiveFilters, activeWorldName, onOve
             <HandbookEntry
               key={entry.id}
               entry={entry}
+              skillReferences={skillReferences}
               source={(entry as ResolvedEntry<AnyHandbookEntry>).source}
               activeWorldName={activeWorldName}
               onOverride={() => onOverride?.(entry)}

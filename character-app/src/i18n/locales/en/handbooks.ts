@@ -3,6 +3,7 @@ const handbooks = {
   tabs: {
     edges: 'Edges',
     hindrances: 'Hindrances',
+    skills: 'Skills',
     weapons: 'Weapons',
     gear: 'Gear',
     powers: 'Powers',
@@ -22,6 +23,8 @@ const handbooks = {
     flags: 'Flags',
     noRank: 'No rank requirement',
     wildCardOnly: 'Wild Card only',
+    coreSkills: 'Core skills',
+    otherSkills: 'Other skills',
     noFacetGroups: 'No filters for this section.',
     noResults: 'No entries match the selected filters.',
   },
@@ -123,6 +126,10 @@ const handbooks = {
     points: 'Points',
     category: 'Category',
     wildCardOnly: 'Wild Card Only',
+    linkedAttribute: 'Linked attribute',
+    coreSkill: 'Core skill',
+    yes: 'Yes',
+    no: 'No',
   },
   modifiers: {
     title: 'Modifiers',

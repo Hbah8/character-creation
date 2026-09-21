@@ -44,6 +44,7 @@ import type {
   WeaponCategory,
   HandbookModifier,
   EdgeRequirements,
+  AttributeKey,
 } from '@/types/handbook'
 
 // ---------------------------------------------------------------------------
@@ -143,6 +144,32 @@ const RACIAL_ABILITY_TYPES: RacialAbilityType[] = ['positive', 'negative']
 const ARCANE_BACKGROUNDS: ArcaneBackground[] = [
   'Magic', 'Miracles', 'Psionics', 'SuperPowers', 'WeirdScience',
 ]
+
+const ATTRIBUTES: AttributeKey[] = ['agility', 'smarts', 'spirit', 'strength', 'vigor']
+
+function SkillFields({ values, set }: { values: FormValues; set: (k: string, v: unknown) => void }) {
+  const { t } = useTranslation('handbooks')
+  return (
+    <>
+      <SelectField
+        label={t('fields.linkedAttribute')}
+        value={(values.linkedAttribute as string) ?? ATTRIBUTES[0]}
+        options={ATTRIBUTES}
+        getLabel={attribute => t(`modifiers.${attribute as AttributeKey}`)}
+        onChange={linkedAttribute => set('linkedAttribute', linkedAttribute)}
+      />
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="isCore"
+          checked={values.isCore === true}
+          onCheckedChange={checked => set('isCore', checked === true)}
+        />
+        <Label htmlFor="isCore" className="cursor-pointer text-xs">{t('fields.coreSkill')}</Label>
+      </div>
+    </>
+  )
+}
+
 function EdgeFields({ values, set }: { values: FormValues; set: (k: string, v: unknown) => void }) {
   const { t } = useTranslation('handbooks')
   return (
@@ -339,6 +366,10 @@ function buildInitialValues(
   if (!baseEntry && !existingOverride) {
     if (category === 'edge') merged.type = EDGE_TYPES[0]
     if (category === 'hindrance') merged.type = HINDRANCE_TYPES[0]
+    if (category === 'skill') {
+      merged.linkedAttribute = ATTRIBUTES[0]
+      merged.isCore = false
+    }
     if (category === 'weapon') merged.category = WEAPON_CATEGORIES[0]
     if (category === 'gear') merged.category = GEAR_CATEGORIES[0]
     if (category === 'mount') merged.category = MOUNT_CATEGORIES[0]
@@ -477,6 +508,7 @@ export function HandbookEntryForm({
 
             {category === 'edge' && <EdgeFields values={values} set={set} />}
             {category === 'hindrance' && <HindranceFields values={values} set={set} />}
+            {category === 'skill' && <SkillFields values={values} set={set} />}
             {category === 'weapon' && <WeaponFields values={values} set={set} />}
             {category === 'gear' && <GearFields values={values} set={set} />}
             {category === 'power' && <PowerFields values={values} set={set} />}

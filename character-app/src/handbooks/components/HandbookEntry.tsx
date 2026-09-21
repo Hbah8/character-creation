@@ -20,11 +20,13 @@ import {
   isMount,
   isPower,
   isRacialAbility,
+  isSkill,
   isWeapon,
 } from '@/handbooks/types'
 
 interface Props {
   entry: AnyHandbookEntry
+  skillReferences?: readonly { id: string; name: string }[]
   source?: 'system' | 'world'
   activeWorldName?: string
   onOverride?: () => void
@@ -52,6 +54,15 @@ function EntryTags({ entry }: Props) {
       <Badge variant={entry.type === 'Major' ? 'destructive' : 'secondary'}>
         {t(`enums.hindranceType.${entry.type}`)}
       </Badge>
+    )
+  }
+
+  if (isSkill(entry)) {
+    return (
+      <div className="flex flex-wrap gap-1">
+        <Badge variant="outline">{t(`modifiers.${entry.linkedAttribute}`)}</Badge>
+        {entry.isCore && <Badge variant="secondary">{t('fields.coreSkill')}</Badge>}
+      </div>
     )
   }
 
@@ -110,7 +121,7 @@ function EntryTags({ entry }: Props) {
   return null
 }
 
-export function HandbookEntry({ entry, source, activeWorldName, onOverride, onEditOverride, onDeleteOverride }: Props) {
+export function HandbookEntry({ entry, skillReferences, source, activeWorldName, onOverride, onEditOverride, onDeleteOverride }: Props) {
   const { t } = useTranslation('handbooks')
   const isWorld = source === 'world'
   const badgeLabel = isWorld && activeWorldName ? activeWorldName : t('badge.swade')
@@ -153,7 +164,7 @@ export function HandbookEntry({ entry, source, activeWorldName, onOverride, onEd
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto p-6">
-          <HandbookEntryDetail entry={entry} />
+          <HandbookEntryDetail entry={entry} skillReferences={skillReferences} />
         </div>
         {activeWorldName && (
           <div className="p-4 border-t flex gap-2">

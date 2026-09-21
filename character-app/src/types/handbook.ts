@@ -71,6 +71,11 @@ export interface HandbookEntry {
   description: string
 }
 
+export interface SkillDefinition extends HandbookEntry {
+  linkedAttribute: AttributeKey
+  isCore: boolean
+}
+
 // ---------------------------------------------------------------------------
 // Edge requirements sub-type
 // ---------------------------------------------------------------------------
@@ -167,6 +172,7 @@ export type HandbookSource = 'system' | 'world'
 export type HandbookCategory =
   | 'edge'
   | 'hindrance'
+  | 'skill'
   | 'weapon'
   | 'gear'
   | 'power'
@@ -200,6 +206,7 @@ export type HandbookEntryOverride<Category extends HandbookCategory, Entry exten
 export type WorldHandbookEntry =
   | CustomHandbookEntry<Edge, 'edge'>
   | CustomHandbookEntry<Hindrance, 'hindrance'>
+  | CustomHandbookEntry<SkillDefinition, 'skill'>
   | CustomHandbookEntry<Weapon, 'weapon'>
   | CustomHandbookEntry<Gear, 'gear'>
   | CustomHandbookEntry<Power, 'power'>
@@ -207,6 +214,7 @@ export type WorldHandbookEntry =
   | CustomHandbookEntry<RacialAbility, 'racialAbility'>
   | HandbookEntryOverride<'edge', Edge>
   | HandbookEntryOverride<'hindrance', Hindrance>
+  | HandbookEntryOverride<'skill', SkillDefinition>
   | HandbookEntryOverride<'weapon', Weapon>
   | HandbookEntryOverride<'gear', Gear>
   | HandbookEntryOverride<'power', Power>
@@ -215,6 +223,7 @@ export type WorldHandbookEntry =
 
 export type EdgeOverride          = { id: string; category: 'edge' }          & Partial<Omit<Edge, 'id'>>
 export type HindranceOverride     = { id: string; category: 'hindrance' }     & Partial<Omit<Hindrance, 'id'>>
+export type SkillOverride          = { id: string; category: 'skill' }         & Partial<Omit<SkillDefinition, 'id'>>
 export type WeaponOverride        = { id: string; category: 'weapon' }        & Partial<Omit<Weapon, 'id'>>
 export type GearOverride          = { id: string; category: 'gear' }          & Partial<Omit<Gear, 'id'>>
 export type PowerOverride         = { id: string; category: 'power' }         & Partial<Omit<Power, 'id'>>
@@ -224,6 +233,7 @@ export type RacialAbilityOverride = { id: string; category: 'racialAbility' } & 
 export type HandbookOverride =
   | EdgeOverride
   | HindranceOverride
+  | SkillOverride
   | WeaponOverride
   | GearOverride
   | PowerOverride

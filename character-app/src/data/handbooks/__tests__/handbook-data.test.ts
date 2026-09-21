@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { SWADE_EDGES } from '@/data/handbooks/edges'
 import { SWADE_EDGE_REQUIREMENTS } from '@/data/handbooks/edgeRequirements'
 import { SWADE_HINDRANCES } from '@/data/handbooks/hindrances'
+import { SWADE_SKILLS } from '@/data/handbooks/skills'
 import { SWADE_WEAPONS } from '@/data/handbooks/weapons'
 import { SWADE_GEAR } from '@/data/handbooks/gear'
 import { SWADE_POWERS } from '@/data/handbooks/powers'
@@ -18,6 +19,8 @@ import type {
   EdgeType,
   MountCategory,
   ArcaneBackground,
+  AttributeKey,
+  SkillDefinition,
 } from '@/types/handbook'
 
 // --- helpers ---
@@ -35,6 +38,42 @@ function hasUniqueIds(arr: readonly { id: string }[], label: string) {
   const unique = new Set(ids)
   expect(unique.size, `${label} IDs must be unique`).toBe(ids.length)
 }
+
+function collectSkillRequirementIds(requirements: typeof SWADE_EDGE_REQUIREMENTS): Set<string> {
+  const skillIds = new Set<string>()
+  for (const edgeRequirements of Object.values(requirements)) {
+    for (const requirement of edgeRequirements.allOf) {
+      const conditions = 'anyOf' in requirement ? requirement.anyOf : [requirement]
+      for (const condition of conditions) {
+        if (condition.type === 'skill') skillIds.add(condition.skill)
+      }
+    }
+  }
+  return skillIds
+}
+
+// --- SKILLS ---
+
+describe('SWADE_SKILLS', () => {
+  it('contains the five core skills and every skill ID used by Edge requirements', () => {
+    const skillIds = new Set(SWADE_SKILLS.map(skill => skill.id))
+
+    expect(SWADE_SKILLS.filter(skill => skill.isCore).map(skill => skill.id).sort()).toEqual([
+      'athletics', 'common-knowledge', 'notice', 'persuasion', 'stealth',
+    ])
+    expect([...collectSkillRequirementIds(SWADE_EDGE_REQUIREMENTS)].every(id => skillIds.has(id))).toBe(true)
+  })
+
+  it('uses a valid linked attribute and unique stable ID for every skill', () => {
+    const attributes: AttributeKey[] = ['agility', 'smarts', 'spirit', 'strength', 'vigor']
+
+    SWADE_SKILLS.forEach(hasRequiredFields)
+    hasUniqueIds(SWADE_SKILLS, 'SWADE_SKILLS')
+    SWADE_SKILLS.forEach((skill: SkillDefinition) => {
+      expect(attributes).toContain(skill.linkedAttribute)
+    })
+  })
+})
 
 // --- EDGES ---
 

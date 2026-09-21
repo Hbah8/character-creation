@@ -56,6 +56,7 @@ export interface EdgeRequirementReferences {
   edges: RequirementReference[]
   hindrances: RequirementReference[]
   races: RequirementReference[]
+  skills: RequirementReference[]
 }
 
 interface EdgeRequirementsEditorProps {
@@ -71,7 +72,7 @@ function createDefaultCondition(
   switch (type) {
     case 'rank': return { type, minimum: 'Novice' }
     case 'attribute': return { type, attribute: 'agility', minimum: 'd4' }
-    case 'skill': return { type, skill: '', minimum: 'd4' }
+    case 'skill': return { type, skill: references.skills[0]?.id ?? '', minimum: 'd4' }
     case 'edge': return { type, edgeId: references.edges[0]?.id ?? '' }
     case 'hindrance': return { type, hindranceId: references.hindrances[0]?.id ?? '' }
     case 'race': return { type, raceId: references.races[0]?.id ?? '' }
@@ -84,9 +85,9 @@ function hasAnyOf(requirement: EdgeRequirement): requirement is { anyOf: EdgeReq
   return 'anyOf' in requirement
 }
 
-function isComplete(condition: EdgeRequirementCondition): boolean {
+function isComplete(condition: EdgeRequirementCondition, references: EdgeRequirementReferences): boolean {
   switch (condition.type) {
-    case 'skill': return condition.skill.trim() !== ''
+    case 'skill': return references.skills.some(reference => reference.id === condition.skill)
     case 'edge': return condition.edgeId !== ''
     case 'hindrance': return condition.hindranceId !== ''
     case 'race': return condition.raceId !== ''
@@ -116,7 +117,7 @@ function ConditionEditor({
   onRemove: () => void
 }) {
   const { t } = useTranslation('handbooks')
-  const incomplete = !isComplete(condition)
+  const incomplete = !isComplete(condition, references)
 
   function changeType(type: EdgeRequirementCondition['type']) {
     onChange(createDefaultCondition(type, references))
@@ -207,10 +208,13 @@ function ConditionFields({
   if (condition.type === 'skill') {
     return (
       <div className="grid grid-cols-[minmax(0,1fr)_5.5rem] gap-2">
-        <label className="flex min-w-0 flex-col gap-1 text-xs">
-          {t('requirementsEditor.skill')}
-          <Input value={condition.skill} aria-invalid={invalid} placeholder={t('requirementsEditor.skillPlaceholder')} onChange={event => onChange({ ...condition, skill: event.target.value })} />
-        </label>
+        <ReferenceSelect
+          label={t('requirementsEditor.skill')}
+          value={condition.skill}
+          options={references.skills}
+          invalid={invalid}
+          onChange={skill => onChange({ ...condition, skill })}
+        />
         <DieSelect value={condition.minimum} onChange={minimum => onChange({ ...condition, minimum })} />
       </div>
     )

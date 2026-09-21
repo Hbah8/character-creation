@@ -72,4 +72,35 @@ describe('validateHandbookEntry', () => {
       },
     })).toThrow('validation.handbook.invalidRequirements')
   })
+
+  it('accepts custom skills and partial skill overrides', () => {
+    expect(validateHandbookEntry({
+      mode: 'custom',
+      handbookCategory: 'skill',
+      id: 'spellcasting',
+      name: 'Spellcasting',
+      description: 'Cast spells.',
+      linkedAttribute: 'smarts',
+      isCore: false,
+    })).toMatchObject({ handbookCategory: 'skill', linkedAttribute: 'smarts', isCore: false })
+
+    expect(validateHandbookEntry({
+      mode: 'override',
+      handbookCategory: 'skill',
+      id: 'athletics',
+      linkedAttribute: 'strength',
+    })).toMatchObject({ handbookCategory: 'skill', linkedAttribute: 'strength' })
+  })
+
+  it('rejects a custom skill with an invalid linked attribute', () => {
+    expect(() => validateHandbookEntry({
+      mode: 'custom',
+      handbookCategory: 'skill',
+      id: 'invalid-skill',
+      name: 'Invalid',
+      description: '',
+      linkedAttribute: 'luck',
+      isCore: false,
+    })).toThrow('validation.handbook.missingRequiredField')
+  })
 })
