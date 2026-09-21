@@ -21,6 +21,7 @@ import {
 import { SWADE_EDGES } from '@/data/handbooks/edges'
 import { SWADE_HINDRANCES } from '@/data/handbooks/hindrances'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
+import { getEdgeRequirementRank } from '@/handbooks/utils/edgeRequirements'
 import { FeatureParameterInput } from '@/racebuilder/components/FeatureParameterInput'
 import {
   createRacialAbilityEffectLabels,
@@ -100,10 +101,10 @@ function edgeOptionsForAbility(
   edges: ResolvedEntry<Edge>[],
 ): ResolvedEntry<Edge>[] {
   if (ability.id === 'diverse-development') {
-    return edges.filter(edge => (edge.requirements?.rank ?? 'Novice') === 'Novice')
+    return edges.filter(edge => (getEdgeRequirementRank(edge.requirements) ?? 'Novice') === 'Novice')
   }
   if (ability.id === 'edge') {
-    return edges.filter(edge => (edge.requirements?.rank ?? 'Novice') !== 'Legendary')
+    return edges.filter(edge => (getEdgeRequirementRank(edge.requirements) ?? 'Novice') !== 'Legendary')
   }
   return edges
 }

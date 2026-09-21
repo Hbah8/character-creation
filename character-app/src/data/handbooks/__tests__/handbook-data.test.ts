@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { SWADE_EDGES } from '@/data/handbooks/edges'
+import { SWADE_EDGE_REQUIREMENTS } from '@/data/handbooks/edgeRequirements'
 import { SWADE_HINDRANCES } from '@/data/handbooks/hindrances'
 import { SWADE_WEAPONS } from '@/data/handbooks/weapons'
 import { SWADE_GEAR } from '@/data/handbooks/gear'
@@ -63,6 +64,58 @@ describe('SWADE_EDGES', () => {
   it('covers at least 7 of the 8 EdgeTypes', () => {
     const types = new Set(SWADE_EDGES.map((e: Edge) => e.type))
     expect(types.size).toBeGreaterThanOrEqual(7)
+  })
+
+  it('defines normalized requirements for compound baseline prerequisites', () => {
+    const edgeById = new Map(SWADE_EDGES.map(edge => [edge.id, edge]))
+
+    expect(edgeById.get('bogatstvo-plus')?.requirements).toEqual({
+      allOf: [
+        { type: 'rank', minimum: 'Novice' },
+        { type: 'edge', edgeId: 'bogatstvo' },
+      ],
+    })
+    expect(edgeById.get('metkiy-strelok')?.requirements).toEqual({
+      allOf: [
+        { type: 'rank', minimum: 'Seasoned' },
+        {
+          anyOf: [
+            { type: 'skill', skill: 'athletics', minimum: 'd8' },
+            { type: 'skill', skill: 'shooting', minimum: 'd8' },
+          ],
+        },
+      ],
+    })
+    expect(edgeById.get('groznyy-vid')?.requirements).toEqual({
+      allOf: [
+        { type: 'rank', minimum: 'Novice' },
+        {
+          anyOf: [
+            { type: 'hindrance', hindranceId: 'zhazhda-krovi' },
+            { type: 'hindrance', hindranceId: 'durnoy-harakter' },
+            { type: 'hindrance', hindranceId: 'zhestokost-minor' },
+            { type: 'hindrance', hindranceId: 'zhestokost-major' },
+            { type: 'hindrance', hindranceId: 'urodstvo-minor' },
+            { type: 'hindrance', hindranceId: 'urodstvo-major' },
+          ],
+        },
+      ],
+    })
+    expect(edgeById.get('artefaktor')?.requirements).toEqual({
+      allOf: [
+        { type: 'rank', minimum: 'Seasoned' },
+        { type: 'edge', edgeId: 'misticheskiy-dar', arcaneBackground: 'any' },
+      ],
+    })
+  })
+
+  it('has one normalized requirement tree for every standard Edge', () => {
+    expect(Object.keys(SWADE_EDGE_REQUIREMENTS).sort()).toEqual(
+      SWADE_EDGES.map(edge => edge.id).sort(),
+    )
+    SWADE_EDGES.forEach(edge => {
+      expect(edge.requirements?.allOf.length, `Edge "${edge.id}" must define requirements`).toBeGreaterThan(0)
+    })
   })
 })
 

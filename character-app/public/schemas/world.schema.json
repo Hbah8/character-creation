@@ -60,6 +60,13 @@
           "description": "Number of attribute points available during character creation. Default: 5."
         }
       }
+    },
+    "worldHandbook": {
+      "type": "array",
+      "description": "World-level handbook custom entries and overrides.",
+      "items": {
+        "$ref": "/character-creation/schemas/handbook-entry.schema.json"
+      }
     }
   },
   "$defs": {

@@ -98,7 +98,38 @@ describe('validateWorldImport', () => {
 
       expect(world.worldHandbook).toHaveLength(1)
       expect(world.worldHandbook[0].id).toBe('level-headed')
-      expect(world.worldHandbook[0].category).toBe('edge')
+      expect('category' in world.worldHandbook[0] && world.worldHandbook[0].category).toBe('edge')
+    })
+
+    it('preserves an explicit custom handbook entry', () => {
+      const world = validateWorldImport({
+        ...validWorld(),
+        worldHandbook: [{
+          mode: 'custom',
+          handbookCategory: 'edge',
+          id: 'fleet-footed',
+          name: 'Fleet-Footed',
+          description: '',
+          type: 'Background',
+          modifiers: [{ type: 'combat', stat: 'pace', amount: 2 }],
+        }],
+      })
+
+      expect(world.worldHandbook).toMatchObject([{
+        mode: 'custom',
+        handbookCategory: 'edge',
+        id: 'fleet-footed',
+      }])
+    })
+
+    it('rejects duplicate entries in the same handbook category', () => {
+      expect(() => validateWorldImport({
+        ...validWorld(),
+        worldHandbook: [
+          { id: 'level-headed', category: 'edge', name: 'First override' },
+          { id: 'level-headed', category: 'edge', name: 'Second override' },
+        ],
+      })).toThrow('validation.world.duplicateHandbookEntry:edge:level-headed')
     })
 
     it('filters out entries with an unknown category', () => {

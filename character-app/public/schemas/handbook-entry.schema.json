@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/character-creation/schemas/handbook-entry.schema.json",
+  "title": "SWADE World Handbook Entry",
+  "oneOf": [
+    { "$ref": "/character-creation/schemas/edge.schema.json" },
+    { "$ref": "/character-creation/schemas/hindrance.schema.json" },
+    { "$ref": "/character-creation/schemas/weapon.schema.json" },
+    { "$ref": "/character-creation/schemas/gear.schema.json" },
+    { "$ref": "/character-creation/schemas/power.schema.json" },
+    { "$ref": "/character-creation/schemas/mount.schema.json" },
+    { "$ref": "/character-creation/schemas/racial-ability.schema.json" }
+  ]
+}

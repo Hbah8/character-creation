@@ -13,7 +13,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { computeOverrideDiff } from '@/handbooks/utils/computeOverrideDiff'
+import { buildHandbookEntry } from '@/handbooks/services/buildHandbookEntry'
+import { HandbookModifierFields } from '@/handbooks/components/HandbookModifierFields'
+import {
+  EdgeRequirementsEditor,
+  type EdgeRequirementReferences,
+} from '@/handbooks/components/EdgeRequirementsEditor'
 import {
   ARCANE_BACKGROUND_LABEL_KEYS,
   EDGE_TYPE_LABEL_KEYS,
@@ -21,7 +28,6 @@ import {
   HINDRANCE_TYPE_LABEL_KEYS,
   MOUNT_CATEGORY_LABEL_KEYS,
   RACIAL_ABILITY_TYPE_LABEL_KEYS,
-  RANK_LABEL_KEYS,
   WEAPON_CATEGORY_LABEL_KEYS,
 } from '@/handbooks/utils/handbookTranslationKeys'
 import type { AnyHandbookEntry } from '@/handbooks/types'
@@ -30,12 +36,14 @@ import type {
   EdgeType,
   GearCategory,
   HandbookCategory,
-  HandbookOverride,
+  StoredHandbookEntry,
+  WorldHandbookEntry,
   HindranceType,
   MountCategory,
-  Rank,
   RacialAbilityType,
   WeaponCategory,
+  HandbookModifier,
+  EdgeRequirements,
 } from '@/types/handbook'
 
 // ---------------------------------------------------------------------------
@@ -46,11 +54,12 @@ export interface HandbookEntryFormProps {
   open: boolean
   category: HandbookCategory
   baseEntry?: AnyHandbookEntry
-  existingOverride?: HandbookOverride
+  existingOverride?: StoredHandbookEntry
   worldName: string
   onClose: () => void
-  onSave: (override: HandbookOverride) => void
+  onSave: (entry: WorldHandbookEntry) => void
   onDelete?: () => void
+  requirementReferences: EdgeRequirementReferences
 }
 
 type FormValues = Record<string, unknown>
@@ -134,8 +143,6 @@ const RACIAL_ABILITY_TYPES: RacialAbilityType[] = ['positive', 'negative']
 const ARCANE_BACKGROUNDS: ArcaneBackground[] = [
   'Magic', 'Miracles', 'Psionics', 'SuperPowers', 'WeirdScience',
 ]
-const RANKS: Rank[] = ['Novice', 'Seasoned', 'Veteran', 'Heroic', 'Legendary']
-
 function EdgeFields({ values, set }: { values: FormValues; set: (k: string, v: unknown) => void }) {
   const { t } = useTranslation('handbooks')
   return (
@@ -148,28 +155,14 @@ function EdgeFields({ values, set }: { values: FormValues; set: (k: string, v: u
         onChange={v => set('type', v)}
       />
       <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id="wildCardOnly"
           checked={!!(values.wildCardOnly)}
-          onChange={e => set('wildCardOnly', e.target.checked || undefined)}
-          className="h-4 w-4 rounded border-input"
+          onCheckedChange={checked => set('wildCardOnly', checked === true || undefined)}
         />
         <Label htmlFor="wildCardOnly" className="text-xs cursor-pointer">
           {t('fields.wildCardOnly')}
         </Label>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-xs">{t('entry.requirements')}</Label>
-        <div className="border rounded-md p-3 flex flex-col gap-2">
-          <SelectField
-            label={t('entry.rank')}
-            value={(values['requirements.rank'] as string) ?? ''}
-            options={['', ...RANKS]}
-            getLabel={v => v ? t(RANK_LABEL_KEYS[v as Rank]) : '—'}
-            onChange={v => set('requirements.rank', v || undefined)}
-          />
-        </div>
       </div>
     </>
   )
@@ -329,39 +322,30 @@ function RacialAbilityFields({ values, set }: { values: FormValues; set: (k: str
 function buildInitialValues(
   category: HandbookCategory,
   baseEntry?: AnyHandbookEntry,
-  existingOverride?: HandbookOverride,
+  existingOverride?: StoredHandbookEntry,
 ): FormValues {
   const merged = { ...baseEntry, ...existingOverride } as FormValues
+  delete merged.mode
+  delete merged.handbookCategory
+  delete merged.source
+  delete merged.category
 
-  // Flatten nested requirements.rank for edges
-  if (category === 'edge') {
-    const req = merged.requirements as { rank?: string } | undefined
-    merged['requirements.rank'] = req?.rank ?? ''
-    delete merged.requirements
+  if (category === 'weapon' || category === 'gear' || category === 'mount') {
+    const existingCategory = (baseEntry as { category?: string } | undefined)?.category
+      ?? (existingOverride as { category?: string } | undefined)?.category
+    if (existingCategory !== undefined) merged.category = existingCategory
+  }
+
+  if (!baseEntry && !existingOverride) {
+    if (category === 'edge') merged.type = EDGE_TYPES[0]
+    if (category === 'hindrance') merged.type = HINDRANCE_TYPES[0]
+    if (category === 'weapon') merged.category = WEAPON_CATEGORIES[0]
+    if (category === 'gear') merged.category = GEAR_CATEGORIES[0]
+    if (category === 'mount') merged.category = MOUNT_CATEGORIES[0]
+    if (category === 'racialAbility') merged.type = RACIAL_ABILITY_TYPES[0]
   }
 
   return merged
-}
-
-// ---------------------------------------------------------------------------
-// Assemble override from form values
-// ---------------------------------------------------------------------------
-
-function buildOverride(
-  category: HandbookCategory,
-  id: string,
-  diff: Record<string, unknown>,
-): HandbookOverride {
-  // Re-nest requirements for edges
-  if (category === 'edge') {
-    const rankVal = diff['requirements.rank']
-    delete diff['requirements.rank']
-    if (rankVal !== undefined) {
-      diff.requirements = { rank: rankVal || undefined }
-    }
-  }
-
-  return { id, category, ...diff } as HandbookOverride
 }
 
 // ---------------------------------------------------------------------------
@@ -377,18 +361,25 @@ export function HandbookEntryForm({
   onClose,
   onSave,
   onDelete,
+  requirementReferences,
 }: HandbookEntryFormProps) {
   const { t } = useTranslation('handbooks')
-  const isCustom = !baseEntry
+  const isCustom = !baseEntry || (
+    existingOverride !== undefined
+    && 'mode' in existingOverride
+    && existingOverride.mode === 'custom'
+  )
   const isEditing = !!existingOverride
 
   const [values, setValues] = useState<FormValues>(() =>
     buildInitialValues(category, baseEntry, existingOverride),
   )
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
       setValues(buildInitialValues(category, baseEntry, existingOverride))
+      setValidationError(null)
     }
   }, [open, category, baseEntry, existingOverride])
 
@@ -397,8 +388,8 @@ export function HandbookEntryForm({
   }
 
   function handleSave() {
-    const id = baseEntry?.id ?? existingOverride?.id ?? crypto.randomUUID()
-    const diff = computeOverrideDiff(baseEntry, values)
+    const id = existingOverride?.id ?? baseEntry?.id ?? crypto.randomUUID()
+    const diff = isCustom ? values : computeOverrideDiff(baseEntry, values)
 
     // If diff is empty for an override (not a custom entry), call onDelete instead
     if (!isCustom && Object.keys(diff).length === 0 && onDelete) {
@@ -406,8 +397,45 @@ export function HandbookEntryForm({
       return
     }
 
-    const override = buildOverride(category, id, { ...diff })
-    onSave(override)
+    try {
+      const entry = buildHandbookEntry(
+        category,
+        id,
+        isCustom ? undefined : baseEntry,
+        { ...diff },
+      )
+      onSave(entry)
+    } catch (error) {
+      setValidationError(error instanceof Error ? error.message : 'validation.handbook.invalidEntry')
+    }
+  }
+
+  const supportsModifiers = category === 'edge' || category === 'hindrance' || category === 'racialAbility'
+  const modifierLabels = {
+    title: t('modifiers.title'),
+    none: t('modifiers.none'),
+    add: t('modifiers.add'),
+    remove: t('modifiers.remove'),
+    type: t('modifiers.type'),
+    combat: t('modifiers.combat'),
+    attributeDieStep: t('modifiers.attributeDieStep'),
+    stat: t('modifiers.stat'),
+    attribute: t('modifiers.attribute'),
+    amount: t('modifiers.amount'),
+    pace: t('fields.pace'),
+    parry: t('modifiers.parry'),
+    toughness: t('fields.toughness'),
+    armor: t('modifiers.armor'),
+    runningDieSteps: t('modifiers.runningDieSteps'),
+    bennies: t('modifiers.bennies'),
+    maxWounds: t('modifiers.maxWounds'),
+    maxFatigue: t('modifiers.maxFatigue'),
+    powerPoints: t('modifiers.powerPoints'),
+    agility: t('modifiers.agility'),
+    strength: t('modifiers.strength'),
+    smarts: t('modifiers.smarts'),
+    spirit: t('modifiers.spirit'),
+    vigor: t('modifiers.vigor'),
   }
 
   const title = isCustom
@@ -418,8 +446,8 @@ export function HandbookEntryForm({
 
   return (
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-h-[calc(100dvh-1rem)] max-w-[calc(100%-1rem)] gap-0 overflow-y-auto p-0 sm:max-w-6xl">
+        <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="flex items-center gap-2">
             {title}
             {!isCustom && (
@@ -428,39 +456,62 @@ export function HandbookEntryForm({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 py-2">
-          {/* Common fields */}
-          <FieldRow label={t('entry.name')}>
-            <Input
-              value={(values.name as string) ?? ''}
-              onChange={e => set('name', e.target.value)}
-            />
-          </FieldRow>
-          <FieldRow label={t('fields.description')}>
-            <Textarea
-              value={(values.description as string) ?? ''}
-              onChange={e => set('description', e.target.value)}
-              rows={3}
-            />
-          </FieldRow>
+        <div className={category === 'edge' ? 'grid lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]' : 'flex flex-col gap-4 p-6'}>
+          <div className={category === 'edge' ? 'flex flex-col gap-4 px-6 pb-6 lg:border-r lg:pr-6' : 'flex flex-col gap-4'}>
+            {category === 'edge' && <h2 className="text-base font-semibold">{t('form.main')}</h2>}
+            <FieldRow label={t('entry.name')}>
+              <Input
+                value={(values.name as string) ?? ''}
+                onChange={e => set('name', e.target.value)}
+              />
+            </FieldRow>
+            <FieldRow label={t('fields.description')}>
+              <Textarea
+                value={(values.description as string) ?? ''}
+                onChange={e => set('description', e.target.value)}
+                rows={3}
+              />
+            </FieldRow>
 
-          <Separator />
+            <Separator />
 
-          {/* Category-specific fields */}
-          {category === 'edge' && <EdgeFields values={values} set={set} />}
-          {category === 'hindrance' && <HindranceFields values={values} set={set} />}
-          {category === 'weapon' && <WeaponFields values={values} set={set} />}
-          {category === 'gear' && <GearFields values={values} set={set} />}
-          {category === 'power' && <PowerFields values={values} set={set} />}
-          {category === 'mount' && <MountFields values={values} set={set} />}
-          {category === 'racialAbility' && <RacialAbilityFields values={values} set={set} />}
+            {category === 'edge' && <EdgeFields values={values} set={set} />}
+            {category === 'hindrance' && <HindranceFields values={values} set={set} />}
+            {category === 'weapon' && <WeaponFields values={values} set={set} />}
+            {category === 'gear' && <GearFields values={values} set={set} />}
+            {category === 'power' && <PowerFields values={values} set={set} />}
+            {category === 'mount' && <MountFields values={values} set={set} />}
+            {category === 'racialAbility' && <RacialAbilityFields values={values} set={set} />}
 
-          {!isCustom && (
-            <p className="text-xs text-muted-foreground">{t('form.inheritedNote')}</p>
+            {supportsModifiers && <Separator />}
+
+            {supportsModifiers && (
+              <HandbookModifierFields
+                modifiers={(values.modifiers as HandbookModifier[] | undefined) ?? []}
+                onChange={modifiers => set('modifiers', modifiers)}
+                labels={modifierLabels}
+              />
+            )}
+
+            {validationError && <p className="text-xs text-destructive">{t('form.invalidEntry')}</p>}
+
+            {!isCustom && (
+              <p className="text-xs text-muted-foreground">{t('form.inheritedNote')}</p>
+            )}
+          </div>
+
+          {category === 'edge' && (
+            <div className="min-w-0 px-6 pt-1 pb-6 lg:pl-6">
+              <EdgeRequirementsEditor
+                value={values.requirements as EdgeRequirements | undefined}
+                references={requirementReferences}
+                onChange={requirements => set('requirements', requirements)}
+              />
+            </div>
           )}
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="mx-0 mb-0 flex-col gap-2 rounded-b-xl p-4 sm:flex-row sm:px-6">
           {onDelete && (
             <Button
               type="button"

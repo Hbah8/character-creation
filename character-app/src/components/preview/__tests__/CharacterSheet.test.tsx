@@ -28,6 +28,7 @@ describe('CharacterSheet', () => {
       resolvedCharacter: {
         source: SOURCE_CHARACTER,
         attributes: { agility: 'd8', strength: 'd6', smarts: 'd6', spirit: 'd6', vigor: 'd6' },
+        modifierBreakdown: [],
         combat: {
           pace: 6,
           parry: 5,

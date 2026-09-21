@@ -30,6 +30,7 @@ const preview = {
     mana: 'Power Points',
     runningDie: 'Running',
     size: 'Size',
+    showCalculation: 'Show calculation',
   },
   attributes: {
     agility: 'Agility',

@@ -13,7 +13,8 @@ import {
   WORLD_RELATIONSHIP_TYPES,
   WORLD_SCHEMA_VERSION,
 } from '@/world/types'
-import type { HandbookOverride, HandbookCategory } from '@/types/handbook'
+import type { HandbookCategory, HandbookOverride, StoredHandbookEntry } from '@/types/handbook'
+import { validateHandbookEntry } from '@/handbooks/services/validateHandbookEntry'
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -108,14 +109,27 @@ function isHandbookCategory(value: unknown): value is HandbookCategory {
   return HANDBOOK_CATEGORIES.includes(value as HandbookCategory)
 }
 
-function validateWorldHandbook(raw: unknown): HandbookOverride[] {
+function validateWorldHandbook(raw: unknown): StoredHandbookEntry[] {
   if (!Array.isArray(raw)) return []
-  const valid: HandbookOverride[] = []
+  const valid: StoredHandbookEntry[] = []
+  const identities = new Set<string>()
   for (const item of raw) {
     if (!isObject(item)) continue
-    if (!isString(item.id) || item.id.trim() === '') continue
-    if (!isHandbookCategory(item.category)) continue
-    valid.push(item as HandbookOverride)
+    let entry: StoredHandbookEntry
+    if ('mode' in item) {
+      entry = validateHandbookEntry(item)
+    } else {
+      if (!isString(item.id) || item.id.trim() === '') continue
+      if (!isHandbookCategory(item.category)) continue
+      entry = item as HandbookOverride
+    }
+    const category = 'handbookCategory' in entry ? entry.handbookCategory : entry.category
+    const identity = `${category}:${entry.id}`
+    if (identities.has(identity)) {
+      throw new Error(`validation.world.duplicateHandbookEntry:${identity}`)
+    }
+    identities.add(identity)
+    valid.push(entry)
   }
   return valid
 }

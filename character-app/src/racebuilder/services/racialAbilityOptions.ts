@@ -1,7 +1,7 @@
 import { SWADE_RACIAL_ABILITIES } from '@/data/handbooks/racialAbilities'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
 import type { RacialAbilityRef } from '@/world/types'
-import type { HandbookOverride, RacialAbility, ResolvedEntry } from '@/types/handbook'
+import type { RacialAbility, ResolvedEntry, StoredHandbookEntry } from '@/types/handbook'
 
 export type ResolvedRacialAbility = ResolvedEntry<RacialAbility>
 
@@ -51,7 +51,7 @@ export function canSelectRacialAbility(
 }
 
 export function resolveRacialAbilitiesForWorld(
-  worldHandbook: HandbookOverride[],
+  worldHandbook: StoredHandbookEntry[],
 ): ResolvedRacialAbility[] {
   return resolveHandbookEntries(
     'racialAbility',
