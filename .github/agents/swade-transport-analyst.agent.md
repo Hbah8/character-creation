@@ -1,6 +1,6 @@
 ---
 description: Focused read-only analyst for SWADE transport and vehicle planning context.
-model: Claude Sonnet 4.6
+model: GPT-5.6 Terra (copilot)
 tools: [read, search, agent]
 name: SwadeTransportAnalyst
 handoffs:
@@ -8,7 +8,7 @@ handoffs:
     agent: Planner
     prompt: Return DOMAIN_ANALYSIS to Planner
     send: true
-    model: Claude Sonnet 4.6
+    model: GPT-5.6 Terra (copilot)
 ---
 
 ## State Contract (MANDATORY)

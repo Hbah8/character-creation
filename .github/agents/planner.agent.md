@@ -1,6 +1,6 @@
 ---
 description: This prompt is used to create a plan for a project or task.
-model: Claude Sonnet 4.6
+model: GPT-5.6 Terra (copilot)
 tools: [agent/runSubagent, edit/createFile, edit/editFiles, todo, agent, read, 'vscode/askQuestions', 'vscode/memory']
 agents: [Plan, SwadeBattleAnalyst, SwadeEquipmentAnalyst, SwadeTransportAnalyst, SwadeRaceDesignerAnalyst]
 name: Planner
@@ -9,7 +9,7 @@ handoffs:
     agent: Developer
     prompt: Implement the plan
     send: true
-    model: Claude Sonnet 4.6 (copilot)
+    model: GPT-5.6 Terra (copilot)
 ---
 
 ## State Contract (MANDATORY)

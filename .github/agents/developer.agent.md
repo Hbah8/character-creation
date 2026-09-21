@@ -1,6 +1,6 @@
 ---
 description: This custom agent implements the plans created by the planner agent, writes red to green tests and implements the code to make the tests pass.
-model: Claude Sonnet 4.6 (copilot)
+model: GPT-5.6 Terra (copilot)
 agents: [agent]
 tools: [execute, read, edit, search, web, agent, todo]
 name: Developer
@@ -9,7 +9,7 @@ handoffs:
     agent: Planner
     prompt: Update the plan based on implementation progress and any blockers encountered
     send: true
-    model: Claude Sonnet 4.6 (copilot)
+    model: GPT-5.6 Terra (copilot)
 ---
 
 ## State Contract (MANDATORY)
