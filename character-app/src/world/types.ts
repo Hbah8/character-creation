@@ -1,4 +1,4 @@
-import type { FeatureParameters, HandbookOverride } from '@/types/handbook'
+import type { FeatureParameters, StoredHandbookEntry } from '@/types/handbook'
 
 export const WORLD_SCHEMA_VERSION = 1
 
@@ -88,5 +88,5 @@ export interface World {
   races: Race[]
   entities: WorldEntity[]
   relationships: WorldRelationship[]
-  worldHandbook: HandbookOverride[]
+  worldHandbook: StoredHandbookEntry[]
 }

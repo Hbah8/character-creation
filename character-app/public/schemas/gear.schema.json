@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/character-creation/schemas/gear.schema.json",
+  "title": "SWADE Gear Handbook Entry",
+  "oneOf": [
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "id", "handbookCategory", "name", "description", "category"],
+      "properties": {
+        "mode": { "const": "custom" }, "id": { "type": "string", "minLength": 1 }, "handbookCategory": { "const": "gear" },
+        "name": { "type": "string" }, "description": { "type": "string" }, "category": { "enum": ["Adventuring", "Clothing", "Food", "Tools", "Other"] },
+        "weight": { "type": "number" }, "cost": { "type": "number" }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "id", "handbookCategory"],
+      "properties": {
+        "mode": { "const": "override" }, "id": { "type": "string", "minLength": 1 }, "handbookCategory": { "const": "gear" },
+        "name": { "type": "string" }, "description": { "type": "string" }, "category": { "enum": ["Adventuring", "Clothing", "Food", "Tools", "Other"] },
+        "weight": { "type": "number" }, "cost": { "type": "number" }
+      }
+    }
+  ]
+}

@@ -45,6 +45,23 @@ describe('resolveHandbookEntries', () => {
     expect(shadowed.type).toBe('Combat')
   })
 
+  it('does not allow a custom entry to shadow a system entry with the same id', () => {
+    const result = resolveHandbookEntries('edge', [
+      {
+        mode: 'custom',
+        id: 'level-headed',
+        handbookCategory: 'edge',
+        name: 'Conflicting custom entry',
+        description: 'This must not replace system data.',
+        type: 'Weird',
+      } as never,
+    ], systemEdges)
+
+    const systemEntry = result.find(entry => entry.id === 'level-headed')!
+    expect(systemEntry.name).toBe('Level Headed')
+    expect(systemEntry.source).toBe('system')
+  })
+
   it('leaves non-overridden system entries tagged system', () => {
     const result = resolveHandbookEntries('edge', [
       { id: 'level-headed', category: 'edge', name: 'Level Headed (House Rule)' },

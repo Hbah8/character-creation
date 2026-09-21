@@ -33,7 +33,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
   const sheetRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const [sheetHeight, setSheetHeight] = useState(0)
-  const { source: character, attributes, combat } = resolvedCharacter
+  const { source: character, attributes, combat, modifierBreakdown } = resolvedCharacter
 
   const { entries } = useWorldLibrary()
   const world = entries.find(e => e.id === character.worldId)?.world ?? null
@@ -116,7 +116,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
           <main className="sheet sheet--mobile">
             <div className="content">
               <SheetHeader character={character} />
-              <SheetQuickStats combat={combat} />
+              <SheetQuickStats combat={combat} modifierBreakdown={modifierBreakdown} />
               <section className="columns">
                 <div className="column">
                   <SheetAttributesSkills character={character} attributes={attributes} />
@@ -173,7 +173,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
         <main className="sheet">
           <div className="content">
             <SheetHeader character={character} />
-            <SheetQuickStats combat={combat} />
+            <SheetQuickStats combat={combat} modifierBreakdown={modifierBreakdown} />
             <section className="columns">
               {(() => {
                 const layout = character.layout ?? DEFAULT_LAYOUT

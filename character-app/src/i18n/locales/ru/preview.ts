@@ -30,6 +30,7 @@ const preview = {
     mana: 'Пункты силы',
     runningDie: 'Бег',
     size: 'Размер',
+    showCalculation: 'Показать расчёт',
   },
   attributes: {
     agility: 'Ловкость',

@@ -154,6 +154,62 @@ describe('resolveEffectiveCharacter', () => {
     expect(result.toughness).toBe('8 (2)')
   })
 
+  it('applies selected handbook modifiers and exposes their calculation sources', () => {
+    const world = makeWorld({
+      worldHandbook: [
+        {
+          mode: 'custom',
+          handbookCategory: 'edge',
+          id: 'fleet-footed',
+          name: 'Fleet-Footed',
+          description: '',
+          type: 'Background',
+          modifiers: [{ type: 'combat', stat: 'pace', amount: 2 }],
+        },
+        {
+          mode: 'custom',
+          handbookCategory: 'hindrance',
+          id: 'clumsy',
+          name: 'Clumsy',
+          description: '',
+          type: 'Minor',
+          modifiers: [{ type: 'combat', stat: 'parry', amount: -1 }],
+        },
+        {
+          mode: 'custom',
+          handbookCategory: 'racialAbility',
+          id: 'quick',
+          name: 'Quick',
+          description: '',
+          type: 'positive',
+          modifiers: [{ type: 'combat', stat: 'pace', amount: 1 }],
+        },
+      ] as never,
+      races: [{
+        id: 'fast-folk',
+        name: 'Fast Folk',
+        description: '',
+        abilities: [{ id: 'quick', repeatCount: 2 }],
+        size: 0,
+      }],
+    })
+    const character = {
+      ...BASE_CHARACTER,
+      raceId: 'fast-folk',
+      edges: [{ id: 'fleet-footed', name: 'Fleet-Footed', effect: '' }],
+      hindrances: [{ id: 'clumsy', name: 'Clumsy', severity: 'minor' as const, description: '' }],
+    }
+
+    const result = resolveCharacter(character, world)
+
+    expect(result.combat).toMatchObject({ pace: 10, parry: 4 })
+    expect(result.modifierBreakdown).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'fleet-footed', source: 'edge', stat: 'pace', amount: 2 }),
+      expect.objectContaining({ id: 'clumsy', source: 'hindrance', stat: 'parry', amount: -1 }),
+      expect.objectContaining({ id: 'quick', source: 'racialAbility', stat: 'pace', amount: 2 }),
+    ]))
+  })
+
   it('derives combat statistics when world is null', () => {
     const char = { ...BASE_CHARACTER, raceId: 'elf' }
     const result = resolveEffectiveCharacter(char, null)

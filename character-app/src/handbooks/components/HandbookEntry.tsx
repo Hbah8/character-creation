@@ -11,6 +11,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { HandbookEntryDetail } from '@/handbooks/components/HandbookEntryDetail'
+import { getEdgeRequirementRank } from '@/handbooks/utils/edgeRequirements'
 import type { AnyHandbookEntry } from '@/handbooks/types'
 import {
   isEdge,
@@ -35,11 +36,12 @@ function EntryTags({ entry }: Props) {
   const { t } = useTranslation('handbooks')
 
   if (isEdge(entry)) {
+    const rank = getEdgeRequirementRank(entry.requirements)
     return (
       <div className="flex flex-wrap gap-1">
         <Badge variant="outline">{t(`enums.edgeType.${entry.type}`)}</Badge>
-        {entry.requirements?.rank && (
-          <Badge variant="secondary">{t(`enums.rank.${entry.requirements.rank}`)}</Badge>
+        {rank && (
+          <Badge variant="secondary">{t(`enums.rank.${rank}`)}</Badge>
         )}
       </div>
     )

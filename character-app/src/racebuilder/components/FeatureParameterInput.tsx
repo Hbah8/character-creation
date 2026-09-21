@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { getEdgeRequirementRank } from '@/handbooks/utils/edgeRequirements'
 import { computeRacialEdgeCost } from '@/racebuilder/services/raceBudget'
 import type {
   Edge,
@@ -248,7 +249,7 @@ export function FeatureParameterInput({
           onValueChange={next => {
             const edge = edges.find(item => item.id === next)
             const costTier = ability.id === 'edge'
-              ? computeRacialEdgeCost(edge?.requirements?.rank ?? 'Novice')
+              ? computeRacialEdgeCost(getEdgeRequirementRank(edge?.requirements) ?? 'Novice')
               : undefined
             onChange({ ...value, edgeId: next, costTier })
           }}

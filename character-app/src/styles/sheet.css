@@ -171,6 +171,20 @@ html, body {
   font-weight: 700;
 }
 
+button.qs-value {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+button.qs-value:hover,
+button.qs-value:focus-visible {
+  outline: 0;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
 .qs-sep {
   color: var(--sheet-muted);
   font-size: 10pt;

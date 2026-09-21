@@ -9,7 +9,7 @@ import type {
   SettingRules,
   Race,
 } from '@/world/types'
-import type { HandbookOverride } from '@/types/handbook'
+import type { StoredHandbookEntry } from '@/types/handbook'
 import { defaultWorld, createWorldEntity } from '@/world/data/defaultWorld'
 import { applyEntityPosition } from '@/world/graph/worldGraphMapper'
 
@@ -135,18 +135,18 @@ export function useWorldStore(initialWorld?: World) {
     setWorld(prev => removeRaceFromWorld(prev, id))
   }, [])
 
-  const addHandbookEntry = useCallback((entry: HandbookOverride) => {
+  const addHandbookEntry = useCallback((entry: StoredHandbookEntry) => {
     setWorld(prev => ({
       ...prev,
       worldHandbook: [...prev.worldHandbook, entry],
     }))
   }, [])
 
-  const updateHandbookEntry = useCallback((id: string, patch: Partial<HandbookOverride>) => {
+  const updateHandbookEntry = useCallback((id: string, patch: Partial<StoredHandbookEntry>) => {
     setWorld(prev => ({
       ...prev,
       worldHandbook: prev.worldHandbook.map(e =>
-        e.id === id ? { ...e, ...patch, id: e.id, category: e.category } as HandbookOverride : e
+        e.id === id ? { ...e, ...patch, id: e.id } as StoredHandbookEntry : e
       ),
     }))
   }, [])

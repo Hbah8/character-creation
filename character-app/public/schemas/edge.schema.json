@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/character-creation/schemas/edge.schema.json",
+  "title": "SWADE Edge Handbook Entry",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "id", "handbookCategory", "name", "description", "type"],
+      "properties": {
+        "mode": { "const": "custom" },
+        "id": { "type": "string", "minLength": 1 },
+        "handbookCategory": { "const": "edge" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "enum": ["Background", "Combat", "Leadership", "Power", "Professional", "Social", "Weird", "WildCard"] },
+        "wildCardOnly": { "type": "boolean" },
+        "requirements": { "$ref": "#/$defs/requirements" },
+        "modifiers": { "type": "array", "items": { "$ref": "/character-creation/schemas/modifier.schema.json" } }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "id", "handbookCategory"],
+      "properties": {
+        "mode": { "const": "override" },
+        "id": { "type": "string", "minLength": 1 },
+        "handbookCategory": { "const": "edge" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "enum": ["Background", "Combat", "Leadership", "Power", "Professional", "Social", "Weird", "WildCard"] },
+        "wildCardOnly": { "type": "boolean" },
+        "requirements": { "$ref": "#/$defs/requirements" },
+        "modifiers": { "type": "array", "items": { "$ref": "/character-creation/schemas/modifier.schema.json" } }
+      }
+    }
+  ],
+  "$defs": {
+    "requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rank": { "enum": ["Novice", "Seasoned", "Veteran", "Heroic", "Legendary"] },
+        "attributes": { "type": "object", "additionalProperties": { "enum": ["d4", "d6", "d8", "d10", "d12"] } },
+        "skills": { "type": "object", "additionalProperties": { "enum": ["d4", "d6", "d8", "d10", "d12"] } },
+        "edges": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

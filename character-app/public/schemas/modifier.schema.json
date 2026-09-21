@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/character-creation/schemas/modifier.schema.json",
+  "title": "SWADE Handbook Modifier",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "stat", "amount"],
+      "properties": {
+        "type": { "const": "combat" },
+        "stat": {
+          "enum": ["pace", "parry", "toughness", "armor", "runningDieSteps", "bennies", "maxWounds", "maxFatigue", "powerPoints"]
+        },
+        "amount": { "type": "number" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "attribute", "amount"],
+      "properties": {
+        "type": { "const": "attribute-die-step" },
+        "attribute": { "enum": ["agility", "strength", "smarts", "spirit", "vigor"] },
+        "amount": { "type": "integer" }
+      }
+    }
+  ]
+}

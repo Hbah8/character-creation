@@ -13,6 +13,7 @@ import { HandbookFilterPanel } from '@/handbooks/components/HandbookFilterPanel'
 import { HandbookList } from '@/handbooks/components/HandbookList'
 import { HandbookStatList } from '@/handbooks/components/HandbookStatList'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
+import type { EdgeRequirementReferences } from '@/handbooks/components/EdgeRequirementsEditor'
 import {
   createEmptyHandbookFilters,
   filterHandbookEntries,
@@ -20,7 +21,7 @@ import {
 } from '@/handbooks/utils/filterHandbookEntries'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import type { AnyHandbookEntry } from '@/handbooks/types'
-import type { HandbookCategory, HandbookOverride } from '@/types/handbook'
+import type { HandbookCategory, StoredHandbookEntry, WorldHandbookEntry } from '@/types/handbook'
 
 type TabLayout = 'cards' | 'stat'
 
@@ -44,7 +45,7 @@ interface FormState {
   open: boolean
   category: HandbookCategory
   baseEntry?: AnyHandbookEntry
-  existingOverride?: HandbookOverride
+  existingOverride?: StoredHandbookEntry
 }
 
 export function HandbooksPage() {
@@ -56,28 +57,46 @@ export function HandbooksPage() {
   const activeWorld = activeWorldId
     ? worldEntries.find(e => e.id === activeWorldId)?.world ?? null
     : null
-  const worldHandbook: HandbookOverride[] = activeWorld?.worldHandbook ?? []
+  const worldHandbook: StoredHandbookEntry[] = activeWorld?.worldHandbook ?? []
+  const requirementReferences: EdgeRequirementReferences = {
+    edges: resolveHandbookEntries('edge', worldHandbook, [...SWADE_EDGES]).map(entry => ({ id: entry.id, name: entry.name })),
+    hindrances: resolveHandbookEntries('hindrance', worldHandbook, [...SWADE_HINDRANCES]).map(entry => ({ id: entry.id, name: entry.name })),
+    races: activeWorld?.races.map(race => ({ id: race.id, name: race.name })) ?? [],
+  }
 
   function handleTabChange() {
     setFilters(createEmptyHandbookFilters())
   }
 
   function openOverride(category: HandbookCategory, entry: AnyHandbookEntry) {
-    const existing = worldHandbook.find(o => o.id === entry.id && o.category === category)
-    setFormState({ open: true, category, baseEntry: entry, existingOverride: existing })
+    const existing = worldHandbook.find(item =>
+      item.id === entry.id
+      && ('handbookCategory' in item ? item.handbookCategory : item.category) === category
+    )
+    const isCustom = !!existing && 'mode' in existing && existing.mode === 'custom'
+    const systemEntry = TABS.find(tab => tab.category === category)?.entries.find(item => item.id === entry.id)
+    setFormState({
+      open: true,
+      category,
+      baseEntry: isCustom ? undefined : systemEntry ?? entry,
+      existingOverride: existing,
+    })
   }
 
   function openAddCustom(category: HandbookCategory) {
     setFormState({ open: true, category })
   }
 
-  function handleSaveOverride(override: HandbookOverride) {
+  function handleSaveOverride(entry: WorldHandbookEntry) {
     if (!activeWorldId || !activeWorld) return
     const updated = {
       ...activeWorld,
       worldHandbook: [
-        ...worldHandbook.filter(o => !(o.id === override.id && o.category === override.category)),
-        override,
+        ...worldHandbook.filter(item =>
+          item.id !== entry.id
+          || ('handbookCategory' in item ? item.handbookCategory : item.category) !== entry.handbookCategory
+        ),
+        entry,
       ],
     }
     saveById(activeWorldId, updated)
@@ -88,7 +107,10 @@ export function HandbooksPage() {
     if (!activeWorldId || !activeWorld) return
     const updated = {
       ...activeWorld,
-      worldHandbook: worldHandbook.filter(o => !(o.id === id && o.category === category)),
+      worldHandbook: worldHandbook.filter(item =>
+        item.id !== id
+        || ('handbookCategory' in item ? item.handbookCategory : item.category) !== category
+      ),
     }
     saveById(activeWorldId, updated)
     setFormState(null)
@@ -183,6 +205,7 @@ export function HandbooksPage() {
             ? () => handleDeleteOverride(formState.existingOverride!.id, formState.category)
             : undefined
           }
+          requirementReferences={requirementReferences}
         />
       )}
     </div>

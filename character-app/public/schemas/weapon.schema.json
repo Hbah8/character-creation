@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/character-creation/schemas/weapon.schema.json",
+  "title": "SWADE Weapon Handbook Entry",
+  "oneOf": [
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "id", "handbookCategory", "name", "description", "category", "damage"],
+      "properties": {
+        "mode": { "const": "custom" }, "id": { "type": "string", "minLength": 1 }, "handbookCategory": { "const": "weapon" },
+        "name": { "type": "string" }, "description": { "type": "string" }, "category": { "enum": ["Melee", "Ranged", "Thrown", "Unarmed"] },
+        "damage": { "type": "string" }, "range": { "type": "string" }, "ap": { "type": "number" }, "rof": { "type": "number" }, "weight": { "type": "number" }, "cost": { "type": "number" }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "id", "handbookCategory"],
+      "properties": {
+        "mode": { "const": "override" }, "id": { "type": "string", "minLength": 1 }, "handbookCategory": { "const": "weapon" },
+        "name": { "type": "string" }, "description": { "type": "string" }, "category": { "enum": ["Melee", "Ranged", "Thrown", "Unarmed"] },
+        "damage": { "type": "string" }, "range": { "type": "string" }, "ap": { "type": "number" }, "rof": { "type": "number" }, "weight": { "type": "number" }, "cost": { "type": "number" }
+      }
+    }
+  ]
+}

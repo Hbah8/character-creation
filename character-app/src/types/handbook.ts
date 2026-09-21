@@ -75,11 +75,30 @@ export interface HandbookEntry {
 // Edge requirements sub-type
 // ---------------------------------------------------------------------------
 
+export type AttributeKey = 'agility' | 'smarts' | 'spirit' | 'strength' | 'vigor'
+
+export type ArcaneBackgroundRequirement =
+  | 'any'
+  | 'weirdScience'
+  | 'magic'
+  | 'psionics'
+  | 'gifted'
+  | 'miracles'
+
+export type EdgeRequirementCondition =
+  | { type: 'rank'; minimum: Rank }
+  | { type: 'attribute'; attribute: AttributeKey; minimum: Die }
+  | { type: 'skill'; skill: string; minimum: Die }
+  | { type: 'edge'; edgeId: string; arcaneBackground?: ArcaneBackgroundRequirement }
+  | { type: 'hindrance'; hindranceId: string }
+  | { type: 'race'; raceId: string }
+  | { type: 'wildCard' }
+  | { type: 'text'; text: string }
+
+export type EdgeRequirement = EdgeRequirementCondition | { anyOf: EdgeRequirementCondition[] }
+
 export interface EdgeRequirements {
-  rank?: Rank
-  attributes?: Partial<Record<string, Die>>
-  skills?: Partial<Record<string, Die>>
-  edges?: string[]
+  allOf: EdgeRequirement[]
 }
 
 // ---------------------------------------------------------------------------
@@ -90,10 +109,12 @@ export interface Edge extends HandbookEntry {
   type: EdgeType
   wildCardOnly?: boolean
   requirements?: EdgeRequirements
+  modifiers?: HandbookModifier[]
 }
 
 export interface Hindrance extends HandbookEntry {
   type: HindranceType
+  modifiers?: HandbookModifier[]
 }
 
 export interface Weapon extends HandbookEntry {
@@ -134,6 +155,7 @@ export interface RacialAbility extends HandbookEntry {
   maxRepeat?: RacialAbilityMaxRepeat
   parameterSchema?: FeatureParameterSchema[]
   effects?: RacialAbilityMechanicalEffect[]
+  modifiers?: HandbookModifier[]
 }
 
 // ---------------------------------------------------------------------------
@@ -151,6 +173,46 @@ export type HandbookCategory =
   | 'mount'
   | 'racialAbility'
 
+export type HandbookCombatStat =
+  | 'pace'
+  | 'parry'
+  | 'toughness'
+  | 'armor'
+  | 'runningDieSteps'
+  | 'bennies'
+  | 'maxWounds'
+  | 'maxFatigue'
+  | 'powerPoints'
+
+export type HandbookModifier =
+  | { type: 'combat'; stat: HandbookCombatStat; amount: number }
+  | { type: 'attribute-die-step'; attribute: string; amount: number }
+
+export type ModifierHandbookEntry = Edge | Hindrance | RacialAbility
+
+export type CustomHandbookEntry<T extends HandbookEntry, Category extends HandbookCategory> =
+  T & { mode: 'custom'; handbookCategory: Category }
+
+export type HandbookEntryOverride<Category extends HandbookCategory, Entry extends HandbookEntry> =
+  { mode: 'override'; id: string; handbookCategory: Category }
+  & Partial<Omit<Entry, 'id'>>
+
+export type WorldHandbookEntry =
+  | CustomHandbookEntry<Edge, 'edge'>
+  | CustomHandbookEntry<Hindrance, 'hindrance'>
+  | CustomHandbookEntry<Weapon, 'weapon'>
+  | CustomHandbookEntry<Gear, 'gear'>
+  | CustomHandbookEntry<Power, 'power'>
+  | CustomHandbookEntry<Mount, 'mount'>
+  | CustomHandbookEntry<RacialAbility, 'racialAbility'>
+  | HandbookEntryOverride<'edge', Edge>
+  | HandbookEntryOverride<'hindrance', Hindrance>
+  | HandbookEntryOverride<'weapon', Weapon>
+  | HandbookEntryOverride<'gear', Gear>
+  | HandbookEntryOverride<'power', Power>
+  | HandbookEntryOverride<'mount', Mount>
+  | HandbookEntryOverride<'racialAbility', RacialAbility>
+
 export type EdgeOverride          = { id: string; category: 'edge' }          & Partial<Omit<Edge, 'id'>>
 export type HindranceOverride     = { id: string; category: 'hindrance' }     & Partial<Omit<Hindrance, 'id'>>
 export type WeaponOverride        = { id: string; category: 'weapon' }        & Partial<Omit<Weapon, 'id'>>
@@ -167,5 +229,7 @@ export type HandbookOverride =
   | PowerOverride
   | MountOverride
   | RacialAbilityOverride
+
+export type StoredHandbookEntry = HandbookOverride | WorldHandbookEntry
 
 export type ResolvedEntry<T extends HandbookEntry> = T & { source: HandbookSource }

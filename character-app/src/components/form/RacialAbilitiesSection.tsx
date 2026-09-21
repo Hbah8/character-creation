@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { resolveRacialAbilitiesForWorld } from '@/racebuilder/services/racialAbilityOptions'
 import type { RacialAbilityRef } from '@/world/types'
-import type { HandbookOverride } from '@/types/handbook'
+import type { StoredHandbookEntry } from '@/types/handbook'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 
 // Pure function exported for unit testing.
@@ -9,7 +9,7 @@ import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 // Falls back to the raw ability id if the ability is not found.
 export function resolveRaceAbilityNames(
   abilityRefs: RacialAbilityRef[],
-  worldHandbook: HandbookOverride[],
+  worldHandbook: StoredHandbookEntry[],
 ): string[] {
   const catalog = resolveRacialAbilitiesForWorld(worldHandbook)
   return abilityRefs.map(ref => {

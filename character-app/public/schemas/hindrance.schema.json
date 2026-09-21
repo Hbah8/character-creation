@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/character-creation/schemas/hindrance.schema.json",
+  "title": "SWADE Hindrance Handbook Entry",
+  "oneOf": [
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "id", "handbookCategory", "name", "description", "type"],
+      "properties": {
+        "mode": { "const": "custom" }, "id": { "type": "string", "minLength": 1 }, "handbookCategory": { "const": "hindrance" },
+        "name": { "type": "string" }, "description": { "type": "string" }, "type": { "enum": ["Major", "Minor"] },
+        "modifiers": { "type": "array", "items": { "$ref": "/character-creation/schemas/modifier.schema.json" } }
+      }
+    },
+    {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "id", "handbookCategory"],
+      "properties": {
+        "mode": { "const": "override" }, "id": { "type": "string", "minLength": 1 }, "handbookCategory": { "const": "hindrance" },
+        "name": { "type": "string" }, "description": { "type": "string" }, "type": { "enum": ["Major", "Minor"] },
+        "modifiers": { "type": "array", "items": { "$ref": "/character-creation/schemas/modifier.schema.json" } }
+      }
+    }
+  ]
+}
