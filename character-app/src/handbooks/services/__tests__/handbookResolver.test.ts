@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
-import type { Edge } from '@/types/handbook'
+import type { Edge, SkillDefinition } from '@/types/handbook'
 
 const systemEdges: Edge[] = [
   { id: 'level-headed', name: 'Level Headed', description: 'Draw two action cards, choose one.', type: 'Combat' },
   { id: 'marksman', name: 'Marksman', description: '+2 to Shooting if you did not move.', type: 'Combat' },
+]
+
+const systemSkills: SkillDefinition[] = [
+  { id: 'athletics', name: 'Athletics', description: 'Physical movement and exertion.', linkedAttribute: 'agility', isCore: true },
 ]
 
 describe('resolveHandbookEntries', () => {
@@ -106,5 +110,37 @@ describe('resolveHandbookEntries', () => {
     expect(result).toHaveLength(1)
     expect(result[0].id).toBe('world-edge-1')
     expect(result[0].source).toBe('world')
+  })
+
+  it('applies a world override to a system skill and appends custom skills', () => {
+    const result = resolveHandbookEntries('skill', [
+      {
+        mode: 'override',
+        id: 'athletics',
+        handbookCategory: 'skill',
+        linkedAttribute: 'strength',
+        isCore: false,
+      },
+      {
+        mode: 'custom',
+        id: 'spellcasting',
+        handbookCategory: 'skill',
+        name: 'Spellcasting',
+        description: 'Use magic.',
+        linkedAttribute: 'smarts',
+        isCore: false,
+      },
+    ], systemSkills)
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: 'athletics',
+        linkedAttribute: 'strength',
+        isCore: false,
+        source: 'world',
+      }),
+      expect.objectContaining({
+        id: 'spellcasting', source: 'world' }),
+    ])
   })
 })

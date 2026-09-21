@@ -5,6 +5,7 @@
   "oneOf": [
     { "$ref": "/character-creation/schemas/edge.schema.json" },
     { "$ref": "/character-creation/schemas/hindrance.schema.json" },
+    { "$ref": "/character-creation/schemas/skill.schema.json" },
     { "$ref": "/character-creation/schemas/weapon.schema.json" },
     { "$ref": "/character-creation/schemas/gear.schema.json" },
     { "$ref": "/character-creation/schemas/power.schema.json" },

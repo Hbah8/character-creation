@@ -27,6 +27,7 @@ import {
 } from '@/handbooks/utils/handbookTranslationKeys'
 import type {
   ArcaneBackground,
+  AttributeKey,
   EdgeType,
   GearCategory,
   HandbookCategory,
@@ -55,6 +56,7 @@ const GEAR_CATEGORIES = ['Adventuring', 'Clothing', 'Food', 'Tools', 'Other'] as
 const MOUNT_CATEGORIES = ['animal', 'vehicle'] as const
 const RACIAL_ABILITY_TYPES = ['positive', 'negative'] as const
 const ARCANE_BACKGROUNDS = ['Magic', 'Miracles', 'Psionics', 'SuperPowers', 'WeirdScience'] as const
+const ATTRIBUTES: AttributeKey[] = ['agility', 'smarts', 'spirit', 'strength', 'vigor']
 
 interface FilterOption {
   value: string
@@ -97,6 +99,10 @@ function getFacetLabel(key: HandbookFacetKey, t: HandbooksT): string {
       return t('fields.arcaneBackground')
     case 'category':
       return t('fields.category')
+    case 'isCore':
+      return t('fields.coreSkill')
+    case 'linkedAttribute':
+      return t('fields.linkedAttribute')
     case 'rank':
       return t('filter.rank')
     case 'source':
@@ -125,6 +131,14 @@ function getOptionLabel(
 
   if (key === 'wildCardOnly') {
     return t('filter.wildCardOnly')
+  }
+
+  if (key === 'isCore') {
+    return value === 'true' ? t('filter.coreSkills') : t('filter.otherSkills')
+  }
+
+  if (key === 'linkedAttribute') {
+    return t(`modifiers.${value as AttributeKey}`)
   }
 
   if (key === 'arcaneBackground') {
@@ -193,6 +207,13 @@ function getFilterGroups(
 
   if (category === 'hindrance') {
     groups.push(buildGroup(category, entries, 'type', HINDRANCE_TYPES, activeWorldName, t))
+  }
+
+  if (category === 'skill') {
+    groups.push(
+      buildGroup(category, entries, 'linkedAttribute', ATTRIBUTES, activeWorldName, t),
+      buildGroup(category, entries, 'isCore', ['true', 'false'], activeWorldName, t),
+    )
   }
 
   if (category === 'weapon') {

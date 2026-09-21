@@ -8,6 +8,8 @@ import type { Character, DieName, Skill, AttributeKey } from '@/types/character'
 import { Trash2, Plus } from 'lucide-react'
 import { calcSkillPointsSpent } from '@/services/pointsService'
 import { useSettingRules } from '@/hooks/useSettingRules'
+import { useWorldLibrary } from '@/world/store/useWorldLibrary'
+import { resolveCharacterSkills } from '@/handbooks/services/resolveCharacterSkills'
 
 const DIE_NAMES: DieName[] = ['d4', 'd6', 'd8', 'd10', 'd12']
 const ATTRIBUTE_KEYS: AttributeKey[] = ['agility', 'strength', 'smarts', 'spirit', 'vigor']
@@ -22,7 +24,10 @@ interface Props {
 
 export function SkillsForm({ skills, character, onAdd, onUpdate, onRemove }: Props) {
   const { t } = useTranslation('form')
-  const spent = calcSkillPointsSpent(skills, character)
+  const { entries } = useWorldLibrary()
+  const worldHandbook = entries.find(entry => entry.id === character.worldId)?.world.worldHandbook ?? []
+  const effectiveSkills = resolveCharacterSkills(skills, worldHandbook)
+  const spent = calcSkillPointsSpent(effectiveSkills, character)
   const { skillPointsBudget } = useSettingRules(character.worldId)
   return (
     <div className="flex flex-col gap-3">
@@ -45,7 +50,7 @@ export function SkillsForm({ skills, character, onAdd, onUpdate, onRemove }: Pro
           <span />
         </div>
 
-        {skills.map(skill => (
+        {effectiveSkills.map(skill => (
           <div key={skill.id} className="grid grid-cols-[1fr_80px_140px_52px_36px] gap-1.5 items-center min-w-[360px]">
             <Input
               value={skill.name}
@@ -64,7 +69,7 @@ export function SkillsForm({ skills, character, onAdd, onUpdate, onRemove }: Pro
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <Select value={skill.linkedAttribute} onValueChange={val => onUpdate(skill.id, { linkedAttribute: val as AttributeKey })}>
+            <Select value={skill.linkedAttribute} onValueChange={val => onUpdate(skill.id, { linkedAttribute: val as AttributeKey })} disabled={skill.skillKey !== undefined}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -81,6 +86,7 @@ export function SkillsForm({ skills, character, onAdd, onUpdate, onRemove }: Pro
                 checked={!!skill.isStarter}
                 onCheckedChange={checked => onUpdate(skill.id, { isStarter: !!checked })}
                 aria-label={t('skills.columnStarter')}
+                disabled={skill.skillKey !== undefined}
               />
             </div>
             <Button size="icon" variant="ghost" onClick={() => onRemove(skill.id)} className="text-destructive hover:text-destructive" aria-label={t('skills.removeSkill')}>

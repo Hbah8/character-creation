@@ -57,6 +57,43 @@ describe('HandbookEntryDetail', () => {
 
     expect(html).toContain('Seasoned')
     expect(html).toContain('Agility d8')
-    expect(html).toContain('Athletics d8 or Shooting d8')
+    expect(html).toContain('Атлетика d8 or Стрельба d8')
+  })
+
+  it('shows a skill linked attribute and core status', async () => {
+    const i18n = (await import('@/i18n')).default
+    await i18n.changeLanguage('en')
+
+    const html = renderToStaticMarkup(createElement(HandbookEntryDetail, {
+      entry: {
+        id: 'athletics',
+        name: 'Athletics',
+        description: '',
+        linkedAttribute: 'agility',
+        isCore: true,
+      },
+    }))
+
+    expect(html).toContain('Linked attribute')
+    expect(html).toContain('Agility')
+    expect(html).toContain('Core skill')
+  })
+
+  it('uses resolved world skill references in Edge requirements', async () => {
+    const i18n = (await import('@/i18n')).default
+    await i18n.changeLanguage('en')
+
+    const html = renderToStaticMarkup(createElement(HandbookEntryDetail, {
+      entry: {
+        id: 'world-edge',
+        name: 'World Edge',
+        description: '',
+        type: 'Weird',
+        requirements: { allOf: [{ type: 'skill', skill: 'spellcasting', minimum: 'd6' }] },
+      },
+      skillReferences: [{ id: 'spellcasting', name: 'House Magic' }],
+    }))
+
+    expect(html).toContain('House Magic d6')
   })
 })

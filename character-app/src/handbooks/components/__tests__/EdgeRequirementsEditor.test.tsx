@@ -31,6 +31,10 @@ describe('EdgeRequirementsEditor', () => {
         edges: [{ id: 'misticheskiy-dar', name: 'Arcane Background' }],
         hindrances: [{ id: 'durnoy-harakter', name: 'Mean' }],
         races: [{ id: 'human', name: 'Human' }],
+        skills: [
+          { id: 'athletics', name: 'Athletics' },
+          { id: 'shooting', name: 'Shooting' },
+        ],
       },
       onChange: vi.fn(),
     }))
@@ -40,5 +44,24 @@ describe('EdgeRequirementsEditor', () => {
     expect(html).toContain('>and</span>')
     expect(html).toContain('Add alternative')
     expect(html).not.toContain('Structured requirements (JSON)')
+  })
+
+  it('renders skill requirements as a resolved reference selector', async () => {
+    const i18n = (await import('@/i18n')).default
+    await i18n.changeLanguage('en')
+
+    const html = renderToStaticMarkup(createElement(EdgeRequirementsEditor, {
+      value: { allOf: [{ type: 'skill', skill: 'athletics', minimum: 'd8' }] },
+      references: {
+        edges: [],
+        hindrances: [],
+        races: [],
+        skills: [{ id: 'athletics', name: 'Athletics' }],
+      },
+      onChange: vi.fn(),
+    }))
+
+    expect(html).not.toContain('<input')
+    expect(html).toContain('role="combobox"')
   })
 })

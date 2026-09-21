@@ -1,6 +1,10 @@
-import type { Edge, Hindrance, Weapon, Gear, Power, Mount, RacialAbility } from '@/types/handbook'
+import type { Edge, Hindrance, Weapon, Gear, Power, Mount, RacialAbility, SkillDefinition } from '@/types/handbook'
 
-export type AnyHandbookEntry = Edge | Hindrance | Weapon | Gear | Power | Mount | RacialAbility
+export type AnyHandbookEntry = Edge | Hindrance | SkillDefinition | Weapon | Gear | Power | Mount | RacialAbility
+
+export function isSkill(e: AnyHandbookEntry): e is SkillDefinition {
+  return 'linkedAttribute' in e && 'isCore' in e
+}
 
 export function isPower(e: AnyHandbookEntry): e is Power {
   return 'ppCost' in e
@@ -29,5 +33,5 @@ export function isEdge(e: AnyHandbookEntry): e is Edge {
 }
 
 export function isGear(e: AnyHandbookEntry): e is Gear {
-  return !isPower(e) && !isWeapon(e) && !isMount(e) && !('type' in e)
+  return !isSkill(e) && !isPower(e) && !isWeapon(e) && !isMount(e) && !('type' in e)
 }

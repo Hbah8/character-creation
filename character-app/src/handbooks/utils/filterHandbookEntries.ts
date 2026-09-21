@@ -3,6 +3,8 @@ import type { HandbookEntry, HandbookSource } from '@/types/handbook'
 export type HandbookFacetKey =
   | 'arcaneBackground'
   | 'category'
+  | 'isCore'
+  | 'linkedAttribute'
   | 'rank'
   | 'source'
   | 'type'
@@ -20,6 +22,8 @@ type FilterInput = string | Partial<HandbookFilterState>
 const FACET_KEYS: HandbookFacetKey[] = [
   'arcaneBackground',
   'category',
+  'isCore',
+  'linkedAttribute',
   'rank',
   'source',
   'type',
@@ -42,6 +46,8 @@ export function getHandbookEntryFacetValues(
   const record = entry as HandbookEntry & {
     arcaneBackground?: string[]
     category?: string
+    isCore?: boolean
+    linkedAttribute?: string
     requirements?: { rank?: string }
     source?: HandbookSource
     type?: string
@@ -53,6 +59,10 @@ export function getHandbookEntryFacetValues(
       return record.arcaneBackground ?? []
     case 'category':
       return record.category ? [record.category] : []
+    case 'isCore':
+      return [record.isCore ? 'true' : 'false']
+    case 'linkedAttribute':
+      return record.linkedAttribute ? [record.linkedAttribute] : []
     case 'rank':
       return [record.requirements?.rank ?? 'none']
     case 'source':

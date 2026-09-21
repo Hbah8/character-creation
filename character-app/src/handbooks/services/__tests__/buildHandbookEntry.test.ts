@@ -29,4 +29,19 @@ describe('buildHandbookEntry', () => {
       name: 'House Rule',
     })
   })
+
+  it('builds a complete custom skill record', () => {
+    expect(buildHandbookEntry('skill', 'spellcasting', undefined, {
+      name: 'Spellcasting',
+      description: 'Cast spells.',
+      linkedAttribute: 'smarts',
+      isCore: false,
+    })).toMatchObject({
+      mode: 'custom',
+      handbookCategory: 'skill',
+      id: 'spellcasting',
+      linkedAttribute: 'smarts',
+      isCore: false,
+    })
+  })
 })

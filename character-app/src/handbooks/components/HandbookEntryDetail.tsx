@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { SWADE_EDGES } from '@/data/handbooks/edges'
 import { SWADE_HINDRANCES } from '@/data/handbooks/hindrances'
+import { SWADE_SKILLS } from '@/data/handbooks/skills'
 import type { AnyHandbookEntry } from '@/handbooks/types'
 import type { EdgeRequirementCondition, HandbookModifier } from '@/types/handbook'
 import {
@@ -11,15 +12,18 @@ import {
   isMount,
   isPower,
   isRacialAbility,
+  isSkill,
   isWeapon,
 } from '@/handbooks/types'
 
 interface Props {
   entry: AnyHandbookEntry
+  skillReferences?: readonly { id: string; name: string }[]
 }
 
 const systemEdgeNames = new Map(SWADE_EDGES.map(edge => [edge.id, edge.name]))
 const systemHindranceNames = new Map(SWADE_HINDRANCES.map(hindrance => [hindrance.id, hindrance.name]))
+const systemSkillNames = new Map(SWADE_SKILLS.map(skill => [skill.id, skill.name]))
 
 function ModifierSummary({ modifiers }: { modifiers: HandbookModifier[] | undefined }) {
   const { t } = useTranslation('handbooks')
@@ -61,8 +65,10 @@ function ModifierSummary({ modifiers }: { modifiers: HandbookModifier[] | undefi
   )
 }
 
-export function HandbookEntryDetail({ entry }: Props) {
+export function HandbookEntryDetail({ entry, skillReferences = [] }: Props) {
   const { t } = useTranslation('handbooks')
+  const skillNames = new Map(systemSkillNames)
+  for (const skill of skillReferences) skillNames.set(skill.id, skill.name)
 
   const formatRequirement = (condition: EdgeRequirementCondition): string => {
     switch (condition.type) {
@@ -87,25 +93,7 @@ export function HandbookEntryDetail({ entry }: Props) {
         return `${labels[condition.attribute]} ${condition.minimum}`
       }
       case 'skill': {
-        const labels: Record<string, string> = {
-          athletics: t('requirements.skills.athletics'),
-          faith: t('requirements.skills.faith'),
-          fighting: t('requirements.skills.fighting'),
-          notice: t('requirements.skills.notice'),
-          psionics: t('requirements.skills.psionics'),
-          repair: t('requirements.skills.repair'),
-          research: t('requirements.skills.research'),
-          shooting: t('requirements.skills.shooting'),
-          spellcasting: t('requirements.skills.spellcasting'),
-          stealth: t('requirements.skills.stealth'),
-          survival: t('requirements.skills.survival'),
-          taunt: t('requirements.skills.taunt'),
-          talent: t('requirements.skills.talent'),
-          thievery: t('requirements.skills.thievery'),
-          warfare: t('requirements.skills.warfare'),
-          'weird-science': t('requirements.skills.weirdScience'),
-        }
-        return `${labels[condition.skill] ?? condition.skill} ${condition.minimum}`
+        return `${skillNames.get(condition.skill) ?? condition.skill} ${condition.minimum}`
       }
       case 'edge': {
         const edgeName = systemEdgeNames.get(condition.edgeId) ?? condition.edgeId
@@ -171,6 +159,17 @@ export function HandbookEntryDetail({ entry }: Props) {
           <Badge variant={entry.type === 'Major' ? 'destructive' : 'secondary'}>{t(`enums.hindranceType.${entry.type}`)}</Badge>
         </div>
         <ModifierSummary modifiers={entry.modifiers} />
+      </div>
+    )
+  }
+
+  if (isSkill(entry)) {
+    return (
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+        <span className="text-muted-foreground">{t('fields.linkedAttribute')}</span>
+        <span>{t(`modifiers.${entry.linkedAttribute}`)}</span>
+        <span className="text-muted-foreground">{t('fields.coreSkill')}</span>
+        <span>{entry.isCore ? t('fields.yes') : t('fields.no')}</span>
       </div>
     )
   }

@@ -122,6 +122,27 @@ describe('validateWorldImport', () => {
       }])
     })
 
+    it('preserves validated custom skill entries', () => {
+      const world = validateWorldImport({
+        ...validWorld(),
+        worldHandbook: [{
+          mode: 'custom',
+          handbookCategory: 'skill',
+          id: 'spellcasting',
+          name: 'Spellcasting',
+          description: 'Cast spells.',
+          linkedAttribute: 'smarts',
+          isCore: false,
+        }],
+      })
+
+      expect(world.worldHandbook).toMatchObject([{
+        handbookCategory: 'skill',
+        id: 'spellcasting',
+        linkedAttribute: 'smarts',
+      }])
+    })
+
     it('rejects duplicate entries in the same handbook category', () => {
       expect(() => validateWorldImport({
         ...validWorld(),

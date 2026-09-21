@@ -3,6 +3,7 @@ const handbooks = {
   tabs: {
     edges: 'Черты',
     hindrances: 'Изъяны',
+    skills: 'Навыки',
     weapons: 'Оружие',
     gear: 'Снаряжение',
     powers: 'Силы',
@@ -22,6 +23,8 @@ const handbooks = {
     flags: 'Флаги',
     noRank: 'Без требования ранга',
     wildCardOnly: 'Только Дикая карта',
+    coreSkills: 'Базовые навыки',
+    otherSkills: 'Остальные навыки',
     noFacetGroups: 'Для этого раздела нет фильтров.',
     noResults: 'Нет записей под выбранные фильтры.',
   },
@@ -123,6 +126,10 @@ const handbooks = {
     points: 'Очки',
     category: 'Категория',
     wildCardOnly: 'Только Дикая карта',
+    linkedAttribute: 'Связанная характеристика',
+    coreSkill: 'Базовый навык',
+    yes: 'Да',
+    no: 'Нет',
   },
   modifiers: {
     title: 'Модификаторы',

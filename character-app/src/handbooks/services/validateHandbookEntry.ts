@@ -13,7 +13,7 @@ import type {
 } from '@/types/handbook'
 
 const HANDBOOK_CATEGORIES: readonly HandbookCategory[] = [
-  'edge', 'hindrance', 'weapon', 'gear', 'power', 'mount', 'racialAbility',
+  'edge', 'hindrance', 'skill', 'weapon', 'gear', 'power', 'mount', 'racialAbility',
 ]
 
 const COMBAT_STATS: readonly HandbookCombatStat[] = [
@@ -170,6 +170,11 @@ export function validateHandbookEntry(raw: unknown): WorldHandbookEntry {
         return
       case 'hindrance':
         if (!isOneOf(raw.type, HINDRANCE_TYPES)) throw new Error('validation.handbook.missingRequiredField')
+        return
+      case 'skill':
+        if (!isOneOf(raw.linkedAttribute, ATTRIBUTES) || typeof raw.isCore !== 'boolean') {
+          throw new Error('validation.handbook.missingRequiredField')
+        }
         return
       case 'weapon':
         if (!isOneOf(raw.category, WEAPON_CATEGORIES) || typeof raw.damage !== 'string') {

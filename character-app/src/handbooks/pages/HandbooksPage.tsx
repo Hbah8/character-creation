@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SWADE_EDGES } from '@/data/handbooks/edges'
 import { SWADE_HINDRANCES } from '@/data/handbooks/hindrances'
+import { SWADE_SKILLS } from '@/data/handbooks/skills'
 import { SWADE_WEAPONS } from '@/data/handbooks/weapons'
 import { SWADE_GEAR } from '@/data/handbooks/gear'
 import { SWADE_POWERS } from '@/data/handbooks/powers'
@@ -27,13 +28,14 @@ type TabLayout = 'cards' | 'stat'
 
 const TABS: Array<{
   key: string
-  labelKey: 'tabs.edges' | 'tabs.hindrances' | 'tabs.weapons' | 'tabs.gear' | 'tabs.powers' | 'tabs.transport' | 'tabs.racialAbilities'
+  labelKey: 'tabs.edges' | 'tabs.hindrances' | 'tabs.skills' | 'tabs.weapons' | 'tabs.gear' | 'tabs.powers' | 'tabs.transport' | 'tabs.racialAbilities'
   category: HandbookCategory
   entries: AnyHandbookEntry[]
   layout: TabLayout
 }> = [
   { key: 'edges',           labelKey: 'tabs.edges',           category: 'edge',          entries: SWADE_EDGES as AnyHandbookEntry[],           layout: 'cards' },
   { key: 'hindrances',      labelKey: 'tabs.hindrances',      category: 'hindrance',     entries: SWADE_HINDRANCES as AnyHandbookEntry[],      layout: 'cards' },
+  { key: 'skills',          labelKey: 'tabs.skills',          category: 'skill',         entries: SWADE_SKILLS as AnyHandbookEntry[],          layout: 'cards' },
   { key: 'weapons',         labelKey: 'tabs.weapons',         category: 'weapon',        entries: SWADE_WEAPONS as AnyHandbookEntry[],         layout: 'stat' },
   { key: 'gear',            labelKey: 'tabs.gear',            category: 'gear',          entries: SWADE_GEAR as AnyHandbookEntry[],            layout: 'stat' },
   { key: 'powers',          labelKey: 'tabs.powers',          category: 'power',         entries: SWADE_POWERS as AnyHandbookEntry[],          layout: 'cards' },
@@ -62,6 +64,7 @@ export function HandbooksPage() {
     edges: resolveHandbookEntries('edge', worldHandbook, [...SWADE_EDGES]).map(entry => ({ id: entry.id, name: entry.name })),
     hindrances: resolveHandbookEntries('hindrance', worldHandbook, [...SWADE_HINDRANCES]).map(entry => ({ id: entry.id, name: entry.name })),
     races: activeWorld?.races.map(race => ({ id: race.id, name: race.name })) ?? [],
+    skills: resolveHandbookEntries('skill', worldHandbook, [...SWADE_SKILLS]).map(entry => ({ id: entry.id, name: entry.name })),
   }
 
   function handleTabChange() {
@@ -174,6 +177,7 @@ export function HandbooksPage() {
                           <div className="p-6">
                             <HandbookList
                               entries={filtered as AnyHandbookEntry[]}
+                              skillReferences={requirementReferences.skills}
                               hasActiveFilters={hasActiveFilters}
                               activeWorldName={activeWorld?.name}
                               onOverride={entry => openOverride(tab.category, entry)}

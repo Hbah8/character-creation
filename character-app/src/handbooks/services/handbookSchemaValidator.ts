@@ -106,10 +106,45 @@ const weaponSchema = {
   ],
 } as const
 
+const skillSchema = {
+  $id: '/character-creation/schemas/skill.schema.json',
+  oneOf: [
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['mode', 'id', 'handbookCategory', 'name', 'description', 'linkedAttribute', 'isCore'],
+      properties: {
+        mode: { const: 'custom' },
+        id: { type: 'string', minLength: 1 },
+        handbookCategory: { const: 'skill' },
+        name: { type: 'string' },
+        description: { type: 'string' },
+        linkedAttribute: { enum: ['agility', 'smarts', 'spirit', 'strength', 'vigor'] },
+        isCore: { type: 'boolean' },
+      },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['mode', 'id', 'handbookCategory'],
+      properties: {
+        mode: { const: 'override' },
+        id: { type: 'string', minLength: 1 },
+        handbookCategory: { const: 'skill' },
+        name: { type: 'string' },
+        description: { type: 'string' },
+        linkedAttribute: { enum: ['agility', 'smarts', 'spirit', 'strength', 'vigor'] },
+        isCore: { type: 'boolean' },
+      },
+    },
+  ],
+} as const
+
 const ajv = new Ajv({ allErrors: true, strict: false })
 ajv.addSchema(modifierSchema)
 const validateEdge = ajv.compile(edgeSchema)
 const validateWeapon = ajv.compile(weaponSchema)
+const validateSkill = ajv.compile(skillSchema)
 
 function formatErrors(errors: ErrorObject[] | null | undefined): string[] {
   return (errors ?? []).map(error => `${error.instancePath} ${error.message ?? 'invalid'}`.trim())
@@ -118,6 +153,10 @@ function formatErrors(errors: ErrorObject[] | null | undefined): string[] {
 export function validateHandbookEntrySchema(raw: unknown): string[] {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return ['value must be an object']
   const handbookCategory = (raw as { handbookCategory?: unknown }).handbookCategory
-  const validate = handbookCategory === 'weapon' ? validateWeapon : validateEdge
+  const validate = handbookCategory === 'weapon'
+    ? validateWeapon
+    : handbookCategory === 'skill'
+      ? validateSkill
+      : validateEdge
   return validate(raw) ? [] : formatErrors(validate.errors)
 }

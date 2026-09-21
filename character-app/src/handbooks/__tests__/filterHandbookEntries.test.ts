@@ -38,6 +38,12 @@ const edgeEntries = [
   },
 ] as const
 
+const skillEntries = [
+  { id: 'athletics', name: 'Athletics', description: '', linkedAttribute: 'agility', isCore: true, source: 'system' },
+  { id: 'notice', name: 'Notice', description: '', linkedAttribute: 'smarts', isCore: true, source: 'system' },
+  { id: 'fighting', name: 'Fighting', description: '', linkedAttribute: 'agility', isCore: false, source: 'system' },
+] as const
+
 describe('filterHandbookEntries', () => {
   it('returns all entries when query is empty', () => {
     expect(filterHandbookEntries(entries, '')).toHaveLength(3)
@@ -121,6 +127,18 @@ describe('filterHandbookEntries', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].id).toBe('wild-card-edge')
+  })
+
+  it('filters skills by linked attribute and core status', () => {
+    expect(filterHandbookEntries(skillEntries, {
+      query: '',
+      facets: { linkedAttribute: ['agility'] },
+    }).map(entry => entry.id)).toEqual(['athletics', 'fighting'])
+
+    expect(filterHandbookEntries(skillEntries, {
+      query: '',
+      facets: { isCore: ['true'] },
+    }).map(entry => entry.id)).toEqual(['athletics', 'notice'])
   })
 
   it('reports whether a filter state is active', () => {
