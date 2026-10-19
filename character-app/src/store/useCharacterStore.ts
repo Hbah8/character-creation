@@ -43,20 +43,13 @@ export function useCharacterStore(initialCharacter?: Character) {
   }, [])
 
   // Hindrances
-  const addHindrance = useCallback(() => {
+  const addHindrance = useCallback((hindrance: Omit<Hindrance, 'id'>) => {
     setCharacter(prev => ({
       ...prev,
       hindrances: [
         ...prev.hindrances,
-        { id: crypto.randomUUID(), name: '', severity: 'minor' as const, description: '' } satisfies Hindrance,
+        { id: crypto.randomUUID(), ...hindrance } satisfies Hindrance,
       ],
-    }))
-  }, [])
-
-  const updateHindrance = useCallback((id: string, patch: Partial<Hindrance>) => {
-    setCharacter(prev => ({
-      ...prev,
-      hindrances: prev.hindrances.map(h => (h.id === id ? { ...h, ...patch } : h)),
     }))
   }, [])
 
@@ -190,7 +183,7 @@ export function useCharacterStore(initialCharacter?: Character) {
     updateField,
     addSkill, updateSkill, removeSkill,
     addEdge, removeEdge,
-    addHindrance, updateHindrance, removeHindrance,
+    addHindrance, removeHindrance,
     addWeapon, updateWeapon, removeWeapon,
     addGearItem, updateGearItem, removeGearItem,
     addSpecialRule, updateSpecialRule, removeSpecialRule,

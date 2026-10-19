@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterEdgeSelectionOptions, getEdgeSelectionOptions } from '@/services/edgeSelectionService'
+import { filterEdgeSelectionOptions, getEdgeSelectionOptions, getUnmetRequirements } from '@/services/edgeSelectionService'
 import type { Character } from '@/types/character'
 import type { Edge } from '@/types/handbook'
 
@@ -57,6 +57,27 @@ const RANKED_EDGES: Edge[] = [
 ]
 
 describe('getEdgeSelectionOptions', () => {
+  it('recognizes selected hindrance handbook references in edge requirements', () => {
+    const edge: Edge = {
+      id: 'clear-conscience',
+      name: 'Clear Conscience',
+      description: '',
+      type: 'Social',
+      requirements: { allOf: [{ type: 'hindrance', hindranceId: 'code-of-honor' }] },
+    }
+
+    expect(getUnmetRequirements(edge, {
+      ...CHARACTER,
+      hindrances: [{
+        id: 'code-of-honor-row',
+        hindranceId: 'code-of-honor',
+        name: 'Code of Honor',
+        severity: 'minor',
+        description: '',
+      }],
+    })).toEqual([])
+  })
+
   it('reports Wild Card and Arcane Background requirements against the current character', () => {
     const ordinary = getEdgeSelectionOptions(EDGES, {
       ...CHARACTER,

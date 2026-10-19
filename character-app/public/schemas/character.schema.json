@@ -294,13 +294,21 @@
 
     "hindrance": {
       "type": "object",
-      "description": "A single character hindrance.",
+      "description": "A selected handbook hindrance. Stable references are preferred; legacy name, severity, and description fields are supported as fallbacks.",
       "additionalProperties": false,
-      "required": ["id", "name", "severity", "description"],
+      "required": ["id"],
+      "anyOf": [
+        { "required": ["hindranceId"] },
+        { "required": ["name", "severity", "description"] }
+      ],
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for this hindrance entry."
+        },
+        "hindranceId": {
+          "type": "string",
+          "description": "Stable identity of the selected hindrance in the system or character world handbook."
         },
         "name": {
           "type": "string",

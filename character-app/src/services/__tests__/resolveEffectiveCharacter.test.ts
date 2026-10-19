@@ -224,7 +224,13 @@ describe('resolveEffectiveCharacter', () => {
       ...BASE_CHARACTER,
       raceId: 'fast-folk',
       edges: [{ id: 'fleet-footed-row', edgeId: 'fleet-footed' }],
-      hindrances: [{ id: 'clumsy', name: 'Clumsy', severity: 'minor' as const, description: '' }],
+      hindrances: [{
+        id: 'clumsy-row',
+        hindranceId: 'clumsy',
+        name: 'Clumsy',
+        severity: 'minor' as const,
+        description: '',
+      }],
     }
 
     const result = resolveCharacter(character, world)

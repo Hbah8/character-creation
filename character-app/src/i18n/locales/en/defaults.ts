@@ -47,9 +47,9 @@ export const enDefaultCharacter: Character = {
   ],
 
   hindrances: [
-    { id: '1', name: 'Bloodthirsty', severity: 'major', description: 'Prone to finishing off enemies and making harsh decisions.' },
-    { id: '2', name: 'Duty', severity: 'minor', description: 'Obligated to follow orders from their organization.' },
-    { id: '3', name: 'Enemy', severity: 'minor', description: 'A specific faction is hunting the operator.' },
+    { id: '1', hindranceId: 'zhazhda-krovi' },
+    { id: '2', hindranceId: 'obyazatelstva-minor' },
+    { id: '3', hindranceId: 'vrag-minor' },
   ],
 
   weapons: [

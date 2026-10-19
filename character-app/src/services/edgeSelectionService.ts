@@ -120,7 +120,9 @@ function getMissingCondition(
         ? null
         : { type: 'arcaneBackground', minimum: condition.arcaneBackground }
     case 'hindrance':
-      return character.hindrances.some(hindrance => hindrance.id === condition.hindranceId) ? null : condition
+      return character.hindrances.some(hindrance =>
+        (hindrance.hindranceId ?? hindrance.id) === condition.hindranceId,
+      ) ? null : condition
     case 'race':
       return character.raceId === condition.raceId ? null : condition
     case 'wildCard':

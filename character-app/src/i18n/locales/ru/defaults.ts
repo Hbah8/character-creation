@@ -47,9 +47,9 @@ export const ruDefaultCharacter: Character = {
   ],
 
   hindrances: [
-    { id: '1', name: 'Кровожадность', severity: 'major', description: 'склонен добивать врагов и идти на жесткие решения.' },
-    { id: '2', name: 'Долг', severity: 'minor', description: 'обязан выполнять приказы своей структуры.' },
-    { id: '3', name: 'Враг', severity: 'minor', description: 'за оператором охотится конкретная сторона конфликта.' },
+    { id: '1', hindranceId: 'zhazhda-krovi' },
+    { id: '2', hindranceId: 'obyazatelstva-minor' },
+    { id: '3', hindranceId: 'vrag-minor' },
   ],
 
   weapons: [

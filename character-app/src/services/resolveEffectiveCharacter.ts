@@ -1,8 +1,9 @@
 import { DEFAULT_CHARACTER_RESOURCE_LIMITS } from '@/types/character'
-import type { Character, AttributeKey, CombatModifier, DieName, ResolvedCharacterSkill } from '@/types/character'
+import type { Character, AttributeKey, CombatModifier, DieName, ResolvedCharacterHindrance, ResolvedCharacterSkill } from '@/types/character'
 import type { World } from '@/world/types'
 import { resolveCharacterSkills } from '@/handbooks/services/resolveCharacterSkills'
 import { resolveCharacterEdges, type ResolvedCharacterEdge } from '@/handbooks/services/resolveCharacterEdges'
+import { resolveCharacterHindrances } from '@/handbooks/services/resolveCharacterHindrances'
 import { resolveRacialAbilitiesForWorld } from '@/racebuilder/services/racialAbilityOptions'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
 import { SWADE_EDGES } from '@/data/handbooks/edges'
@@ -31,6 +32,7 @@ export interface ResolvedCharacter {
   attributes: Record<AttributeKey, DieName>
   skills: ResolvedCharacterSkill[]
   edges: ResolvedCharacterEdge[]
+  hindrances: ResolvedCharacterHindrance[]
   combat: ResolvedCombatStats
   modifierBreakdown: ResolvedModifierBreakdown[]
 }
@@ -61,6 +63,7 @@ export function resolveCharacter(character: Character, world: World | null): Res
   const worldHandbook = world?.worldHandbook ?? []
   const skills = resolveCharacterSkills(character.skills, worldHandbook)
   const edges = resolveCharacterEdges(character.edges, worldHandbook)
+  const hindrances = resolveCharacterHindrances(character.hindrances, worldHandbook)
   const race = world && character.raceId
     ? world.races.find(candidate => candidate.id === character.raceId)
     : undefined
@@ -116,6 +119,7 @@ export function resolveCharacter(character: Character, world: World | null): Res
     attributes,
     skills,
     edges,
+    hindrances,
     combat: { pace, parry, toughness, armor, runningDie, size: effectiveSize, bennies, maxWounds, maxFatigue, powerPoints },
     modifierBreakdown: [
       ...toCombatModifierBreakdown(character.combatModifiers ?? []),
@@ -133,7 +137,7 @@ function collectActiveHandbookModifiers(
   const edges = resolveHandbookEntries('edge', worldHandbook, [...SWADE_EDGES])
   const hindrances = resolveHandbookEntries('hindrance', worldHandbook, [...SWADE_HINDRANCES])
   const selectedEdgeIds = new Set(character.edges.map(edge => edge.edgeId))
-  const selectedHindranceIds = new Set(character.hindrances.map(hindrance => hindrance.id))
+  const selectedHindranceIds = new Set(character.hindrances.map(hindrance => hindrance.hindranceId ?? hindrance.id))
   const active: ActiveHandbookModifier[] = []
 
   for (const edge of edges) {

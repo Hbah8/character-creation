@@ -358,8 +358,8 @@ export function CharacterCreatorPage() {
         return (
           <HindrancesForm
             hindrances={character.hindrances}
+            worldHandbook={characterWorldHandbook}
             onAdd={store.addHindrance}
-            onUpdate={store.updateHindrance}
             onRemove={handleHindranceRemoval}
             column={layout.hindrances}
             onColumnChange={col => handleLayoutChange('hindrances', col)}

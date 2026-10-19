@@ -37,6 +37,7 @@ describe('CharacterSheet', () => {
           type: 'Background',
           source: 'system',
         }],
+        hindrances: [],
         modifierBreakdown: [],
         combat: {
           pace: 6,

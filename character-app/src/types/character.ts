@@ -53,9 +53,17 @@ export type HindranceSeverity = 'minor' | 'major'
 
 export interface Hindrance {
   id: string
+  hindranceId?: string
+  name?: string
+  severity?: HindranceSeverity
+  description?: string
+}
+
+export interface ResolvedCharacterHindrance extends Hindrance {
   name: string
   severity: HindranceSeverity
   description: string
+  source?: 'system' | 'world'
 }
 
 export interface Weapon {
