@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react'
 import type { Character, Skill, Edge, Hindrance, Weapon, SpecialRule, CharacterPower, PowerModifier } from '@/types/character'
 import { defaultCharacter } from '@/data/defaultCharacter'
+import { addCatalogSkill } from '@/services/characterSkillService'
+import { addEdgeReference, removeEdgeReference } from '@/services/characterEdgeService'
 
 export function useCharacterStore(initialCharacter?: Character) {
   const [character, setCharacter] = useState<Character>(initialCharacter ?? defaultCharacter)
@@ -10,17 +12,14 @@ export function useCharacterStore(initialCharacter?: Character) {
   }, [])
 
   // Skills
-  const addSkill = useCallback(() => {
+  const addSkill = useCallback((skillKey: string) => {
     setCharacter(prev => ({
       ...prev,
-      skills: [
-        ...prev.skills,
-        { id: crypto.randomUUID(), name: '', die: 'd4', linkedAttribute: 'agility', isStarter: false } satisfies Skill,
-      ],
+      skills: addCatalogSkill(prev.skills, skillKey, crypto.randomUUID()),
     }))
   }, [])
 
-  const updateSkill = useCallback((id: string, patch: Partial<Skill>) => {
+  const updateSkill = useCallback((id: string, patch: Pick<Skill, 'die'>) => {
     setCharacter(prev => ({
       ...prev,
       skills: prev.skills.map(s => (s.id === id ? { ...s, ...patch } : s)),
@@ -32,22 +31,15 @@ export function useCharacterStore(initialCharacter?: Character) {
   }, [])
 
   // Edges
-  const addEdge = useCallback(() => {
+  const addEdge = useCallback((edgeId: string) => {
     setCharacter(prev => ({
       ...prev,
-      edges: [...prev.edges, { id: crypto.randomUUID(), name: '', effect: '' } satisfies Edge],
-    }))
-  }, [])
-
-  const updateEdge = useCallback((id: string, patch: Partial<Edge>) => {
-    setCharacter(prev => ({
-      ...prev,
-      edges: prev.edges.map(e => (e.id === id ? { ...e, ...patch } : e)),
+      edges: addEdgeReference(prev.edges, edgeId, crypto.randomUUID()),
     }))
   }, [])
 
   const removeEdge = useCallback((id: string) => {
-    setCharacter(prev => ({ ...prev, edges: prev.edges.filter(e => e.id !== id) }))
+    setCharacter(prev => ({ ...prev, ...removeEdgeReference(prev.edges, id, prev.arcaneBackground) }))
   }, [])
 
   // Hindrances
@@ -197,7 +189,7 @@ export function useCharacterStore(initialCharacter?: Character) {
     character,
     updateField,
     addSkill, updateSkill, removeSkill,
-    addEdge, updateEdge, removeEdge,
+    addEdge, removeEdge,
     addHindrance, updateHindrance, removeHindrance,
     addWeapon, updateWeapon, removeWeapon,
     addGearItem, updateGearItem, removeGearItem,

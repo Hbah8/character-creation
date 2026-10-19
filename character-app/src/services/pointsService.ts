@@ -1,4 +1,4 @@
-import type { Character, Skill, DieName, AttributeKey } from '@/types/character'
+import type { Character, ResolvedCharacterSkill, DieName, AttributeKey } from '@/types/character'
 
 const DIE_ORDER: DieName[] = ['d4', 'd6', 'd8', 'd10', 'd12']
 
@@ -30,7 +30,7 @@ export function calcAttributePointsSpent(character: Character, _budget = DEFAULT
  * If isStarter = true, the d4 level is free (skip that step).
  * Budget: 12 points.
  */
-export function calcSkillPointsSpent(skills: Skill[], character: Character, _budget = DEFAULT_SKILL_POINTS_BUDGET): number {
+export function calcSkillPointsSpent(skills: ResolvedCharacterSkill[], character: Character, _budget = DEFAULT_SKILL_POINTS_BUDGET): number {
   return skills.reduce((total, skill) => {
     const skillIdx = dieIndex(skill.die)
     if (skillIdx < 0) return total

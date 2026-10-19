@@ -33,6 +33,7 @@ function createCharacter(overrides: Partial<Character> = {}): Character {
     role: 'Explorer',
     fileNo: 'MCK-001',
     portraitUrl: '',
+    isWildCard: true,
     agility: 'd10',
     strength: 'd12',
     smarts: 'd8',
@@ -87,7 +88,7 @@ describe('race effective character flow', () => {
     const character = createCharacter({
       raceId: 'giant-kin',
       raceName: 'Giant Kin',
-      skills: [{ id: 'fighting', skillKey: 'fighting', name: 'Fighting', die: 'd8', linkedAttribute: 'agility' }],
+      skills: [{ id: 'fighting', skillKey: 'fighting', die: 'd8' }],
     })
     const effective = resolveCharacter(character, world)
 
@@ -129,7 +130,7 @@ describe('race effective character flow', () => {
       toughness: 'ignored',
       armor: 'ignored',
       vigor: 'd8',
-      skills: [{ id: 'fighting', skillKey: 'fighting', name: 'Fighting', die: 'd8', linkedAttribute: 'agility' }],
+      skills: [{ id: 'fighting', skillKey: 'fighting', die: 'd8' }],
       combatModifiers: [
         { id: 'staff', source: 'equipment', name: 'Staff held in two hands', parry: 1 },
         { id: 'armor', source: 'equipment', name: 'Worn armor', armor: 2 },

@@ -1,3 +1,5 @@
+import type { ArcaneBackground, Rank } from '@/types/handbook'
+
 // d12+1 and d12+2 represent above-maximum attribute values granted by racial bonuses.
 // The app hard-caps display at d12+2. These values are only used in the effective character
 // model (preview/PDF) — they are never stored in the base character or shown in form pickers.
@@ -32,17 +34,19 @@ export interface CombatModifier {
 
 export interface Skill {
   id: string
-  skillKey?: string
-  name: string
+  skillKey: string
   die: DieName
+}
+
+export interface ResolvedCharacterSkill extends Skill {
+  name: string
   linkedAttribute: AttributeKey
-  isStarter?: boolean
+  isStarter: boolean
 }
 
 export interface Edge {
   id: string
-  name: string
-  effect: string
+  edgeId: string
 }
 
 export type HindranceSeverity = 'minor' | 'major'
@@ -111,10 +115,12 @@ export interface Character {
   sheetTitle: string
   callsign: string
   name: string
-  rank: string
+  rank: Rank
   role: string
   fileNo: string
   portraitUrl: string
+  isWildCard: boolean
+  arcaneBackground?: ArcaneBackground
 
   // Attributes
   agility: DieName

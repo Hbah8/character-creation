@@ -1,10 +1,14 @@
 import { useTranslation } from 'react-i18next'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Character } from '@/types/character'
 import { PortraitUpload } from '@/components/form/PortraitUpload'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
+import type { Rank } from '@/types/handbook'
+
+const RANKS: Rank[] = ['Novice', 'Seasoned', 'Veteran', 'Heroic', 'Legendary']
 
 interface Props {
   character: Character
@@ -50,7 +54,14 @@ export function IdentityForm({ character, onChange }: Props) {
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="rank">{t('identity.rank')}</Label>
-          <Input id="rank" value={character.rank} onChange={e => onChange('rank', e.target.value)} />
+          <Select value={character.rank} onValueChange={rank => onChange('rank', rank as Rank)}>
+            <SelectTrigger id="rank"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {RANKS.map(rank => <SelectItem key={rank} value={rank}>{t(`identity.ranks.${rank}`)}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="role">{t('identity.role')}</Label>
@@ -60,6 +71,10 @@ export function IdentityForm({ character, onChange }: Props) {
           <Label htmlFor="fileNo">{t('identity.fileNo')}</Label>
           <Input id="fileNo" value={character.fileNo} onChange={e => onChange('fileNo', e.target.value)} />
         </div>
+        <div className="col-span-2 flex items-center gap-2">
+          <Checkbox id="isWildCard" checked={character.isWildCard} onCheckedChange={checked => onChange('isWildCard', checked === true)} />
+          <Label htmlFor="isWildCard" className="cursor-pointer">{t('identity.wildCard')}</Label>
+        </div>
         {races.length > 0 && (
           <div className="col-span-2 flex flex-col gap-1">
             <Label htmlFor="race">{t('identity.race.label')}</Label>
@@ -68,12 +83,14 @@ export function IdentityForm({ character, onChange }: Props) {
                 <SelectValue placeholder={t('identity.race.placeholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">{t('identity.race.noRace')}</SelectItem>
-                {races.map(race => (
-                  <SelectItem key={race.id} value={race.id}>
-                    {race.name}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectItem value="__none__">{t('identity.race.noRace')}</SelectItem>
+                  {races.map(race => (
+                    <SelectItem key={race.id} value={race.id}>
+                      {race.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>

@@ -1,6 +1,10 @@
-import type { Character, AttributeKey, HindranceSeverity, CharacterLayout, ColumnSide, CharacterPower, PowerModifier, CombatModifier, CombatModifierSource } from '@/types/character'
+import type { Character, HindranceSeverity, CharacterLayout, ColumnSide, CharacterPower, PowerModifier, CombatModifier, CombatModifierSource, Skill } from '@/types/character'
 import { DEFAULT_CHARACTER_RESOURCE_LIMITS, DEFAULT_LAYOUT } from '@/types/character'
 import { parseToughness } from '@/utils/toughnessUtils'
+import { resolveSkillDefinitions } from '@/handbooks/services/resolveCharacterSkills'
+import { resolveEdgeDefinitions } from '@/handbooks/services/resolveCharacterEdges'
+import type { StoredHandbookEntry } from '@/types/handbook'
+import type { Rank } from '@/types/handbook'
 
 function isString(value: unknown): value is string {
   return typeof value === 'string'
@@ -14,8 +18,32 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-const ATTRIBUTE_KEYS: AttributeKey[] = ['agility', 'strength', 'smarts', 'spirit', 'vigor']
 const COMBAT_MODIFIER_SOURCES: CombatModifierSource[] = ['edge', 'hindrance', 'equipment', 'manual']
+const ARCANE_BACKGROUNDS = ['Magic', 'Miracles', 'Psionics', 'SuperPowers', 'WeirdScience'] as const
+const RANKS: Rank[] = ['Novice', 'Seasoned', 'Veteran', 'Heroic', 'Legendary']
+const LEGACY_SYSTEM_SKILL_KEYS_BY_NAME: Readonly<Record<string, string>> = {
+  athletics: 'athletics',
+  'common knowledge': 'common-knowledge',
+  driving: 'driving',
+  fighting: 'fighting',
+  focus: 'focus',
+  healing: 'healing',
+  intimidation: 'intimidation',
+  notice: 'notice',
+  occult: 'occult',
+  performance: 'performance',
+  persuasion: 'persuasion',
+  piloting: 'piloting',
+  repair: 'repair',
+  research: 'research',
+  riding: 'riding',
+  science: 'science',
+  shooting: 'shooting',
+  stealth: 'stealth',
+  survival: 'survival',
+  taunt: 'taunt',
+  thievery: 'thievery',
+}
 
 // TODO: remove shim once all exported JSONs have been migrated
 function migrateSeverity(value: unknown): HindranceSeverity {
@@ -25,27 +53,35 @@ function migrateSeverity(value: unknown): HindranceSeverity {
   return 'minor'
 }
 
-// TODO: remove shim once all exported JSONs have been migrated
-function migrateLinkedAttribute(value: unknown): AttributeKey {
-  const legacyMap: Record<string, AttributeKey> = {
-    'Ловкость': 'agility',
-    'Сила': 'strength',
-    'Смекалка': 'smarts',
-    'Характер': 'spirit',
-    'Выносливость': 'vigor',
+function normalizeSkill(raw: unknown, worldHandbook: readonly StoredHandbookEntry[]): Skill {
+  if (!isObject(raw) || !isString(raw.id) || !isString(raw.die)) {
+    throw new Error('validation.import.invalidSkill')
   }
-  if (isString(value)) {
-    const mapped = legacyMap[value]
-    if (mapped) return mapped
-    if (ATTRIBUTE_KEYS.includes(value as AttributeKey)) return value as AttributeKey
+  const definitions = resolveSkillDefinitions(worldHandbook)
+  const skillKeysByName = new Map([
+    ...definitions.map(skill => [skill.name.toLocaleLowerCase(), skill.id] as const),
+    ...Object.entries(LEGACY_SYSTEM_SKILL_KEYS_BY_NAME),
+  ])
+  const skillKey = isString(raw.skillKey)
+    ? raw.skillKey
+    : isString(raw.name)
+      ? skillKeysByName.get(raw.name.toLocaleLowerCase())
+      : undefined
+  if (!skillKey || !definitions.some(skill => skill.id === skillKey)) {
+    const identifier = isString(raw.skillKey) ? raw.skillKey : isString(raw.name) ? raw.name : raw.id
+    throw new Error(`validation.import.unknownSkill:${identifier}`)
   }
-  return 'agility'
+  return { id: raw.id, skillKey, die: raw.die as Skill['die'] }
 }
 
-function migrateSkillKey(skill: Record<string, unknown>): string | undefined {
-  if (isString(skill.skillKey)) return skill.skillKey
-  if (skill.id === 'fighting' || skill.name === 'Fighting' || skill.name === 'Драка') return 'fighting'
-  return undefined
+function normalizeEdge(raw: unknown, worldHandbook: readonly StoredHandbookEntry[]): Character['edges'][number] {
+  if (!isObject(raw) || !isString(raw.id) || !isString(raw.edgeId) || Object.keys(raw).some(key => key !== 'id' && key !== 'edgeId')) {
+    throw new Error('validation.import.invalidEdge')
+  }
+  if (!resolveEdgeDefinitions(worldHandbook).some(edge => edge.id === raw.edgeId)) {
+    throw new Error(`validation.import.unknownEdge:${raw.edgeId}`)
+  }
+  return { id: raw.id, edgeId: raw.edgeId }
 }
 
 function dieValue(die: unknown): number {
@@ -143,7 +179,7 @@ function migrateLegacyCombatModifiers(raw: Record<string, unknown>, skills: Char
   }
 }
 
-export function validateCharacterImport(raw: unknown): Character {
+export function validateCharacterImport(raw: unknown, worldHandbook: readonly StoredHandbookEntry[] = []): Character {
   if (!isObject(raw)) {
     throw new Error('validation.import.notAnObject')
   }
@@ -157,6 +193,14 @@ export function validateCharacterImport(raw: unknown): Character {
     if (!isString(raw[key])) {
       throw new Error(`validation.import.missingStringField:${key}`)
     }
+  }
+
+  if (!RANKS.includes(raw.rank as Rank)) {
+    throw new Error('validation.import.invalidRank')
+  }
+
+  if (typeof raw.isWildCard !== 'boolean') {
+    throw new Error('validation.import.missingBooleanField:isWildCard')
   }
 
   const hasModifierSources = raw.combatModifiers !== undefined
@@ -184,16 +228,22 @@ export function validateCharacterImport(raw: unknown): Character {
   if (!isArray(raw.gear)) throw new Error('validation.import.gearNotArray')
   if (!isArray(raw.specialRules)) throw new Error('validation.import.specialRulesNotArray')
 
-  // Migrate hindrances severity and skill linkedAttribute for legacy JSON files
+  // Migrate hindrance severity and legacy display-name skills to strict catalog references.
   const hindrances = (raw.hindrances as unknown[]).map((h) => {
     if (!isObject(h)) return h
     return { ...h, severity: migrateSeverity(h.severity) }
   })
 
-  const skills = (raw.skills as unknown[]).map((s) => {
-    if (!isObject(s)) return s
-    return { ...s, skillKey: migrateSkillKey(s), linkedAttribute: migrateLinkedAttribute(s.linkedAttribute), isStarter: !!s.isStarter }
-  })
+  const skills = (raw.skills as unknown[]).map(skill => normalizeSkill(skill, worldHandbook))
+  const edges = (raw.edges as unknown[]).map(edge => normalizeEdge(edge, worldHandbook))
+  const arcaneBackground = raw.arcaneBackground === undefined
+    ? undefined
+    : ARCANE_BACKGROUNDS.includes(raw.arcaneBackground as typeof ARCANE_BACKGROUNDS[number])
+      ? raw.arcaneBackground as Character['arcaneBackground']
+      : (() => { throw new Error('validation.import.invalidArcaneBackground') })()
+  if (arcaneBackground !== undefined && !edges.some(edge => edge.edgeId === 'misticheskiy-dar')) {
+    throw new Error('validation.import.arcaneBackgroundWithoutMysticGift')
+  }
 
   const COLUMN_SIDES: ColumnSide[] = ['left', 'right']
   const LAYOUT_KEYS: (keyof CharacterLayout)[] = ['weapons', 'edges', 'hindrances', 'gear', 'specialRules', 'powers']
@@ -233,7 +283,7 @@ export function validateCharacterImport(raw: unknown): Character {
       })
     : []
 
-  const normalizedSkills = skills as Character['skills']
+  const normalizedSkills = skills
   const legacyCombat = migrateLegacyCombatModifiers(raw, normalizedSkills)
   const { bennies: _bennies, wounds: _wounds, fatigue: _fatigue, mana: _mana, ...source } = raw
 
@@ -241,6 +291,9 @@ export function validateCharacterImport(raw: unknown): Character {
     ...(source as unknown as Character),
     hindrances: hindrances as Character['hindrances'],
     skills: normalizedSkills,
+    edges,
+    isWildCard: raw.isWildCard,
+    arcaneBackground,
     layout,
     powers,
     pace: isString(raw.pace) ? raw.pace : '',

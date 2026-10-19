@@ -1,7 +1,8 @@
 import type { Character } from '@/types/character'
+import type { StoredHandbookEntry } from '@/types/handbook'
 import { validateCharacterImport } from '@/services/validateImport'
 
-export async function importFromJson(file: File): Promise<Character> {
+export async function importFromJson(file: File, worldHandbook: readonly StoredHandbookEntry[] = []): Promise<Character> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -12,7 +13,7 @@ export async function importFromJson(file: File): Promise<Character> {
           return
         }
         const raw: unknown = JSON.parse(text)
-        const character = validateCharacterImport(raw)
+        const character = validateCharacterImport(raw, worldHandbook)
         resolve(character)
       } catch (err) {
         if (err instanceof SyntaxError) {

@@ -33,7 +33,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
   const sheetRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const [sheetHeight, setSheetHeight] = useState(0)
-  const { source: character, attributes, combat, modifierBreakdown } = resolvedCharacter
+  const { source: character, attributes, skills, edges, combat, modifierBreakdown } = resolvedCharacter
 
   const { entries } = useWorldLibrary()
   const world = entries.find(e => e.id === character.worldId)?.world ?? null
@@ -119,9 +119,9 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
               <SheetQuickStats combat={combat} modifierBreakdown={modifierBreakdown} />
               <section className="columns">
                 <div className="column">
-                  <SheetAttributesSkills character={character} attributes={attributes} />
+                  <SheetAttributesSkills skills={skills} attributes={attributes} />
                   {layout.weapons === 'left' && <SheetWeapons character={character} />}
-                  {layout.edges === 'left' && <SheetEdges character={character} />}
+                  {layout.edges === 'left' && <SheetEdges edges={edges} />}
                   {layout.hindrances === 'left' && <SheetHindrances character={character} />}
                   {layout.gear === 'left' && <SheetGear character={character} />}
                   {layout.specialRules === 'left' && <SheetSpecialRules character={character} />}
@@ -129,7 +129,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
                 </div>
                 <div className="column">
                   {layout.weapons === 'right' && <SheetWeapons character={character} />}
-                  {layout.edges === 'right' && <SheetEdges character={character} />}
+                  {layout.edges === 'right' && <SheetEdges edges={edges} />}
                   {layout.hindrances === 'right' && <SheetHindrances character={character} />}
                   {layout.gear === 'right' && <SheetGear character={character} />}
                   {layout.specialRules === 'right' && <SheetSpecialRules character={character} />}
@@ -180,9 +180,9 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
                 return (
                   <>
                     <div className="column">
-                      <SheetAttributesSkills character={character} attributes={attributes} />
+                      <SheetAttributesSkills skills={skills} attributes={attributes} />
                       {layout.weapons === 'left' && <SheetWeapons character={character} />}
-                      {layout.edges === 'left' && <SheetEdges character={character} />}
+                      {layout.edges === 'left' && <SheetEdges edges={edges} />}
                       {layout.hindrances === 'left' && <SheetHindrances character={character} />}
                       {layout.gear === 'left' && <SheetGear character={character} />}
                       {layout.specialRules === 'left' && <SheetSpecialRules character={character} />}
@@ -190,7 +190,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
                     </div>
                     <div className="column">
                       {layout.weapons === 'right' && <SheetWeapons character={character} />}
-                      {layout.edges === 'right' && <SheetEdges character={character} />}
+                      {layout.edges === 'right' && <SheetEdges edges={edges} />}
                       {layout.hindrances === 'right' && <SheetHindrances character={character} />}
                       {layout.gear === 'right' && <SheetGear character={character} />}
                       {layout.specialRules === 'right' && <SheetSpecialRules character={character} />}

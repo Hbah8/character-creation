@@ -28,6 +28,15 @@ describe('CharacterSheet', () => {
       resolvedCharacter: {
         source: SOURCE_CHARACTER,
         attributes: { agility: 'd8', strength: 'd6', smarts: 'd6', spirit: 'd6', vigor: 'd6' },
+        skills: [],
+        edges: [{
+          id: 'vigilant-row',
+          edgeId: 'bditelnost',
+          name: 'Vigilant',
+          description: 'Notice every detail.',
+          type: 'Background',
+          source: 'system',
+        }],
         modifierBreakdown: [],
         combat: {
           pace: 6,
@@ -46,6 +55,8 @@ describe('CharacterSheet', () => {
 
     expect(html).toContain('AGILITY d8')
     expect(html).toContain('7 (2)')
+    expect(html).toContain('Vigilant')
+    expect(html).toContain('Notice every detail.')
     expect(html).not.toContain('99')
   })
 })

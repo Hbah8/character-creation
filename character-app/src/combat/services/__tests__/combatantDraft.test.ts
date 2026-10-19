@@ -11,7 +11,7 @@ const character: Character = {
     { id: 'worn-armor', source: 'equipment', name: 'Worn armor', armor: 2 },
   ],
   bennies: '3', wounds: '0', fatigue: '0', mana: '0',
-  skills: [{ id: 'fighting', skillKey: 'fighting', name: 'Fighting', die: 'd6', linkedAttribute: 'agility' }],
+  skills: [{ id: 'fighting', skillKey: 'fighting', die: 'd6' }],
   edges: [], hindrances: [], weapons: [], gear: [], specialRules: [], powers: [], notes: '',
 }
 

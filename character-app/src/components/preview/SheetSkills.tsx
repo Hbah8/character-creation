@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import type { Character } from '@/types/character'
+import type { ResolvedCharacterSkill } from '@/types/character'
 
 interface Props {
-  character: Character
+  skills: ResolvedCharacterSkill[]
 }
 
-export function SheetSkills({ character }: Props) {
+export function SheetSkills({ skills }: Props) {
   const { t } = useTranslation('preview')
   return (
     <section className="section">
@@ -19,7 +19,7 @@ export function SheetSkills({ character }: Props) {
           </tr>
         </thead>
         <tbody>
-          {character.skills.map(skill => (
+          {skills.map(skill => (
             <tr key={skill.id}>
               <td>{skill.name}</td>
               <td>{skill.die}</td>

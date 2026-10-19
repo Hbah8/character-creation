@@ -7,6 +7,7 @@ export const SWADE_SKILLS: readonly SkillDefinition[] = [
   { id: 'persuasion', name: 'Убеждение', description: 'Переговоры, дипломатия и влияние на других.', linkedAttribute: 'spirit', isCore: true },
   { id: 'stealth', name: 'Скрытность', description: 'Незаметное передвижение и укрытие.', linkedAttribute: 'agility', isCore: true },
   { id: 'fighting', name: 'Драка', description: 'Атаки в ближнем бою.', linkedAttribute: 'agility', isCore: false },
+  { id: 'driving', name: 'Вождение', description: 'Управление наземным транспортом.', linkedAttribute: 'agility', isCore: false },
   { id: 'focus', name: 'Концентрация', description: 'Контроль и применение мистических способностей.', linkedAttribute: 'spirit', isCore: false },
   { id: 'healing', name: 'Лечение', description: 'Первая помощь и медицинская помощь.', linkedAttribute: 'smarts', isCore: false },
   { id: 'intimidation', name: 'Запугивание', description: 'Угрозы и принуждение.', linkedAttribute: 'spirit', isCore: false },

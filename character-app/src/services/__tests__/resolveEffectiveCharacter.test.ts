@@ -13,6 +13,7 @@ const BASE_CHARACTER: Character = {
   role: 'Fighter',
   fileNo: 'TST-001',
   portraitUrl: '',
+  isWildCard: true,
   agility: 'd6',
   strength: 'd6',
   smarts: 'd6',
@@ -27,7 +28,7 @@ const BASE_CHARACTER: Character = {
   fatigue: '0',
   mana: '0',
   notes: '',
-  skills: [{ id: 'fighting', name: 'Fighting', die: 'd6', linkedAttribute: 'agility' }],
+  skills: [{ id: 'fighting', skillKey: 'fighting', die: 'd6' }],
   edges: [],
   hindrances: [],
   weapons: [],
@@ -66,6 +67,22 @@ function resolveEffectiveCharacter(character: Character, world: World | null): C
 }
 
 describe('resolveEffectiveCharacter', () => {
+  it('resolves selected system edges for a character without a world', () => {
+    const result = resolveCharacter({
+      ...BASE_CHARACTER,
+      edges: [{ id: 'vigilant-row', edgeId: 'bditelnost' }],
+    }, null)
+
+    expect(result.edges).toEqual([
+      expect.objectContaining({
+        id: 'vigilant-row',
+        edgeId: 'bditelnost',
+        name: 'Бдительность',
+        source: 'system',
+      }),
+    ])
+  })
+
   it('separates source data, effective attributes, and resolved combat values', () => {
     const character = {
       ...BASE_CHARACTER,
@@ -78,6 +95,16 @@ describe('resolveEffectiveCharacter', () => {
     expect(result.attributes).toEqual({
       agility: 'd6', strength: 'd6', smarts: 'd6', spirit: 'd6', vigor: 'd6',
     })
+    expect(result.skills).toEqual([
+      {
+        id: 'fighting',
+        skillKey: 'fighting',
+        name: 'Драка',
+        die: 'd6',
+        linkedAttribute: 'agility',
+        isStarter: false,
+      },
+    ])
     expect(result.combat).toEqual({
       pace: 6,
       parry: 5,
@@ -124,7 +151,7 @@ describe('resolveEffectiveCharacter', () => {
       toughness: '99 (99)',
       armor: '3',
       vigor: 'd8' as const,
-      skills: [{ id: 'fighting', name: 'Fighting', die: 'd8' as const, linkedAttribute: 'agility' as const }],
+      skills: [{ id: 'fighting', skillKey: 'fighting', die: 'd8' as const }],
       combatModifiers: [{ id: 'legacy-armor', source: 'manual' as const, name: 'Armor', armor: 3 }],
     }
 
@@ -196,7 +223,7 @@ describe('resolveEffectiveCharacter', () => {
     const character = {
       ...BASE_CHARACTER,
       raceId: 'fast-folk',
-      edges: [{ id: 'fleet-footed', name: 'Fleet-Footed', effect: '' }],
+      edges: [{ id: 'fleet-footed-row', edgeId: 'fleet-footed' }],
       hindrances: [{ id: 'clumsy', name: 'Clumsy', severity: 'minor' as const, description: '' }],
     }
 

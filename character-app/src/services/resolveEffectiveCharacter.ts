@@ -1,6 +1,8 @@
 import { DEFAULT_CHARACTER_RESOURCE_LIMITS } from '@/types/character'
-import type { Character, AttributeKey, CombatModifier, DieName } from '@/types/character'
+import type { Character, AttributeKey, CombatModifier, DieName, ResolvedCharacterSkill } from '@/types/character'
 import type { World } from '@/world/types'
+import { resolveCharacterSkills } from '@/handbooks/services/resolveCharacterSkills'
+import { resolveCharacterEdges, type ResolvedCharacterEdge } from '@/handbooks/services/resolveCharacterEdges'
 import { resolveRacialAbilitiesForWorld } from '@/racebuilder/services/racialAbilityOptions'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
 import { SWADE_EDGES } from '@/data/handbooks/edges'
@@ -27,6 +29,8 @@ export interface ResolvedCombatStats {
 export interface ResolvedCharacter {
   source: Character
   attributes: Record<AttributeKey, DieName>
+  skills: ResolvedCharacterSkill[]
+  edges: ResolvedCharacterEdge[]
   combat: ResolvedCombatStats
   modifierBreakdown: ResolvedModifierBreakdown[]
 }
@@ -54,6 +58,9 @@ interface ActiveHandbookModifier {
  * - Callers must export `source`, never resolved output.
  */
 export function resolveCharacter(character: Character, world: World | null): ResolvedCharacter {
+  const worldHandbook = world?.worldHandbook ?? []
+  const skills = resolveCharacterSkills(character.skills, worldHandbook)
+  const edges = resolveCharacterEdges(character.edges, worldHandbook)
   const race = world && character.raceId
     ? world.races.find(candidate => candidate.id === character.raceId)
     : undefined
@@ -66,7 +73,7 @@ export function resolveCharacter(character: Character, world: World | null): Res
     runningDieSteps: 0,
     attributeSteps: new Map<AttributeKey, number>(),
   }
-  const handbookModifiers = world ? collectActiveHandbookModifiers(character, world, catalog) : []
+  const handbookModifiers = collectActiveHandbookModifiers(character, worldHandbook, world, catalog)
   const handbookAttributeSteps = sumAttributeDieSteps(handbookModifiers)
 
   const attributes: Record<AttributeKey, DieName> = {
@@ -85,7 +92,7 @@ export function resolveCharacter(character: Character, world: World | null): Res
     }
   }
 
-  const fighting = character.skills.find(skill => skill.skillKey === 'fighting' || skill.id === 'fighting')
+  const fighting = skills.find(skill => skill.skillKey === 'fighting')
   const fightingDieValue = dieValue(fighting?.die ?? '')
   const vigorDieValue = dieValue(attributes.vigor)
   const effectiveSize = (character.size ?? 0) + (race?.size ?? 0)
@@ -107,6 +114,8 @@ export function resolveCharacter(character: Character, world: World | null): Res
   return {
     source: character,
     attributes,
+    skills,
+    edges,
     combat: { pace, parry, toughness, armor, runningDie, size: effectiveSize, bennies, maxWounds, maxFatigue, powerPoints },
     modifierBreakdown: [
       ...toCombatModifierBreakdown(character.combatModifiers ?? []),
@@ -117,12 +126,13 @@ export function resolveCharacter(character: Character, world: World | null): Res
 
 function collectActiveHandbookModifiers(
   character: Character,
-  world: World,
+  worldHandbook: World['worldHandbook'],
+  world: World | null,
   racialAbilities: ReturnType<typeof resolveRacialAbilitiesForWorld>,
 ): ActiveHandbookModifier[] {
-  const edges = resolveHandbookEntries('edge', world.worldHandbook, [...SWADE_EDGES])
-  const hindrances = resolveHandbookEntries('hindrance', world.worldHandbook, [...SWADE_HINDRANCES])
-  const selectedEdgeIds = new Set(character.edges.map(edge => edge.id))
+  const edges = resolveHandbookEntries('edge', worldHandbook, [...SWADE_EDGES])
+  const hindrances = resolveHandbookEntries('hindrance', worldHandbook, [...SWADE_HINDRANCES])
+  const selectedEdgeIds = new Set(character.edges.map(edge => edge.edgeId))
   const selectedHindranceIds = new Set(character.hindrances.map(hindrance => hindrance.id))
   const active: ActiveHandbookModifier[] = []
 
@@ -136,7 +146,7 @@ function collectActiveHandbookModifiers(
       appendModifiers(active, hindrance.id, 'hindrance', hindrance.name, hindrance.modifiers)
     }
   }
-  if (character.raceId) {
+  if (world && character.raceId) {
     const race = world.races.find(candidate => candidate.id === character.raceId)
     for (const ref of race?.abilities ?? []) {
       const ability = racialAbilities.find(candidate => candidate.id === ref.id)

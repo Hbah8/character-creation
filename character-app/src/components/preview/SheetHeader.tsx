@@ -6,7 +6,7 @@ interface Props {
 }
 
 export function SheetHeader({ character }: Props) {
-  const { t } = useTranslation('preview')
+  const { t } = useTranslation(['preview', 'form'])
   return (
     <header className="header">
       <div className="titlebar">
@@ -17,7 +17,7 @@ export function SheetHeader({ character }: Props) {
         <div className="id-block">
           <div className="id-callsign">{character.callsign || '—'}</div>
           <div className="id-name">{character.name || '—'}</div>
-          <div className="id-rank-role">{character.rank || '—'} · {character.role || '—'}</div>
+          <div className="id-rank-role">{t(`form:identity.ranks.${character.rank}`)} · {character.role || '—'}</div>
         </div>
         <div className="portrait">
           {character.portraitUrl ? (

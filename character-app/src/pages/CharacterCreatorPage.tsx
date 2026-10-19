@@ -74,7 +74,7 @@ export function CharacterCreatorPage() {
   const navigate = useNavigate()
 
   const library = useCharacterLibrary()
-  const { activeWorldId } = useWorldLibrary()
+  const { activeWorldId, entries: worldEntries } = useWorldLibrary()
   const initialCharacter = id
     ? getDefaultCharacter(initialLocale)
     : { ...getDefaultCharacter(initialLocale), worldId: activeWorldId ?? undefined }
@@ -170,7 +170,8 @@ export function CharacterCreatorPage() {
 
   async function handleImportJson(file: File) {
     try {
-      const imported = await importFromJson(file)
+      const activeWorldHandbook = worldEntries.find(entry => entry.id === activeWorldId)?.world.worldHandbook ?? []
+      const imported = await importFromJson(file, activeWorldHandbook)
       const withWorld = { ...imported, worldId: activeWorldId ?? undefined }
       store.replaceCharacter(withWorld)
       setImportWarnings(imported.importWarnings ?? [])
@@ -217,8 +218,9 @@ export function CharacterCreatorPage() {
   }
 
   const layout = character.layout ?? DEFAULT_LAYOUT
+  const characterWorldHandbook = worldEntries.find(entry => entry.id === character.worldId)?.world.worldHandbook ?? []
 
-  const subtitle = [character.rank, character.role, character.fileNo].filter(Boolean).join(' · ')
+  const subtitle = [tForm(`identity.ranks.${character.rank}`), character.role, character.fileNo].filter(Boolean).join(' · ')
 
   const sectionLabels: Record<SectionKey, string> = useMemo(() => ({
     identity: tForm('sections.identity'),
@@ -260,10 +262,11 @@ export function CharacterCreatorPage() {
       case 'edges':
         return (
           <EdgesForm
-            edges={character.edges}
+            character={character}
+            worldHandbook={characterWorldHandbook}
             onAdd={store.addEdge}
-            onUpdate={store.updateEdge}
             onRemove={store.removeEdge}
+            onArcaneBackgroundChange={arcaneBackground => store.updateField('arcaneBackground', arcaneBackground)}
             column={layout.edges}
             onColumnChange={col => handleLayoutChange('edges', col)}
           />

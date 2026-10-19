@@ -1,21 +1,21 @@
 import { useTranslation } from 'react-i18next'
-import type { Character } from '@/types/character'
+import type { ResolvedCharacterEdge } from '@/handbooks/services/resolveCharacterEdges'
 
 interface Props {
-  character: Character
+  edges: ResolvedCharacterEdge[]
 }
 
-export function SheetEdges({ character }: Props) {
+export function SheetEdges({ edges }: Props) {
   const { t } = useTranslation('preview')
-  if (character.edges.length === 0) return null
+  if (edges.length === 0) return null
   return (
     <section className="section">
       <div className="section-title">{t('sections.edges')}</div>
       <div className="list">
-        {character.edges.map(edge => (
+        {edges.map(edge => (
           <p key={edge.id} className="item">
             <strong>{edge.name}</strong>
-            {edge.effect ? ` - ${edge.effect}` : ''}
+            {edge.description ? ` - ${edge.description}` : ''}
           </p>
         ))}
       </div>

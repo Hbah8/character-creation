@@ -10,6 +10,7 @@ const BASE = {
   role: 'Fighter',
   fileNo: 'TST-001',
   portraitUrl: '',
+  isWildCard: true,
   agility: 'd6',
   strength: 'd6',
   smarts: 'd6',

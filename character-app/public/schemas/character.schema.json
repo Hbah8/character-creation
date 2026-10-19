@@ -13,6 +13,7 @@
     "role",
     "fileNo",
     "portraitUrl",
+    "isWildCard",
     "agility",
     "strength",
     "smarts",
@@ -47,7 +48,8 @@
     },
     "rank": {
       "type": "string",
-      "description": "Character rank (e.g. Novice, Seasoned, Veteran, Heroic, Legendary)."
+      "enum": ["Novice", "Seasoned", "Veteran", "Heroic", "Legendary"],
+      "description": "Canonical SWADE rank key. The UI translates it for display."
     },
     "role": {
       "type": "string",
@@ -60,6 +62,15 @@
     "portraitUrl": {
       "type": "string",
       "description": "Portrait image. May be an https URL or a base64 data-URI (data:image/…). Empty string means no portrait."
+    },
+    "isWildCard": {
+      "type": "boolean",
+      "description": "Whether this character is a SWADE Wild Card."
+    },
+    "arcaneBackground": {
+      "type": "string",
+      "enum": ["Magic", "Miracles", "Psionics", "SuperPowers", "WeirdScience"],
+      "description": "Selected Arcane Background. Allowed only when the character has the Mystic Gift edge."
     },
 
     "agility": {
@@ -198,7 +209,7 @@
       "type": "object",
       "description": "A single character skill entry.",
       "additionalProperties": false,
-      "required": ["id", "name", "die", "linkedAttribute"],
+      "required": ["id", "skillKey", "die"],
       "properties": {
         "id": {
           "type": "string",
@@ -206,24 +217,11 @@
         },
         "skillKey": {
           "type": "string",
-          "description": "Optional stable canonical identity for a system skill, for example 'fighting'."
-        },
-        "name": {
-          "type": "string",
-          "description": "Skill name (e.g. 'Athletics', 'Shooting', 'Notice')."
+          "description": "Required stable canonical identity resolved from the system or character world skill handbook."
         },
         "die": {
           "$ref": "#/$defs/dieName",
           "description": "Current die rating for this skill."
-        },
-        "linkedAttribute": {
-          "$ref": "#/$defs/attributeKey",
-          "description": "Governing attribute for this skill."
-        },
-        "isStarter": {
-          "type": "boolean",
-          "description": "True if this is a free starter skill. Omit or false otherwise.",
-          "default": false
         }
       }
     },
@@ -279,21 +277,17 @@
 
     "edge": {
       "type": "object",
-      "description": "A single character edge.",
+      "description": "A reference to a single edge in the system or character world handbook.",
       "additionalProperties": false,
-      "required": ["id", "name", "effect"],
+      "required": ["id", "edgeId"],
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for this edge entry."
+          "description": "Unique identifier for this selected edge row."
         },
-        "name": {
+        "edgeId": {
           "type": "string",
-          "description": "Edge name."
-        },
-        "effect": {
-          "type": "string",
-          "description": "Short description of the edge effect."
+          "description": "Required stable canonical handbook identity, resolved from the system or character world edge catalog."
         }
       }
     },

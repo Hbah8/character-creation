@@ -11,6 +11,7 @@ export const enDefaultCharacter: Character = {
   role: 'Assault Trooper',
   fileNo: 'WLF-██-001',
   portraitUrl: '',
+  isWildCard: true,
 
   agility: 'd8',
   strength: 'd6',
@@ -25,23 +26,23 @@ export const enDefaultCharacter: Character = {
   combatModifiers: [{ id: 'default-armor', source: 'equipment', name: 'Body armor', armor: 2 }],
 
   skills: [
-    { id: '1', name: 'Shooting', die: 'd10', linkedAttribute: 'agility', isStarter: false },
-    { id: '2', skillKey: 'fighting', name: 'Fighting', die: 'd8', linkedAttribute: 'agility', isStarter: false },
-    { id: '3', name: 'Athletics', die: 'd8', linkedAttribute: 'agility', isStarter: false },
-    { id: '4', name: 'Notice', die: 'd8', linkedAttribute: 'smarts', isStarter: false },
-    { id: '5', name: 'Stealth', die: 'd6', linkedAttribute: 'agility', isStarter: false },
-    { id: '6', name: 'Intimidation', die: 'd6', linkedAttribute: 'spirit', isStarter: false },
-    { id: '7', name: 'Repair', die: 'd6', linkedAttribute: 'smarts', isStarter: false },
-    { id: '8', name: 'Driving', die: 'd6', linkedAttribute: 'agility', isStarter: false },
-    { id: '9', name: 'Healing', die: 'd4', linkedAttribute: 'smarts', isStarter: false },
-    { id: '10', name: 'Common Knowledge', die: 'd6', linkedAttribute: 'smarts', isStarter: false },
+    { id: '1', skillKey: 'shooting', die: 'd10' },
+    { id: '2', skillKey: 'fighting', die: 'd8' },
+    { id: '3', skillKey: 'athletics', die: 'd8' },
+    { id: '4', skillKey: 'notice', die: 'd8' },
+    { id: '5', skillKey: 'stealth', die: 'd6' },
+    { id: '6', skillKey: 'intimidation', die: 'd6' },
+    { id: '7', skillKey: 'repair', die: 'd6' },
+    { id: '8', skillKey: 'driving', die: 'd6' },
+    { id: '9', skillKey: 'healing', die: 'd4' },
+    { id: '10', skillKey: 'common-knowledge', die: 'd6' },
   ],
 
   edges: [
-    { id: '1', name: 'Level Headed', effect: 'Draw two action cards at the start of the round, choose one.' },
-    { id: '2', name: 'Marksman', effect: '+2 to Shooting if you did not move this turn.' },
-    { id: '3', name: 'Combat Hardened', effect: '+1 to Toughness.' },
-    { id: '4', name: 'Team Tactics', effect: '+1 to support an ally within communication range.' },
+    { id: '1', edgeId: 'hladnokrovie' },
+    { id: '2', edgeId: 'metkiy-strelok' },
+    { id: '3', edgeId: 'boevaya-zakalka' },
+    { id: '4', edgeId: 'komandnyy-golos' },
   ],
 
   hindrances: [

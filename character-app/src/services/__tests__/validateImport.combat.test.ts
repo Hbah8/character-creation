@@ -10,6 +10,7 @@ const BASE = {
   role: 'Fighter',
   fileNo: 'TST-001',
   portraitUrl: '',
+  isWildCard: true,
   agility: 'd6',
   strength: 'd6',
   smarts: 'd6',
@@ -67,6 +68,45 @@ describe('validateCharacterImport - combat fields backward compatibility', () =>
     expect(result.combatModifiers).toEqual(expect.arrayContaining([
       expect.objectContaining({ source: 'manual', pace: 2, parry: 1, toughness: 2, armor: 2 }),
     ]))
+  })
+
+  it('migrates a known legacy system skill to a strict catalog reference', () => {
+    const result = validateCharacterImport({
+      ...BASE,
+      skills: [{ id: 'legacy-shooting', name: 'Shooting', die: 'd8', linkedAttribute: 'agility', isStarter: false }],
+    })
+
+    expect(result.skills).toEqual([{ id: 'legacy-shooting', skillKey: 'shooting', die: 'd8' }])
+  })
+
+  it('rejects an imported skill that cannot be resolved by the system catalog', () => {
+    expect(() => validateCharacterImport({
+      ...BASE,
+      skills: [{ id: 'legacy-juggling', name: 'Juggling', die: 'd6', linkedAttribute: 'agility' }],
+    })).toThrow('validation.import.unknownSkill:Juggling')
+  })
+
+  it('accepts a custom-world skill only when the effective world handbook is provided', () => {
+    const imported = validateCharacterImport({
+      ...BASE,
+      skills: [{ id: 'house-magic-row', skillKey: 'house-magic', die: 'd6' }],
+    }, [
+      {
+        mode: 'custom',
+        handbookCategory: 'skill',
+        id: 'house-magic',
+        name: 'House Magic',
+        description: '',
+        linkedAttribute: 'spirit',
+        isCore: true,
+      },
+    ])
+
+    expect(imported.skills).toEqual([{ id: 'house-magic-row', skillKey: 'house-magic', die: 'd6' }])
+    expect(() => validateCharacterImport({
+      ...BASE,
+      skills: [{ id: 'house-magic-row', skillKey: 'house-magic', die: 'd6' }],
+    })).toThrow('validation.import.unknownSkill:house-magic')
   })
 
   it('migrates legacy resource limits into manual modifier deltas and removes the fields', () => {
