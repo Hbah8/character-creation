@@ -409,6 +409,8 @@ export function HandbookEntryForm({
 
   useEffect(() => {
     if (open) {
+      // The dialog must reset its editable draft when its source entry changes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValues(buildInitialValues(category, baseEntry, existingOverride))
       setValidationError(null)
     }

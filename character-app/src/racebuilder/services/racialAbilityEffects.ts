@@ -326,7 +326,7 @@ export function buildRacialAbilityEffects(
           rare: rareSkillPenalty(cost),
         }),
       ]
-    case 'attribute-penalty':
+    case 'attribute-penalty': {
       const isStrengthPenalty = parameterString(parameters, 'attributeId') === 'strength'
       return [
         effect(ref.id, 'traits', 'penalty', isStrengthPenalty ? 'attributePenaltyStrength' : 'attributePenalty', {
@@ -334,6 +334,7 @@ export function buildRacialAbilityEffects(
           penalty: attributePenalty(cost),
         }),
       ]
+    }
     default:
       return [
         effect(ref.id, 'other', ability?.type === 'negative' ? 'penalty' : 'neutral', 'customAbility'),

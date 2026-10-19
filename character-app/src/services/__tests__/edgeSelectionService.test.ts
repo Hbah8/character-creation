@@ -11,6 +11,7 @@ const CHARACTER: Character = {
   role: '',
   fileNo: '',
   portraitUrl: '',
+  isWildCard: false,
   agility: 'd6',
   strength: 'd6',
   smarts: 'd6',

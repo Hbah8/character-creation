@@ -127,6 +127,8 @@ export function CharacterCreatorPage() {
       try {
         const loaded = library.loadById(id)
         store.replaceCharacter(loaded)
+        // Keep the saved/dirty baseline in sync with the newly loaded route entity.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCleanSnapshot(JSON.stringify(loaded))
         setSavedAt(null)
         loadedIdRef.current = id
@@ -144,6 +146,8 @@ export function CharacterCreatorPage() {
     history.replaceState(null, '', window.location.pathname + window.location.search)
     try {
       const { character: shared, portraitStripped } = decodeCharacterFromHash(hash)
+      // The hash is consumed once to initialize the share-import confirmation flow.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPendingShareChar(shared)
       setPendingSharePortraitStripped(portraitStripped)
     } catch {

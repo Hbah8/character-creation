@@ -4,6 +4,7 @@ import type { Character } from '@/types/character'
 
 const character: Character = {
   sheetTitle: '', callsign: 'Scout', name: 'Scout', rank: 'Novice', role: '', fileNo: '', portraitUrl: '',
+  isWildCard: false,
   agility: 'd6', strength: 'd6', smarts: 'd6', spirit: 'd6', vigor: 'd6',
   pace: '99', parry: '99', toughness: '99', armor: '0',
   combatModifiers: [

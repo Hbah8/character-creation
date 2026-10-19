@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { Character, Skill, Edge, Hindrance, Weapon, SpecialRule, CharacterPower, PowerModifier } from '@/types/character'
+import type { Character, Skill, Hindrance, Weapon, SpecialRule, CharacterPower, PowerModifier } from '@/types/character'
 import { defaultCharacter } from '@/data/defaultCharacter'
 import { addCatalogSkill } from '@/services/characterSkillService'
 import { addEdgeReference, removeEdgeReference } from '@/services/characterEdgeService'

@@ -4,13 +4,14 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { CharacterSheet } from '@/components/preview/CharacterSheet'
 import type { Character } from '@/types/character'
 
-const SOURCE_CHARACTER = {
+const SOURCE_CHARACTER: Character = {
   sheetTitle: 'Test', callsign: 'ACE', name: 'Test Name', rank: 'Novice', role: '', fileNo: '', portraitUrl: '',
+  isWildCard: false,
   agility: 'd6', strength: 'd6', smarts: 'd6', spirit: 'd6', vigor: 'd6',
   pace: '99', parry: '99', toughness: '99', armor: '99',
   bennies: '3', wounds: '0', fatigue: '0', mana: '0', notes: '',
   skills: [], edges: [], hindrances: [], weapons: [], gear: [], specialRules: [], powers: [],
-} as Character
+}
 
 describe('CharacterSheet', () => {
   beforeAll(() => {

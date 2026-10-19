@@ -5,6 +5,8 @@ import type {
   EdgeRequirement,
   EdgeRequirementCondition,
   EdgeType,
+  AttributeKey,
+  Die,
   Rank,
 } from '@/types/handbook'
 
@@ -29,8 +31,8 @@ const DIE_INDEX: Record<string, number> = {
 
 export type UnmetEdgeRequirement =
   | { type: 'rank'; minimum: Rank }
-  | { type: 'attribute'; attribute: string; minimum: string }
-  | { type: 'skill'; skill: string; minimum: string }
+  | { type: 'attribute'; attribute: AttributeKey; minimum: Die }
+  | { type: 'skill'; skill: string; minimum: Die }
   | { type: 'edge'; edgeId: string }
   | { type: 'hindrance'; hindranceId: string }
   | { type: 'race'; raceId: string }

@@ -40,7 +40,7 @@ interface EdgeRequirementsListProps {
   unmetRequirements?: readonly UnmetEdgeRequirement[]
 }
 
-function formatCondition(condition: EdgeRequirementCondition, definitions: readonly Edge[], formT: TFunction, handbookT: TFunction): string {
+function formatCondition(condition: EdgeRequirementCondition, definitions: readonly Edge[], formT: TFunction<'form'>, handbookT: TFunction<'handbooks'>): string {
   switch (condition.type) {
     case 'rank':
       return formT('edges.requirements.rank', { rank: handbookT(RANK_LABEL_KEYS[condition.minimum]) })
@@ -62,7 +62,7 @@ function formatCondition(condition: EdgeRequirementCondition, definitions: reado
   }
 }
 
-function formatRequirement(requirement: EdgeRequirement, definitions: readonly Edge[], formT: TFunction, handbookT: TFunction): string {
+function formatRequirement(requirement: EdgeRequirement, definitions: readonly Edge[], formT: TFunction<'form'>, handbookT: TFunction<'handbooks'>): string {
   if ('anyOf' in requirement) {
     return formT('edges.requirements.anyOf', {
       conditions: requirement.anyOf.map(condition => formatCondition(condition, definitions, formT, handbookT)).join(` ${formT('edges.requirements.or')} `),
@@ -71,7 +71,7 @@ function formatRequirement(requirement: EdgeRequirement, definitions: readonly E
   return formatCondition(requirement, definitions, formT, handbookT)
 }
 
-function formatUnmetRequirement(requirement: UnmetEdgeRequirement, definitions: readonly Edge[], formT: TFunction, handbookT: TFunction): string {
+function formatUnmetRequirement(requirement: UnmetEdgeRequirement, definitions: readonly Edge[], formT: TFunction<'form'>, handbookT: TFunction<'handbooks'>): string {
   if (requirement.type === 'anyOf') {
     return formT('edges.requirements.anyOf', {
       conditions: requirement.conditions.map(condition => formatUnmetRequirement(condition, definitions, formT, handbookT)).join(` ${formT('edges.requirements.or')} `),

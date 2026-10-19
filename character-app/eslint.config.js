@@ -18,5 +18,28 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_',
+        ignoreRestSiblings: true,
+        varsIgnorePattern: '^_',
+      }],
+      'react-refresh/only-export-components': ['error', {
+        allowConstantExport: true,
+        allowExportNames: [
+          'ALL_STATUSES',
+          'badgeVariants',
+          'buttonVariants',
+          'getImportWarningTranslationKey',
+          'hasSeenWelcome',
+          'markWelcomeSeen',
+          'resolveRaceAbilityNames',
+          'toggleVariants',
+          'useSidebar',
+        ],
+      }],
+    },
   },
 ])

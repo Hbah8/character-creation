@@ -48,6 +48,8 @@ export function WorldBuilderPage() {
       try {
         const loaded = library.loadById(id)
         store.replaceWorld(loaded)
+        // Keep the saved/dirty baseline in sync with the newly loaded route entity.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCleanSnapshot(JSON.stringify(loaded))
         setSavedAt(null)
         setSelectedEntityId(loaded.entities[0]?.id ?? null)

@@ -57,6 +57,8 @@ export function RaceForm({ mode, race, worldId, world, onSaved, onCancel }: Race
   }), [abilities, derivedSize, description, name, race?.id])
 
   useEffect(() => {
+    // Editing a different race replaces the form draft with that race's values.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setName(race?.name ?? '')
     setDescription(race?.description ?? '')
     setAbilities(race?.abilities.map(normalizeAbilityRef) ?? [])
