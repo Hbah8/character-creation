@@ -13,9 +13,10 @@ const RANKS: Rank[] = ['Novice', 'Seasoned', 'Veteran', 'Heroic', 'Legendary']
 interface Props {
   character: Character
   onChange: <K extends keyof Character>(key: K, value: Character[K]) => void
+  onPrerequisiteChange?: (changes: Partial<Character>) => void
 }
 
-export function IdentityForm({ character, onChange }: Props) {
+export function IdentityForm({ character, onChange, onPrerequisiteChange }: Props) {
   const { t } = useTranslation('form')
   const { entries, activeWorldId } = useWorldLibrary()
   const activeWorld = entries.find(e => e.id === activeWorldId)?.world ?? null
@@ -23,6 +24,10 @@ export function IdentityForm({ character, onChange }: Props) {
 
   function handleRaceChange(value: string) {
     if (value === '__none__') {
+      if (onPrerequisiteChange) {
+        onPrerequisiteChange({ raceId: undefined, raceName: undefined, size: undefined })
+        return
+      }
       onChange('raceId', undefined)
       onChange('raceName', undefined)
       onChange('size', undefined)
@@ -30,6 +35,10 @@ export function IdentityForm({ character, onChange }: Props) {
     }
     const race = races.find(r => r.id === value)
     if (!race) return
+    if (onPrerequisiteChange) {
+      onPrerequisiteChange({ raceId: race.id, raceName: race.name, size: 0 })
+      return
+    }
     onChange('raceId', race.id)
     onChange('raceName', race.name)
     // Keep character.size as a non-racial modifier; racial size is derived from the race's abilities.
@@ -54,7 +63,9 @@ export function IdentityForm({ character, onChange }: Props) {
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="rank">{t('identity.rank')}</Label>
-          <Select value={character.rank} onValueChange={rank => onChange('rank', rank as Rank)}>
+          <Select value={character.rank} onValueChange={rank => onPrerequisiteChange
+            ? onPrerequisiteChange({ rank: rank as Rank })
+            : onChange('rank', rank as Rank)}>
             <SelectTrigger id="rank"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -72,7 +83,9 @@ export function IdentityForm({ character, onChange }: Props) {
           <Input id="fileNo" value={character.fileNo} onChange={e => onChange('fileNo', e.target.value)} />
         </div>
         <div className="col-span-2 flex items-center gap-2">
-          <Checkbox id="isWildCard" checked={character.isWildCard} onCheckedChange={checked => onChange('isWildCard', checked === true)} />
+          <Checkbox id="isWildCard" checked={character.isWildCard} onCheckedChange={checked => onPrerequisiteChange
+            ? onPrerequisiteChange({ isWildCard: checked === true })
+            : onChange('isWildCard', checked === true)} />
           <Label htmlFor="isWildCard" className="cursor-pointer">{t('identity.wildCard')}</Label>
         </div>
         {races.length > 0 && (

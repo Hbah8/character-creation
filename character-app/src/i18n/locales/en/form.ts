@@ -116,6 +116,12 @@ const form = {
     removeEdge: 'Remove edge',
     arcaneBackground: 'Arcane Background',
     noArcaneBackground: 'No Arcane Background',
+    dependencyConfirmation: {
+      title: 'Remove dependent edges?',
+      description: 'This change makes selected edges invalid. Continue to apply the change and remove these edges?',
+      cancel: 'Cancel',
+      confirm: 'Apply and remove',
+    },
     requirements: {
       title: 'Requirements',
       rank: 'Rank: {{rank}}',

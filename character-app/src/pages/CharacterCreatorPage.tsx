@@ -31,11 +31,23 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import { exportToJson, exportToPdf } from '@/services/exportService'
 import { importFromJson } from '@/services/importService'
+import { getDependentEdges, removeEdgeReference } from '@/services/characterEdgeService'
+import { resolveEdgeDefinitions } from '@/handbooks/services/resolveCharacterEdges'
 import { encodeCharacterToHash, decodeCharacterFromHash, buildShareUrl } from '@/services/shareService'
-import type { Character } from '@/types/character'
+import type { Character, Edge, Skill } from '@/types/character'
 import { DEFAULT_LAYOUT } from '@/types/character'
 import type { ColumnSide } from '@/types/character'
 import { detectInitialLocale, changeLocale } from '@/i18n/index'
@@ -50,6 +62,11 @@ const SECTIONS = [
 ] as const
 
 type SectionKey = typeof SECTIONS[number]
+
+interface PendingCharacterChange {
+  character: Character
+  dependentEdges: Array<{ edge: Edge; name: string }>
+}
 
 const SECTION_ICONS: Record<SectionKey, React.ElementType> = {
   identity: User,
@@ -100,6 +117,7 @@ export function CharacterCreatorPage() {
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [activeSection, setActiveSection] = useState<string>('identity')
   const [scaleMode, setScaleMode] = useState<ScaleMode>('fit-width')
+  const [pendingCharacterChange, setPendingCharacterChange] = useState<PendingCharacterChange | null>(null)
   const copyLinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const loadedIdRef = useRef<string | undefined>(undefined)
 
@@ -219,6 +237,67 @@ export function CharacterCreatorPage() {
 
   const layout = character.layout ?? DEFAULT_LAYOUT
   const characterWorldHandbook = worldEntries.find(entry => entry.id === character.worldId)?.world.worldHandbook ?? []
+  const edgeDefinitions = resolveEdgeDefinitions(characterWorldHandbook)
+
+  function requestCharacterChange(nextCharacter: Character) {
+    const dependentEdges = getDependentEdges(character, nextCharacter, edgeDefinitions)
+    if (dependentEdges.length === 0) {
+      store.replaceCharacter(nextCharacter)
+      return
+    }
+
+    const definitionNames = new Map(edgeDefinitions.map(edge => [edge.id, edge.name]))
+    setPendingCharacterChange({
+      character: nextCharacter,
+      dependentEdges: dependentEdges.map(edge => ({
+        edge,
+        name: (edge.edgeId && definitionNames.get(edge.edgeId)) || edge.edgeId || edge.id,
+      })),
+    })
+  }
+
+  function handleDependentEdgesConfirm() {
+    if (!pendingCharacterChange) return
+    const nextCharacter = pendingCharacterChange.dependentEdges.reduce(
+      (updated, { edge }) => ({
+        ...updated,
+        ...removeEdgeReference(updated.edges, edge.id, updated.arcaneBackground),
+      }),
+      pendingCharacterChange.character,
+    )
+    store.replaceCharacter(nextCharacter)
+    setPendingCharacterChange(null)
+  }
+
+  function handleCharacterFieldChange<K extends keyof Character>(key: K, value: Character[K]) {
+    requestCharacterChange({ ...character, [key]: value })
+  }
+
+  function handleIdentityPrerequisiteChange(changes: Partial<Character>) {
+    requestCharacterChange({ ...character, ...changes })
+  }
+
+  function handleSkillUpdate(id: string, patch: Pick<Skill, 'die'>) {
+    requestCharacterChange({
+      ...character,
+      skills: character.skills.map(skill => skill.id === id ? { ...skill, ...patch } : skill),
+    })
+  }
+
+  function handleSkillRemoval(id: string) {
+    requestCharacterChange({ ...character, skills: character.skills.filter(skill => skill.id !== id) })
+  }
+
+  function handleHindranceRemoval(id: string) {
+    requestCharacterChange({ ...character, hindrances: character.hindrances.filter(hindrance => hindrance.id !== id) })
+  }
+
+  function handleEdgeRemoval(id: string) {
+    requestCharacterChange({
+      ...character,
+      ...removeEdgeReference(character.edges, id, character.arcaneBackground),
+    })
+  }
 
   const subtitle = [tForm(`identity.ranks.${character.rank}`), character.role, character.fileNo].filter(Boolean).join(' · ')
 
@@ -241,12 +320,16 @@ export function CharacterCreatorPage() {
       case 'identity':
         return (
           <div className="flex flex-col gap-4">
-            <IdentityForm character={character} onChange={store.updateField} />
+            <IdentityForm
+              character={character}
+              onChange={store.updateField}
+              onPrerequisiteChange={handleIdentityPrerequisiteChange}
+            />
             <RacialAbilitiesSection raceId={character.raceId} worldId={character.worldId} />
           </div>
         )
       case 'attributes':
-        return <AttributesForm character={character} onChange={store.updateField} />
+        return <AttributesForm character={character} onChange={handleCharacterFieldChange} />
       case 'combat':
         return <CombatForm character={character} onChange={store.updateField} />
       case 'skills':
@@ -255,8 +338,8 @@ export function CharacterCreatorPage() {
             skills={character.skills}
             character={character}
             onAdd={store.addSkill}
-            onUpdate={store.updateSkill}
-            onRemove={store.removeSkill}
+            onUpdate={handleSkillUpdate}
+            onRemove={handleSkillRemoval}
           />
         )
       case 'edges':
@@ -265,8 +348,8 @@ export function CharacterCreatorPage() {
             character={character}
             worldHandbook={characterWorldHandbook}
             onAdd={store.addEdge}
-            onRemove={store.removeEdge}
-            onArcaneBackgroundChange={arcaneBackground => store.updateField('arcaneBackground', arcaneBackground)}
+            onRemove={handleEdgeRemoval}
+            onArcaneBackgroundChange={arcaneBackground => handleCharacterFieldChange('arcaneBackground', arcaneBackground)}
             column={layout.edges}
             onColumnChange={col => handleLayoutChange('edges', col)}
           />
@@ -277,7 +360,7 @@ export function CharacterCreatorPage() {
             hindrances={character.hindrances}
             onAdd={store.addHindrance}
             onUpdate={store.updateHindrance}
-            onRemove={store.removeHindrance}
+            onRemove={handleHindranceRemoval}
             column={layout.hindrances}
             onColumnChange={col => handleLayoutChange('hindrances', col)}
           />
@@ -358,6 +441,27 @@ export function CharacterCreatorPage() {
 
   return (
     <div className="flex flex-col h-[100svh] w-full max-w-full overflow-x-hidden bg-background text-foreground print:h-auto">
+      <AlertDialog open={pendingCharacterChange !== null} onOpenChange={open => {
+        if (!open) setPendingCharacterChange(null)
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tForm('edges.dependencyConfirmation.title')}</AlertDialogTitle>
+            <AlertDialogDescription>{tForm('edges.dependencyConfirmation.description')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className="list-disc pl-5 text-sm">
+            {pendingCharacterChange?.dependentEdges.map(({ edge, name }) => (
+              <li key={edge.id}>{name}</li>
+            ))}
+          </ul>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tForm('edges.dependencyConfirmation.cancel')}</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleDependentEdgesConfirm}>
+              {tForm('edges.dependencyConfirmation.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-2 border-b shrink-0 print:hidden gap-4">
         <div className="flex items-center gap-2 min-w-0">

@@ -116,6 +116,12 @@ const form = {
     removeEdge: 'Удалить черту',
     arcaneBackground: 'Мистический дар',
     noArcaneBackground: 'Без мистического дара',
+    dependencyConfirmation: {
+      title: 'Удалить зависимые черты?',
+      description: 'Это изменение нарушит требования выбранных черт. Применить изменение и удалить эти черты?',
+      cancel: 'Отмена',
+      confirm: 'Применить и удалить',
+    },
     requirements: {
       title: 'Требования',
       rank: 'Ранг: {{rank}}',
