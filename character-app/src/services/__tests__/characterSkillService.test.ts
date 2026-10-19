@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { addCatalogSkill } from '@/services/characterSkillService'
 import { getAvailableSkillDefinitions } from '@/handbooks/services/resolveCharacterSkills'
+import { SWADE_SKILLS } from '@/data/handbooks/skills'
+import { enDefaultCharacter } from '@/i18n/locales/en/defaults'
+import { ruDefaultCharacter } from '@/i18n/locales/ru/defaults'
 
 describe('character skill creation', () => {
+  it('preselects every core SWADE skill in both new-character templates', () => {
+    const coreSkillIds = SWADE_SKILLS.filter(skill => skill.isCore).map(skill => skill.id)
+
+    for (const character of [ruDefaultCharacter, enDefaultCharacter]) {
+      expect(character.skills.map(skill => skill.skillKey)).toEqual(expect.arrayContaining(coreSkillIds))
+    }
+  })
+
   it('adds a strict system-catalog reference and does not duplicate it', () => {
     const skills = addCatalogSkill([], 'shooting', 'row-shooting')
 

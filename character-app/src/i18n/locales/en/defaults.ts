@@ -36,6 +36,7 @@ export const enDefaultCharacter: Character = {
     { id: '8', skillKey: 'driving', die: 'd6' },
     { id: '9', skillKey: 'healing', die: 'd4' },
     { id: '10', skillKey: 'common-knowledge', die: 'd6' },
+    { id: '11', skillKey: 'persuasion', die: 'd4' },
   ],
 
   edges: [
