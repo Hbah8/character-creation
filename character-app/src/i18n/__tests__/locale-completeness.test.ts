@@ -57,4 +57,8 @@ describe('locale completeness', () => {
       checkCompleteness(name, en, ru)
     })
   }
+
+  it('translates the Seasoned rank as Закалённый', () => {
+    expect(ruForm.identity.ranks.Seasoned).toBe('Закалённый')
+  })
 })

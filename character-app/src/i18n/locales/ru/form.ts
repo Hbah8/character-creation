@@ -22,7 +22,7 @@ const form = {
     wildCard: 'Дикая карта',
     ranks: {
       Novice: 'Новичок',
-      Seasoned: 'Бывалый',
+      Seasoned: 'Закалённый',
       Veteran: 'Ветеран',
       Heroic: 'Герой',
       Legendary: 'Легенда',
