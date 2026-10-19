@@ -33,4 +33,34 @@ describe('SkillsForm', () => {
     expect(html).not.toContain('Skill name')
     expect(html).not.toContain('type="checkbox"')
   })
+
+  it('renders character skills in linked-attribute order and alphabetically within each group', async () => {
+    const i18n = (await import('@/i18n')).default
+    await i18n.changeLanguage('en')
+
+    const html = renderToStaticMarkup(createElement(SkillsForm, {
+      skills: [...enDefaultCharacter.skills].reverse(),
+      character: enDefaultCharacter,
+      onAdd: vi.fn(),
+      onUpdate: vi.fn(),
+      onRemove: vi.fn(),
+    }))
+    const orderedNames = [
+      'Атлетика',
+      'Вождение',
+      'Драка',
+      'Скрытность',
+      'Стрельба',
+      'Внимание',
+      'Лечение',
+      'Осведомлённость',
+      'Ремонт',
+      'Запугивание',
+      'Убеждение',
+    ]
+
+    expect(orderedNames.map(name => html.indexOf(`title="${name}"`))).toEqual(
+      [...orderedNames].map(name => html.indexOf(`title="${name}"`)).sort((a, b) => a - b),
+    )
+  })
 })

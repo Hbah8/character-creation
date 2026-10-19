@@ -7,7 +7,11 @@ import { Trash2 } from 'lucide-react'
 import { calcSkillPointsSpent } from '@/services/pointsService'
 import { useSettingRules } from '@/hooks/useSettingRules'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
-import { getAvailableSkillDefinitions, resolveCharacterSkills } from '@/handbooks/services/resolveCharacterSkills'
+import {
+  getAvailableSkillDefinitions,
+  resolveCharacterSkills,
+  sortSkillsByLinkedAttribute,
+} from '@/handbooks/services/resolveCharacterSkills'
 
 const DIE_NAMES: DieName[] = ['d4', 'd6', 'd8', 'd10', 'd12']
 
@@ -23,7 +27,7 @@ export function SkillsForm({ skills, character, onAdd, onUpdate, onRemove }: Pro
   const { t } = useTranslation('form')
   const { entries } = useWorldLibrary()
   const worldHandbook = entries.find(entry => entry.id === character.worldId)?.world.worldHandbook ?? []
-  const effectiveSkills = resolveCharacterSkills(skills, worldHandbook)
+  const effectiveSkills = sortSkillsByLinkedAttribute(resolveCharacterSkills(skills, worldHandbook))
   const availableSkills = getAvailableSkillDefinitions(skills, worldHandbook)
   const spent = calcSkillPointsSpent(effectiveSkills, character)
   const { skillPointsBudget } = useSettingRules(character.worldId)
@@ -87,4 +91,3 @@ export function SkillsForm({ skills, character, onAdd, onUpdate, onRemove }: Pro
     </div>
   )
 }
-

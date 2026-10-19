@@ -1,7 +1,26 @@
 import { SWADE_SKILLS } from '@/data/handbooks/skills'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
-import type { ResolvedCharacterSkill, Skill } from '@/types/character'
+import type { AttributeKey, ResolvedCharacterSkill, Skill } from '@/types/character'
 import type { ResolvedEntry, SkillDefinition, StoredHandbookEntry } from '@/types/handbook'
+
+const ATTRIBUTE_SORT_ORDER: Record<AttributeKey, number> = {
+  agility: 0,
+  smarts: 1,
+  spirit: 2,
+  strength: 3,
+  vigor: 4,
+}
+
+const SKILL_NAME_COLLATOR = new Intl.Collator('ru', { sensitivity: 'base' })
+
+export function sortSkillsByLinkedAttribute<T extends { name: string; linkedAttribute: AttributeKey }>(
+  skills: readonly T[],
+): T[] {
+  return [...skills].sort((left, right) =>
+    ATTRIBUTE_SORT_ORDER[left.linkedAttribute] - ATTRIBUTE_SORT_ORDER[right.linkedAttribute]
+    || SKILL_NAME_COLLATOR.compare(left.name, right.name),
+  )
+}
 
 export function resolveSkillDefinitions(
   worldHandbook: readonly StoredHandbookEntry[],
@@ -14,7 +33,9 @@ export function getAvailableSkillDefinitions(
   worldHandbook: readonly StoredHandbookEntry[],
 ): ResolvedEntry<SkillDefinition>[] {
   const selectedSkillKeys = new Set(skills.map(skill => skill.skillKey))
-  return resolveSkillDefinitions(worldHandbook).filter(skill => !selectedSkillKeys.has(skill.id))
+  return sortSkillsByLinkedAttribute(
+    resolveSkillDefinitions(worldHandbook).filter(skill => !selectedSkillKeys.has(skill.id)),
+  )
 }
 
 export function resolveCharacterSkills(
