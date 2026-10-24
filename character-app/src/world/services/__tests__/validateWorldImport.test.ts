@@ -54,6 +54,75 @@ describe('validateWorldImport', () => {
     expect(world.relationships[0].type).toBe('located_in')
   })
 
+  describe('audio', () => {
+    it('defaults an absent audio section for worlds exported before audio support', () => {
+      const world = validateWorldImport(validWorld())
+
+      expect(world).toMatchObject({
+        audio: {
+          schemaVersion: 1,
+          assets: [],
+          tracks: [],
+          scenes: [],
+          presets: [],
+        },
+      })
+    })
+
+    it('preserves valid serializable audio metadata without local file bindings', () => {
+      const world = validateWorldImport({
+        ...validWorld(),
+        audio: {
+          schemaVersion: 1,
+          assets: [{
+            id: 'asset-1',
+            filename: 'cave-ambience.mp3',
+            mediaType: 'audio/mpeg',
+            byteLength: 1024,
+            durationSeconds: 42,
+            checksum: 'abc123',
+          }],
+          tracks: [{
+            id: 'track-1',
+            assetId: 'asset-1',
+            name: 'Cave ambience',
+            loop: true,
+            defaultVolume: 0.5,
+          }],
+          scenes: [],
+          presets: [],
+        },
+      })
+
+      expect(world).toMatchObject({
+        audio: {
+          assets: [{ id: 'asset-1', filename: 'cave-ambience.mp3' }],
+          tracks: [{ id: 'track-1', assetId: 'asset-1', loop: true }],
+        },
+      })
+      expect(JSON.stringify(world)).not.toContain('fileHandle')
+    })
+
+    it('rejects tracks that reference unknown audio assets', () => {
+      expect(() => validateWorldImport({
+        ...validWorld(),
+        audio: {
+          schemaVersion: 1,
+          assets: [],
+          tracks: [{
+            id: 'track-1',
+            assetId: 'missing-asset',
+            name: 'Missing track',
+            loop: false,
+            defaultVolume: 1,
+          }],
+          scenes: [],
+          presets: [],
+        },
+      })).toThrow('validation.world.audioUnknownAsset:missing-asset')
+    })
+  })
+
   it('rejects non-object JSON', () => {
     expect(() => validateWorldImport(null)).toThrow('validation.world.notAnObject')
   })

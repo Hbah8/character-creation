@@ -13,6 +13,7 @@ import enLibrary from './locales/en/library'
 import enShare from './locales/en/share'
 import enHandbooks from './locales/en/handbooks'
 import enRaceBuilder from './locales/en/raceBuilder'
+import enAudio from './locales/en/audio'
 
 import ruCommon from './locales/ru/common'
 import ruHeader from './locales/ru/header'
@@ -24,6 +25,7 @@ import ruLibrary from './locales/ru/library'
 import ruShare from './locales/ru/share'
 import ruHandbooks from './locales/ru/handbooks'
 import ruRaceBuilder from './locales/ru/raceBuilder'
+import ruAudio from './locales/ru/audio'
 
 const LOCALE_STORAGE_KEY = 'swade-locale'
 
@@ -62,6 +64,7 @@ i18n
         share: enShare,
         handbooks: enHandbooks,
         raceBuilder: enRaceBuilder,
+        audio: enAudio,
       },
       ru: {
         common: ruCommon,
@@ -74,6 +77,7 @@ i18n
         share: ruShare,
         handbooks: ruHandbooks,
         raceBuilder: ruRaceBuilder,
+        audio: ruAudio,
       },
     },
     interpolation: {

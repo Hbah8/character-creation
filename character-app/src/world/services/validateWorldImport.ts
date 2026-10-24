@@ -7,8 +7,15 @@ import type {
   SettingRules,
   Race,
   RacialAbilityRef,
+  AudioAsset,
+  AudioPreset,
+  AudioScene,
+  AudioTrack,
+  WorldAudio,
 } from '@/world/types'
 import {
+  createEmptyWorldAudio,
+  WORLD_AUDIO_SCHEMA_VERSION,
   WORLD_ENTITY_TYPES,
   WORLD_RELATIONSHIP_TYPES,
   WORLD_SCHEMA_VERSION,
@@ -197,6 +204,139 @@ function validateRaces(raw: unknown): Race[] {
   return raw.map(validateRace)
 }
 
+function validateAudioId(value: unknown, errorCode: string): string {
+  if (!isString(value) || value.trim() === '') {
+    throw new Error(errorCode)
+  }
+  return value
+}
+
+function validateAudioAssets(raw: unknown): AudioAsset[] {
+  if (!Array.isArray(raw)) {
+    throw new Error('validation.world.audioAssetsNotArray')
+  }
+  const ids = new Set<string>()
+  return raw.map((item, index) => {
+    if (!isObject(item)) throw new Error(`validation.world.audioAssetNotObject:${index}`)
+    const id = validateAudioId(item.id, `validation.world.audioAssetMissingId:${index}`)
+    if (ids.has(id)) throw new Error(`validation.world.duplicateAudioAssetId:${id}`)
+    ids.add(id)
+    if (!isString(item.filename) || item.filename.trim() === '') {
+      throw new Error(`validation.world.audioAssetMissingFilename:${id}`)
+    }
+    if (!isString(item.mediaType) || item.mediaType.trim() === '') {
+      throw new Error(`validation.world.audioAssetMissingMediaType:${id}`)
+    }
+    if (!isNumber(item.byteLength) || item.byteLength < 0) {
+      throw new Error(`validation.world.audioAssetInvalidByteLength:${id}`)
+    }
+    if (item.durationSeconds !== undefined && (!isNumber(item.durationSeconds) || item.durationSeconds < 0)) {
+      throw new Error(`validation.world.audioAssetInvalidDuration:${id}`)
+    }
+    if (item.checksum !== undefined && !isString(item.checksum)) {
+      throw new Error(`validation.world.audioAssetInvalidChecksum:${id}`)
+    }
+    return {
+      id,
+      filename: item.filename,
+      mediaType: item.mediaType,
+      byteLength: item.byteLength,
+      ...(item.durationSeconds === undefined ? {} : { durationSeconds: item.durationSeconds }),
+      ...(item.checksum === undefined ? {} : { checksum: item.checksum }),
+    }
+  })
+}
+
+function validateAudioPresets(raw: unknown): AudioPreset[] {
+  if (!Array.isArray(raw)) throw new Error('validation.world.audioPresetsNotArray')
+  const ids = new Set<string>()
+  return raw.map((item, index) => {
+    if (!isObject(item)) throw new Error(`validation.world.audioPresetNotObject:${index}`)
+    const id = validateAudioId(item.id, `validation.world.audioPresetMissingId:${index}`)
+    if (ids.has(id)) throw new Error(`validation.world.duplicateAudioPresetId:${id}`)
+    ids.add(id)
+    if (!isString(item.name) || item.name.trim() === '') {
+      throw new Error(`validation.world.audioPresetMissingName:${id}`)
+    }
+    return { id, name: item.name }
+  })
+}
+
+function validateAudioTracks(raw: unknown, assetIds: Set<string>, presetIds: Set<string>): AudioTrack[] {
+  if (!Array.isArray(raw)) throw new Error('validation.world.audioTracksNotArray')
+  const ids = new Set<string>()
+  return raw.map((item, index) => {
+    if (!isObject(item)) throw new Error(`validation.world.audioTrackNotObject:${index}`)
+    const id = validateAudioId(item.id, `validation.world.audioTrackMissingId:${index}`)
+    if (ids.has(id)) throw new Error(`validation.world.duplicateAudioTrackId:${id}`)
+    ids.add(id)
+    if (!isString(item.assetId) || !assetIds.has(item.assetId)) {
+      throw new Error(`validation.world.audioUnknownAsset:${String(item.assetId)}`)
+    }
+    if (!isString(item.name) || item.name.trim() === '') {
+      throw new Error(`validation.world.audioTrackMissingName:${id}`)
+    }
+    if (typeof item.loop !== 'boolean') throw new Error(`validation.world.audioTrackInvalidLoop:${id}`)
+    if (!isNumber(item.defaultVolume) || item.defaultVolume < 0 || item.defaultVolume > 1) {
+      throw new Error(`validation.world.audioTrackInvalidVolume:${id}`)
+    }
+    if (
+      item.presetId !== undefined
+      && (
+        !isString(item.presetId)
+        || (!presetIds.has(item.presetId) && !['underwater', 'tunnel', 'distortion'].includes(item.presetId))
+      )
+    ) {
+      throw new Error(`validation.world.audioUnknownPreset:${String(item.presetId)}`)
+    }
+    return {
+      id,
+      assetId: item.assetId,
+      name: item.name,
+      loop: item.loop,
+      defaultVolume: item.defaultVolume,
+      ...(item.presetId === undefined ? {} : { presetId: item.presetId }),
+    }
+  })
+}
+
+function validateAudioScenes(raw: unknown, trackIds: Set<string>): AudioScene[] {
+  if (!Array.isArray(raw)) throw new Error('validation.world.audioScenesNotArray')
+  const ids = new Set<string>()
+  return raw.map((item, index) => {
+    if (!isObject(item)) throw new Error(`validation.world.audioSceneNotObject:${index}`)
+    const id = validateAudioId(item.id, `validation.world.audioSceneMissingId:${index}`)
+    if (ids.has(id)) throw new Error(`validation.world.duplicateAudioSceneId:${id}`)
+    ids.add(id)
+    if (!isString(item.name) || item.name.trim() === '') {
+      throw new Error(`validation.world.audioSceneMissingName:${id}`)
+    }
+    if (!Array.isArray(item.trackIds) || !item.trackIds.every(isString)) {
+      throw new Error(`validation.world.audioSceneTrackIdsNotArray:${id}`)
+    }
+    for (const trackId of item.trackIds) {
+      if (!trackIds.has(trackId)) throw new Error(`validation.world.audioUnknownTrack:${trackId}`)
+    }
+    return { id, name: item.name, trackIds: item.trackIds }
+  })
+}
+
+function validateWorldAudio(raw: unknown): WorldAudio {
+  if (raw === undefined) return createEmptyWorldAudio()
+  if (!isObject(raw) || raw.schemaVersion !== WORLD_AUDIO_SCHEMA_VERSION) {
+    throw new Error('validation.world.audioUnsupportedSchemaVersion')
+  }
+  const assets = validateAudioAssets(raw.assets)
+  const presets = validateAudioPresets(raw.presets)
+  const tracks = validateAudioTracks(
+    raw.tracks,
+    new Set(assets.map(asset => asset.id)),
+    new Set(presets.map(preset => preset.id)),
+  )
+  const scenes = validateAudioScenes(raw.scenes, new Set(tracks.map(track => track.id)))
+  return { schemaVersion: WORLD_AUDIO_SCHEMA_VERSION, assets, tracks, scenes, presets }
+}
+
 function validateRelationship(
   raw: unknown,
   index: number,
@@ -284,6 +424,7 @@ export function validateWorldImport(raw: unknown): World {
     settingRules: validateSettingRules(raw.settingRules),
     races: validateRaces(raw.races),
     worldHandbook: validateWorldHandbook(raw.worldHandbook),
+    audio: validateWorldAudio(raw.audio),
     entities,
     relationships,
   }

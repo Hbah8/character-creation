@@ -11,6 +11,7 @@ const navigation = {
   graph: 'Graph',
   edit: 'Edit',
   powers: 'Powers',
+  audio: 'Audio',
 } as const
 
 export default navigation

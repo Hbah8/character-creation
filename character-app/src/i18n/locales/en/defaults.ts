@@ -1,7 +1,7 @@
 import type { Character } from '@/types/character'
 import { DEFAULT_LAYOUT } from '@/types/character'
 import type { World } from '@/world/types'
-import { WORLD_SCHEMA_VERSION } from '@/world/types'
+import { createEmptyWorldAudio, WORLD_SCHEMA_VERSION } from '@/world/types'
 
 export const enDefaultCharacter: Character = {
   sheetTitle: 'Character Sheet',
@@ -89,6 +89,7 @@ export const enDefaultWorld: World = {
   },
   races: [],
   worldHandbook: [],
+  audio: createEmptyWorldAudio(),
   entities: [
     {
       id: 'default-location',

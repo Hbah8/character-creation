@@ -1,6 +1,7 @@
 import type { Locale } from '@/i18n/types'
 import { enDefaultWorld } from '@/i18n/locales/en/defaults'
 import { ruDefaultWorld } from '@/i18n/locales/ru/defaults'
+import { createEmptyWorldAudio } from '@/world/types'
 import type { World, WorldEntityType, WorldPosition } from '@/world/types'
 
 function cloneWorld(world: World): World {
@@ -21,6 +22,15 @@ function cloneWorld(world: World): World {
       position: { ...entity.position },
     })),
     relationships: world.relationships.map(relationship => ({ ...relationship })),
+    audio: world.audio
+      ? {
+          ...world.audio,
+          assets: world.audio.assets.map(asset => ({ ...asset })),
+          tracks: world.audio.tracks.map(track => ({ ...track })),
+          scenes: world.audio.scenes.map(scene => ({ ...scene, trackIds: [...scene.trackIds] })),
+          presets: world.audio.presets.map(preset => ({ ...preset })),
+        }
+      : createEmptyWorldAudio(),
   }
 }
 

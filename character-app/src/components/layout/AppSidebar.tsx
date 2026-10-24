@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, Globe2, LayoutDashboard, ShieldIcon, Swords, Users } from 'lucide-react'
+import { BookOpen, Globe2, LayoutDashboard, Music2, ShieldIcon, Swords, Users } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +27,7 @@ const NAV_ITEMS = [
   { labelKey: 'combat', href: '/combat', icon: Swords, requiresWorld: false },
   { labelKey: 'handbooks', href: '/handbooks', icon: BookOpen, requiresWorld: false },
   { labelKey: 'raceBuilder', href: '/races', icon: ShieldIcon, requiresWorld: true },
+  { labelKey: 'audio', href: '/audio', icon: Music2, requiresWorld: true },
 ] as const
 
 export function AppSidebar() {

@@ -1,6 +1,7 @@
 import type { FeatureParameters, StoredHandbookEntry } from '@/types/handbook'
 
 export const WORLD_SCHEMA_VERSION = 1
+export const WORLD_AUDIO_SCHEMA_VERSION = 1
 
 export const WORLD_ENTITY_TYPES = [
   'location',
@@ -80,6 +81,54 @@ export interface WorldRelationship {
   description: string
 }
 
+export interface AudioAsset {
+  id: string
+  filename: string
+  mediaType: string
+  byteLength: number
+  durationSeconds?: number
+  checksum?: string
+}
+
+export interface AudioTrack {
+  id: string
+  assetId: string
+  name: string
+  loop: boolean
+  defaultVolume: number
+  presetId?: string
+  muted?: boolean
+}
+
+export interface AudioScene {
+  id: string
+  name: string
+  trackIds: string[]
+}
+
+export interface AudioPreset {
+  id: string
+  name: string
+}
+
+export interface WorldAudio {
+  schemaVersion: typeof WORLD_AUDIO_SCHEMA_VERSION
+  assets: AudioAsset[]
+  tracks: AudioTrack[]
+  scenes: AudioScene[]
+  presets: AudioPreset[]
+}
+
+export function createEmptyWorldAudio(): WorldAudio {
+  return {
+    schemaVersion: WORLD_AUDIO_SCHEMA_VERSION,
+    assets: [],
+    tracks: [],
+    scenes: [],
+    presets: [],
+  }
+}
+
 export interface World {
   schemaVersion: typeof WORLD_SCHEMA_VERSION
   name: string
@@ -89,4 +138,5 @@ export interface World {
   entities: WorldEntity[]
   relationships: WorldRelationship[]
   worldHandbook: StoredHandbookEntry[]
+  audio?: WorldAudio
 }

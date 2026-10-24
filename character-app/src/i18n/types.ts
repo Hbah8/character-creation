@@ -13,6 +13,7 @@ import type enLibrary from './locales/en/library'
 import type enShare from './locales/en/share'
 import type enHandbooks from './locales/en/handbooks'
 import type enRaceBuilder from './locales/en/raceBuilder'
+import type enAudio from './locales/en/audio'
 
 declare module 'i18next' {
   interface CustomTypeOptions {
@@ -28,6 +29,7 @@ declare module 'i18next' {
       share: typeof enShare
       handbooks: typeof enHandbooks
       raceBuilder: typeof enRaceBuilder
+      audio: typeof enAudio
     }
   }
 }
