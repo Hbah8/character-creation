@@ -2,7 +2,7 @@ import { verifyLocalAudioAsset } from '@/audio/services/localAudioAssetSource'
 import type { LocalAudioAssetBinding } from '@/audio/services/localAudioAssetBindingRepository'
 import type { AudioAsset } from '@/world/types'
 
-export type AudioAssetAvailability = 'available' | 'missing' | 'changed'
+export type AudioAssetAvailability = 'available' | 'missing' | 'changed' | 'permission-required'
 
 export async function getAudioAssetAvailability(
   assets: AudioAsset[],

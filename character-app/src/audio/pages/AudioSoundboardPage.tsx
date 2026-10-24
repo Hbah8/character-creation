@@ -18,7 +18,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { addAudioAssets, removeAudioAsset } from '@/audio/services/audioLibraryService'
+import {
+  addAudioAssets,
+  getTracksToStopForSceneActivation,
+  duckOtherAudioTracks,
+  removeAudioAsset,
+} from '@/audio/services/audioLibraryService'
 import { createAudioAssetMetadata } from '@/audio/services/audioAssetImportService'
 import {
   getLocalAudioAssetBinding,
@@ -32,9 +37,20 @@ import {
 import { createEmptyWorldAudio } from '@/world/types'
 import type { AudioAsset } from '@/world/types'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
-import { createAudioPlaybackService } from '@/audio/services/audioPlaybackService'
+import {
+  createAudioPlaybackService,
+  getTransitionDurationMs,
+  type AudioPresetId,
+} from '@/audio/services/audioPlaybackService'
 
 const EMPTY_AUDIO_ASSETS: AudioAsset[] = []
+
+function getAvailabilityLabel(
+  status: AudioAssetAvailability | undefined,
+): 'available' | 'missing' | 'changed' | 'permissionRequired' {
+  if (status === 'permission-required') return 'permissionRequired'
+  return status ?? 'missing'
+}
 
 interface AudioFilePickerWindow extends Window {
   showOpenFilePicker?: (options: {
@@ -58,15 +74,34 @@ export function AudioSoundboardPage() {
   const [activeTrackIds, setActiveTrackIds] = useState<string[]>([])
   const [playingTrackIds, setPlayingTrackIds] = useState<string[]>([])
   const [sceneName, setSceneName] = useState('')
+  const [crossfadeTargetId, setCrossfadeTargetId] = useState('')
   const playbackRef = useRef(createAudioPlaybackService(source => new Audio(source), file => URL.createObjectURL(file), source => URL.revokeObjectURL(source)))
   const activeEntry = entries.find(entry => entry.id === activeWorldId)
   const assets = activeEntry?.world.audio?.assets ?? EMPTY_AUDIO_ASSETS
   const audio = activeEntry?.world.audio ?? createEmptyWorldAudio()
 
   function addTrack(asset: AudioAsset): void {
-    const track = { id: crypto.randomUUID(), assetId: asset.id, name: asset.filename, loop: true, defaultVolume: 0.7 }
+    const track = {
+      id: crypto.randomUUID(),
+      assetId: asset.id,
+      name: asset.filename,
+      loop: true,
+      defaultVolume: 0.7,
+      transition: 'fade-short' as const,
+    }
     saveById(activeEntry!.id, { ...activeEntry!.world, audio: { ...audio, tracks: [...audio.tracks, track] } })
     setActiveTrackIds(ids => [...ids, track.id])
+  }
+
+  async function getPlayableFile(trackId: string): Promise<{ file: File, track: typeof audio.tracks[number] } | undefined> {
+    const track = audio.tracks.find(item => item.id === trackId)
+    if (!track) return undefined
+    const binding = await getLocalAudioAssetBinding(track.assetId)
+    if (!binding) return undefined
+    const fileHandle = binding.fileHandle as PermissionedFileSystemHandle
+    const permission = await fileHandle.queryPermission({ mode: 'read' })
+    if (permission !== 'granted' && await fileHandle.requestPermission({ mode: 'read' }) !== 'granted') return undefined
+    return { file: await fileHandle.getFile(), track }
   }
 
   async function playTrack(trackId: string): Promise<void> {
@@ -78,6 +113,7 @@ export function AudioSoundboardPage() {
         setErrorKey('playbackFailed')
         return
       }
+
       const fileHandle = binding.fileHandle as PermissionedFileSystemHandle
       const permission = await fileHandle.queryPermission({ mode: 'read' })
       if (permission !== 'granted' && await fileHandle.requestPermission({ mode: 'read' }) !== 'granted') {
@@ -85,7 +121,18 @@ export function AudioSoundboardPage() {
         return
       }
       const file = await binding.fileHandle.getFile()
-      await playbackRef.current.play(trackId, file, track.loop, track.muted ? 0 : track.defaultVolume, track.presetId)
+      await playbackRef.current.play(
+        trackId,
+        file,
+        track.loop,
+        track.muted ? 0 : track.defaultVolume,
+        track.presetId as AudioPresetId | undefined,
+      )
+      playbackRef.current.fadeIn(
+        trackId,
+        track.muted ? 0 : track.defaultVolume,
+        getTransitionDurationMs(track.transition),
+      )
       setPlayingTrackIds(ids => ids.includes(trackId) ? ids : [...ids, trackId])
       setErrorKey(null)
     } catch {
@@ -99,13 +146,49 @@ export function AudioSoundboardPage() {
   }
 
   function stopTrack(trackId: string): void {
-    playbackRef.current.stop(trackId)
+    const track = audio.tracks.find(item => item.id === trackId)
+    void playbackRef.current.stopWithTransition(
+      trackId,
+      getTransitionDurationMs(track?.transition),
+    )
     setPlayingTrackIds(ids => ids.filter(id => id !== trackId))
   }
 
   function removeTrackFromMixer(trackId: string): void {
     stopTrack(trackId)
     setActiveTrackIds(ids => ids.filter(id => id !== trackId))
+  }
+
+  function duckOtherTracks(foregroundTrackId: string): void {
+    const updatedAudio = duckOtherAudioTracks(audio, foregroundTrackId)
+    for (const track of updatedAudio.tracks) {
+      if (track.id !== foregroundTrackId) {
+        playbackRef.current.setVolume(track.id, track.muted ? 0 : track.defaultVolume)
+      }
+    }
+    saveById(activeEntry!.id, { ...activeEntry!.world, audio: updatedAudio })
+  }
+
+  async function crossfadeToTarget(): Promise<void> {
+    if (!crossfadeTargetId || activeTrackIds.length === 0) return
+    try {
+      const target = await getPlayableFile(crossfadeTargetId)
+      if (!target) throw new Error('audio.asset.missing')
+      const outgoingTrackId = activeTrackIds.find(trackId => trackId !== crossfadeTargetId)
+      if (!outgoingTrackId) return
+      await playbackRef.current.crossfade(
+        outgoingTrackId,
+        crossfadeTargetId,
+        target.file,
+        target.track.loop,
+        target.track.muted ? 0 : target.track.defaultVolume,
+        target.track.presetId as AudioPresetId | undefined,
+        1200,
+      )
+      setPlayingTrackIds(ids => [...new Set([...ids.filter(id => id !== outgoingTrackId), crossfadeTargetId])])
+    } catch {
+      setErrorKey('playbackFailed')
+    }
   }
 
   function updateTrack(trackId: string, changes: Partial<typeof audio.tracks[number]>): void {
@@ -137,6 +220,7 @@ export function AudioSoundboardPage() {
   async function activateScene(sceneId: string): Promise<void> {
     const scene = audio.scenes.find(item => item.id === sceneId)
     if (!scene) return
+    getTracksToStopForSceneActivation(activeTrackIds, scene.trackIds).forEach(stopTrack)
     setActiveTrackIds(scene.trackIds)
     await Promise.all(scene.trackIds.map(playTrack))
   }
@@ -275,9 +359,13 @@ export function AudioSoundboardPage() {
                     <div className="flex shrink-0 items-center gap-2">
                       <Badge variant="secondary">{asset.mediaType}</Badge>
                       <Badge variant={availability[asset.id] === 'available' ? 'default' : 'outline'}>
-                        {t(availability[asset.id] ?? 'missing')}
+                        {t(getAvailabilityLabel(availability[asset.id]))}
                       </Badge>
-                      <Button size="sm" disabled={availability[asset.id] !== 'available'} onClick={() => addTrack(asset)}>
+                      <Button
+                        size="sm"
+                        disabled={availability[asset.id] === 'missing' || availability[asset.id] === 'changed'}
+                        onClick={() => addTrack(asset)}
+                      >
                         <Play data-icon="inline-start" />
                         {t('addToMixer')}
                       </Button>
@@ -340,6 +428,15 @@ export function AudioSoundboardPage() {
                 <input aria-label={t('volume')} type="range" min="0" max="1" step="0.05" value={track.defaultVolume} onChange={event => updateTrack(trackId, { defaultVolume: Number(event.target.value) })} />
                 <Button size="icon" variant="outline" onClick={() => updateTrack(trackId, { muted: !track.muted })}><Volume2 /></Button>
                 <Button size="icon" variant="outline" onClick={() => updateTrack(trackId, { loop: !track.loop })}>{track.loop ? 'Loop' : 'Once'}</Button>
+                <Select value={track.transition ?? 'instant'} onValueChange={transition => updateTrack(trackId, { transition: transition as typeof track.transition })}>
+                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="instant">{t('transitionInstant')}</SelectItem>
+                    <SelectItem value="fade-short">{t('transitionShort')}</SelectItem>
+                    <SelectItem value="fade-medium">{t('transitionMedium')}</SelectItem>
+                    <SelectItem value="fade-long">{t('transitionLong')}</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select value={track.presetId ?? 'clean'} onValueChange={presetId => updateTrack(trackId, { presetId: presetId === 'clean' ? undefined : presetId })}>
                   <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -347,14 +444,36 @@ export function AudioSoundboardPage() {
                     <SelectItem value="underwater">{t('presetUnderwater')}</SelectItem>
                     <SelectItem value="tunnel">{t('presetTunnel')}</SelectItem>
                     <SelectItem value="distortion">{t('presetDistortion')}</SelectItem>
+                    <SelectItem value="behind-door">{t('presetBehindDoor')}</SelectItem>
+                    <SelectItem value="cave">{t('presetCave')}</SelectItem>
+                    <SelectItem value="radio">{t('presetRadio')}</SelectItem>
+                    <SelectItem value="distant">{t('presetDistant')}</SelectItem>
+                    <SelectItem value="haunted">{t('presetHaunted')}</SelectItem>
+                    <SelectItem value="explosion-aftermath">{t('presetExplosionAftermath')}</SelectItem>
+                    <SelectItem value="dreamlike">{t('presetDreamlike')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button size="icon" onClick={() => void (isPlaying ? pauseTrack(trackId) : playTrack(trackId))}>{isPlaying ? <Pause /> : <Play />}</Button>
                 <Button size="icon" variant="outline" onClick={() => stopTrack(trackId)}><Square /></Button>
+                <Button size="sm" variant="outline" onClick={() => duckOtherTracks(trackId)}>{t('duckOthers')}</Button>
                 <Button size="icon" variant="outline" onClick={() => removeTrackFromMixer(trackId)} aria-label={t('removeFromMixer')}><X /></Button>
               </div>
             })}
           </CardContent>
+          {activeTrackIds.length > 1 && (
+            <CardContent className="flex items-center gap-2 border-t pt-4">
+              <Select value={crossfadeTargetId} onValueChange={setCrossfadeTargetId}>
+                <SelectTrigger className="flex-1"><SelectValue placeholder={t('crossfadeTarget')} /></SelectTrigger>
+                <SelectContent>
+                  {activeTrackIds.map(trackId => {
+                    const track = audio.tracks.find(item => item.id === trackId)
+                    return track ? <SelectItem key={track.id} value={track.id}>{track.name}</SelectItem> : null
+                  })}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" disabled={!crossfadeTargetId} onClick={() => void crossfadeToTarget()}>{t('crossfade')}</Button>
+            </CardContent>
+          )}
         </Card>
 
         <Card>

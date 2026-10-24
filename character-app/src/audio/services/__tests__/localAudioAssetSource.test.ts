@@ -34,6 +34,17 @@ describe('verifyLocalAudioAsset', () => {
     expect(status).toBe('missing')
   })
 
+  it('reports permission required when the browser blocks background file verification', async () => {
+    const status = await verifyLocalAudioAsset(
+      { filename: 'cave-ambience.mp3', byteLength: 1024 },
+      createFileHandle(async () => {
+        throw new DOMException('Permission must be requested by a user gesture.', 'NotAllowedError')
+      }),
+    )
+
+    expect(status).toBe('permission-required')
+  })
+
   it('reports changed when the selected source file no longer matches its metadata', async () => {
     const status = await verifyLocalAudioAsset(
       { filename: 'cave-ambience.mp3', byteLength: 1024 },

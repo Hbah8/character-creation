@@ -12,6 +12,7 @@ import type {
   AudioScene,
   AudioTrack,
   WorldAudio,
+  AudioTransition,
 } from '@/world/types'
 import {
   createEmptyWorldAudio,
@@ -19,6 +20,7 @@ import {
   WORLD_ENTITY_TYPES,
   WORLD_RELATIONSHIP_TYPES,
   WORLD_SCHEMA_VERSION,
+  AUDIO_TRANSITIONS,
 } from '@/world/types'
 import type { HandbookCategory, HandbookOverride, StoredHandbookEntry } from '@/types/handbook'
 import { validateHandbookEntry } from '@/handbooks/services/validateHandbookEntry'
@@ -280,11 +282,25 @@ function validateAudioTracks(raw: unknown, assetIds: Set<string>, presetIds: Set
     if (!isNumber(item.defaultVolume) || item.defaultVolume < 0 || item.defaultVolume > 1) {
       throw new Error(`validation.world.audioTrackInvalidVolume:${id}`)
     }
+    if (item.transition !== undefined && (!isString(item.transition) || !AUDIO_TRANSITIONS.includes(item.transition as AudioTransition))) {
+      throw new Error(`validation.world.audioTrackInvalidTransition:${id}`)
+    }
     if (
       item.presetId !== undefined
       && (
         !isString(item.presetId)
-        || (!presetIds.has(item.presetId) && !['underwater', 'tunnel', 'distortion'].includes(item.presetId))
+        || (!presetIds.has(item.presetId) && ![
+          'underwater',
+          'tunnel',
+          'distortion',
+          'behind-door',
+          'cave',
+          'radio',
+          'distant',
+          'haunted',
+          'explosion-aftermath',
+          'dreamlike',
+        ].includes(item.presetId))
       )
     ) {
       throw new Error(`validation.world.audioUnknownPreset:${String(item.presetId)}`)
@@ -296,6 +312,7 @@ function validateAudioTracks(raw: unknown, assetIds: Set<string>, presetIds: Set
       loop: item.loop,
       defaultVolume: item.defaultVolume,
       ...(item.presetId === undefined ? {} : { presetId: item.presetId }),
+      ...(item.transition === undefined ? {} : { transition: item.transition as AudioTransition }),
     }
   })
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createAudioPlaybackService } from '@/audio/services/audioPlaybackService'
+import { createAudioPlaybackService, getTransitionDurationMs } from '@/audio/services/audioPlaybackService'
 
 describe('audioPlaybackService', () => {
   it('plays independent tracks simultaneously and controls each one separately', async () => {
@@ -25,6 +25,33 @@ describe('audioPlaybackService', () => {
     expect(created[0].volume).toBe(0.5)
     expect(created[1].paused).toBe(true)
     expect(created[1].currentTime).toBe(0)
+  })
+
+  it('applies an immediate volume change at both valid boundaries', async () => {
+    const created: FakeAudio[] = []
+    const service = createAudioPlaybackService(
+      source => {
+        const audio = new FakeAudio(source)
+        created.push(audio)
+        return audio
+      },
+      () => 'blob:test',
+      () => undefined,
+    )
+
+    await service.play('track-1', {} as File, false, 0.5)
+    service.setVolume('track-1', 0)
+    expect(created[0].volume).toBe(0)
+
+    service.setVolume('track-1', 1)
+    expect(created[0].volume).toBe(1)
+  })
+
+  it('maps transition options to their fade duration', () => {
+    expect(getTransitionDurationMs('instant')).toBe(0)
+    expect(getTransitionDurationMs('fade-short')).toBe(1000)
+    expect(getTransitionDurationMs('fade-medium')).toBe(3000)
+    expect(getTransitionDurationMs('fade-long')).toBe(5000)
   })
 })
 

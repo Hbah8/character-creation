@@ -35,3 +35,22 @@ export function removeAudioAsset(audio: WorldAudio, assetId: string): WorldAudio
     })),
   }
 }
+
+export function getTracksToStopForSceneActivation(
+  activeTrackIds: string[],
+  targetTrackIds: string[],
+): string[] {
+  const targetIds = new Set(targetTrackIds)
+  return activeTrackIds.filter(trackId => !targetIds.has(trackId))
+}
+
+export function duckOtherAudioTracks(audio: WorldAudio, foregroundTrackId: string): WorldAudio {
+  return {
+    ...audio,
+    tracks: audio.tracks.map(track => (
+      track.id === foregroundTrackId
+        ? track
+        : { ...track, defaultVolume: Number((track.defaultVolume * 0.3).toFixed(2)) }
+    )),
+  }
+}

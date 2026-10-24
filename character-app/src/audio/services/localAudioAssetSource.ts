@@ -1,6 +1,6 @@
 import type { AudioAsset } from '@/world/types'
 
-export type LocalAudioAssetStatus = 'available' | 'missing' | 'changed'
+export type LocalAudioAssetStatus = 'available' | 'missing' | 'changed' | 'permission-required'
 
 export async function verifyLocalAudioAsset(
   asset: Pick<AudioAsset, 'filename' | 'byteLength'>,
@@ -14,6 +14,9 @@ export async function verifyLocalAudioAsset(
   } catch (error) {
     if (error instanceof DOMException && error.name === 'NotFoundError') {
       return 'missing'
+    }
+    if (error instanceof DOMException && error.name === 'NotAllowedError') {
+      return 'permission-required'
     }
     throw error
   }

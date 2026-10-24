@@ -98,7 +98,17 @@ export interface AudioTrack {
   defaultVolume: number
   presetId?: string
   muted?: boolean
+  transition?: AudioTransition
 }
+
+export const AUDIO_TRANSITIONS = [
+  'instant',
+  'fade-short',
+  'fade-medium',
+  'fade-long',
+] as const
+
+export type AudioTransition = typeof AUDIO_TRANSITIONS[number]
 
 export interface AudioScene {
   id: string

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { addAudioAssets, removeAudioAsset } from '@/audio/services/audioLibraryService'
+import {
+  addAudioAssets,
+  getTracksToStopForSceneActivation,
+  duckOtherAudioTracks,
+  removeAudioAsset,
+} from '@/audio/services/audioLibraryService'
 import { createEmptyWorldAudio } from '@/world/types'
 
 describe('addAudioAssets', () => {
@@ -50,6 +55,30 @@ describe('addAudioAssets', () => {
       assets: [{ id: 'asset-2' }],
       tracks: [{ id: 'track-2' }],
       scenes: [{ id: 'scene-1', trackIds: ['track-2'] }],
+    })
+  })
+
+  it('stops only outgoing tracks when activating another scene', () => {
+    expect(getTracksToStopForSceneActivation(
+      ['rain', 'tavern'],
+      ['tavern', 'combat'],
+    )).toEqual(['rain'])
+  })
+
+  it('reduces and persists the volume of every other track', () => {
+    const audio = {
+      ...createEmptyWorldAudio(),
+      tracks: [
+        { id: 'music', assetId: 'music-asset', name: 'Music', loop: true, defaultVolume: 1 },
+        { id: 'effect', assetId: 'effect-asset', name: 'Effect', loop: false, defaultVolume: 0.8 },
+      ],
+    }
+
+    expect(duckOtherAudioTracks(audio, 'effect')).toMatchObject({
+      tracks: [
+        { id: 'music', defaultVolume: 0.3 },
+        { id: 'effect', defaultVolume: 0.8 },
+      ],
     })
   })
 })
