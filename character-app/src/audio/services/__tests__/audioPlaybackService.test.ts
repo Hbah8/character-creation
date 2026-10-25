@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { createAudioPlaybackService, getTransitionDurationMs } from '@/audio/services/audioPlaybackService'
+import {
+  createAudioPlaybackService,
+  getAudioPlaybackInstanceId,
+  getTransitionDurationMs,
+} from '@/audio/services/audioPlaybackService'
 
 describe('audioPlaybackService', () => {
   it('plays independent tracks simultaneously and controls each one separately', async () => {
@@ -45,6 +49,32 @@ describe('audioPlaybackService', () => {
 
     service.setVolume('track-1', 1)
     expect(created[0].volume).toBe(1)
+  })
+
+  it('keeps the same track independent between scene playback instances', async () => {
+    const created: FakeAudio[] = []
+    const service = createAudioPlaybackService(
+      source => {
+        const audio = new FakeAudio(source)
+        created.push(audio)
+        return audio
+      },
+      () => 'blob:test',
+      () => undefined,
+    )
+
+    const sceneATrackId = getAudioPlaybackInstanceId('track-1', 'scene-a')
+    const sceneBTrackId = getAudioPlaybackInstanceId('track-1', 'scene-b')
+    await service.play(sceneATrackId, {} as File, true, 0.3)
+    await service.play(sceneBTrackId, {} as File, true, 0.8)
+    created[0].currentTime = 35
+    service.setLoop(sceneATrackId, false)
+    service.pause(sceneATrackId)
+
+    expect(sceneATrackId).not.toBe(sceneBTrackId)
+    expect(created).toHaveLength(2)
+    expect(created[0]).toMatchObject({ paused: true, currentTime: 35, loop: false, volume: 0.3 })
+    expect(created[1]).toMatchObject({ paused: false, currentTime: 0, loop: true, volume: 0.8 })
   })
 
   it('maps transition options to their fade duration', () => {

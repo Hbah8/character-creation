@@ -1,4 +1,60 @@
-import type { AudioAsset, WorldAudio } from '@/world/types'
+import type { AudioAsset, AudioSceneTrackSettings, AudioTrack, WorldAudio } from '@/world/types'
+
+type AudioSceneTrackChanges = Partial<Pick<AudioTrack, 'loop' | 'defaultVolume' | 'muted' | 'presetId' | 'transition'>>
+
+function toSceneTrackSettings(track: AudioTrack): AudioSceneTrackSettings {
+  return {
+    loop: track.loop,
+    defaultVolume: track.defaultVolume,
+    muted: track.muted ?? false,
+    presetId: track.presetId ?? null,
+    transition: track.transition ?? null,
+  }
+}
+
+export function getAudioSceneTrack(
+  audio: WorldAudio,
+  sceneId: string | null,
+  trackId: string,
+): AudioTrack | undefined {
+  const track = audio.tracks.find(item => item.id === trackId)
+  if (!track) return undefined
+  if (!sceneId) return track
+
+  const scene = audio.scenes.find(item => item.id === sceneId)
+  const settings = scene?.trackSettings?.[trackId]
+  if (!settings) return track
+
+  return {
+    ...track,
+    ...settings,
+    presetId: settings.presetId ?? undefined,
+    transition: settings.transition ?? undefined,
+  }
+}
+
+export function updateAudioSceneTrackSettings(
+  audio: WorldAudio,
+  sceneId: string,
+  trackId: string,
+  changes: AudioSceneTrackChanges,
+): WorldAudio {
+  const track = getAudioSceneTrack(audio, sceneId, trackId)
+  if (!track || !audio.scenes.some(scene => scene.id === sceneId && scene.trackIds.includes(trackId))) {
+    throw new Error(`audio.sceneTrack.notFound:${sceneId}:${trackId}`)
+  }
+
+  const updatedTrack = { ...track, ...changes }
+  const settings = toSceneTrackSettings(updatedTrack)
+  return {
+    ...audio,
+    scenes: audio.scenes.map(scene => (
+      scene.id === sceneId
+        ? { ...scene, trackSettings: { ...scene.trackSettings, [trackId]: settings } }
+        : scene
+    )),
+  }
+}
 
 export function addAudioAssets(
   audio: WorldAudio,
@@ -32,7 +88,21 @@ export function removeAudioAsset(audio: WorldAudio, assetId: string): WorldAudio
     scenes: audio.scenes.map(scene => ({
       ...scene,
       trackIds: scene.trackIds.filter(trackId => !removedTrackIds.has(trackId)),
+      ...(scene.trackSettings
+        ? {
+            trackSettings: Object.fromEntries(
+              Object.entries(scene.trackSettings).filter(([trackId]) => !removedTrackIds.has(trackId)),
+            ),
+          }
+        : {}),
     })),
+  }
+}
+
+export function removeAudioScene(audio: WorldAudio, sceneId: string): WorldAudio {
+  return {
+    ...audio,
+    scenes: audio.scenes.filter(scene => scene.id !== sceneId),
   }
 }
 

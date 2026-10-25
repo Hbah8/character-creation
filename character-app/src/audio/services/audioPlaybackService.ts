@@ -37,6 +37,10 @@ export const AUDIO_PRESET_IDS = [
 
 export type AudioPresetId = typeof AUDIO_PRESET_IDS[number]
 
+export function getAudioPlaybackInstanceId(trackId: string, sceneId?: string): string {
+  return sceneId === undefined ? trackId : JSON.stringify([sceneId, trackId])
+}
+
 interface BrowserTrack {
   audio: AudioElement
   source: string
@@ -217,6 +221,10 @@ export function createAudioPlaybackService(
       const track = tracks.get(trackId)
       if (!track) return
       track.audio.volume = Math.min(1, Math.max(0, volume))
+    },
+    setLoop(trackId: string, loop: boolean): void {
+      const track = tracks.get(trackId)
+      if (track) track.audio.loop = loop
     },
     setPreset(trackId: string, presetId?: string): void {
       const track = tracks.get(trackId)

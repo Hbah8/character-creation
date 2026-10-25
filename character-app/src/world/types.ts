@@ -114,6 +114,15 @@ export interface AudioScene {
   id: string
   name: string
   trackIds: string[]
+  trackSettings?: Record<string, AudioSceneTrackSettings>
+}
+
+export interface AudioSceneTrackSettings {
+  loop: boolean
+  defaultVolume: number
+  muted: boolean
+  presetId: string | null
+  transition: AudioTransition | null
 }
 
 export interface AudioPreset {

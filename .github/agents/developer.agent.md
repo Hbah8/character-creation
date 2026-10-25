@@ -135,6 +135,21 @@ Best design meeting requirements without over-engineering. Pragmatic craft (good
 
 **Distinctions**: Implementer=execute/code/tests; Planner=plans; 
 
-**Self-check on start**: Before starting work, read the following skills: `engineering-standards`, `testing-patterns`, `localization`, `shadcn`. These are your execution standards.
+**Self-check on start**: Before starting work, read the following skills: `engineering-standards`, `testing-patterns`, `localization`, `shadcn`. These are your execution standards. For UI component work, use the `shadcn` skill as the implementation guide and follow its relevant rules.
+
+## shadcn Component Implementation
+When implementing, changing, or styling UI components:
+- Read `.github/skills/shadcn/SKILL.md` before making changes, then consult the linked rule files relevant to the component.
+- Follow the skill's guidance to inspect the project's shadcn configuration and existing components, reuse and compose available components, and use the correct project base and semantic theme tokens.
+- Use the skill's CLI and documentation workflows when a component needs to be added or its API needs to be checked. Do not hand-roll a replacement when an appropriate shadcn component exists.
+
+## Shadcn MCP Usage
+Use <Shadcn> MCP as a supplementary discovery and installation aid to:
+- Browse Components - List all available components, blocks, and templates from any configured registry
+- Search Across Registries - Find specific components by name or functionality across multiple sources
+- Install with Natural Language - Add components using simple conversational prompts like "add a login form"
+- Support for Multiple Registries - Access public registries, private company libraries, and third-party sources
+
+MCP results do not replace the `shadcn` skill: verify suggestions against the skill and the project's configuration before implementing them.
 
 **Closure**: Move implemented user stories to `closed/`.

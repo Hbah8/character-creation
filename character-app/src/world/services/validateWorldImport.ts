@@ -10,6 +10,7 @@ import type {
   AudioAsset,
   AudioPreset,
   AudioScene,
+  AudioSceneTrackSettings,
   AudioTrack,
   WorldAudio,
   AudioTransition,
@@ -279,6 +280,9 @@ function validateAudioTracks(raw: unknown, assetIds: Set<string>, presetIds: Set
       throw new Error(`validation.world.audioTrackMissingName:${id}`)
     }
     if (typeof item.loop !== 'boolean') throw new Error(`validation.world.audioTrackInvalidLoop:${id}`)
+    if (item.muted !== undefined && typeof item.muted !== 'boolean') {
+      throw new Error(`validation.world.audioTrackInvalidMuted:${id}`)
+    }
     if (!isNumber(item.defaultVolume) || item.defaultVolume < 0 || item.defaultVolume > 1) {
       throw new Error(`validation.world.audioTrackInvalidVolume:${id}`)
     }
@@ -311,13 +315,79 @@ function validateAudioTracks(raw: unknown, assetIds: Set<string>, presetIds: Set
       name: item.name,
       loop: item.loop,
       defaultVolume: item.defaultVolume,
+      ...(item.muted === undefined ? {} : { muted: item.muted }),
       ...(item.presetId === undefined ? {} : { presetId: item.presetId }),
       ...(item.transition === undefined ? {} : { transition: item.transition as AudioTransition }),
     }
   })
 }
 
-function validateAudioScenes(raw: unknown, trackIds: Set<string>): AudioScene[] {
+function isKnownAudioPreset(value: string, presetIds: Set<string>): boolean {
+  return presetIds.has(value) || [
+    'underwater',
+    'tunnel',
+    'distortion',
+    'behind-door',
+    'cave',
+    'radio',
+    'distant',
+    'haunted',
+    'explosion-aftermath',
+    'dreamlike',
+  ].includes(value)
+}
+
+function validateAudioSceneTrackSettings(
+  raw: unknown,
+  sceneTrackIds: string[],
+  presetIds: Set<string>,
+  sceneId: string,
+): Record<string, AudioSceneTrackSettings> {
+  if (!isObject(raw)) {
+    throw new Error(`validation.world.audioSceneTrackSettingsNotObject:${sceneId}`)
+  }
+
+  const settings: Record<string, AudioSceneTrackSettings> = {}
+  for (const [trackId, value] of Object.entries(raw)) {
+    if (!sceneTrackIds.includes(trackId)) {
+      throw new Error(`validation.world.audioSceneSettingsUnknownTrack:${trackId}`)
+    }
+    if (!isObject(value)) {
+      throw new Error(`validation.world.audioSceneTrackSettingsInvalid:${trackId}`)
+    }
+    if (typeof value.loop !== 'boolean') {
+      throw new Error(`validation.world.audioSceneTrackInvalidLoop:${trackId}`)
+    }
+    if (!isNumber(value.defaultVolume) || value.defaultVolume < 0 || value.defaultVolume > 1) {
+      throw new Error(`validation.world.audioSceneTrackInvalidVolume:${trackId}`)
+    }
+    if (typeof value.muted !== 'boolean') {
+      throw new Error(`validation.world.audioSceneTrackInvalidMuted:${trackId}`)
+    }
+    if (
+      value.presetId !== null
+      && (!isString(value.presetId) || !isKnownAudioPreset(value.presetId, presetIds))
+    ) {
+      throw new Error(`validation.world.audioSceneUnknownPreset:${String(value.presetId)}`)
+    }
+    if (
+      value.transition !== null
+      && (!isString(value.transition) || !AUDIO_TRANSITIONS.includes(value.transition as AudioTransition))
+    ) {
+      throw new Error(`validation.world.audioSceneTrackInvalidTransition:${trackId}`)
+    }
+    settings[trackId] = {
+      loop: value.loop,
+      defaultVolume: value.defaultVolume,
+      muted: value.muted,
+      presetId: value.presetId,
+      transition: value.transition as AudioTransition | null,
+    }
+  }
+  return settings
+}
+
+function validateAudioScenes(raw: unknown, trackIds: Set<string>, presetIds: Set<string>): AudioScene[] {
   if (!Array.isArray(raw)) throw new Error('validation.world.audioScenesNotArray')
   const ids = new Set<string>()
   return raw.map((item, index) => {
@@ -334,7 +404,15 @@ function validateAudioScenes(raw: unknown, trackIds: Set<string>): AudioScene[] 
     for (const trackId of item.trackIds) {
       if (!trackIds.has(trackId)) throw new Error(`validation.world.audioUnknownTrack:${trackId}`)
     }
-    return { id, name: item.name, trackIds: item.trackIds }
+    const trackSettings = item.trackSettings === undefined
+      ? undefined
+      : validateAudioSceneTrackSettings(item.trackSettings, item.trackIds, presetIds, id)
+    return {
+      id,
+      name: item.name,
+      trackIds: item.trackIds,
+      ...(trackSettings === undefined ? {} : { trackSettings }),
+    }
   })
 }
 
@@ -350,7 +428,11 @@ function validateWorldAudio(raw: unknown): WorldAudio {
     new Set(assets.map(asset => asset.id)),
     new Set(presets.map(preset => preset.id)),
   )
-  const scenes = validateAudioScenes(raw.scenes, new Set(tracks.map(track => track.id)))
+  const scenes = validateAudioScenes(
+    raw.scenes,
+    new Set(tracks.map(track => track.id)),
+    new Set(presets.map(preset => preset.id)),
+  )
   return { schemaVersion: WORLD_AUDIO_SCHEMA_VERSION, assets, tracks, scenes, presets }
 }
 

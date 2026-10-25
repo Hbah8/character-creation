@@ -27,7 +27,13 @@ function cloneWorld(world: World): World {
           ...world.audio,
           assets: world.audio.assets.map(asset => ({ ...asset })),
           tracks: world.audio.tracks.map(track => ({ ...track })),
-          scenes: world.audio.scenes.map(scene => ({ ...scene, trackIds: [...scene.trackIds] })),
+          scenes: world.audio.scenes.map(scene => ({
+            ...scene,
+            trackIds: [...scene.trackIds],
+            ...(scene.trackSettings ? { trackSettings: Object.fromEntries(
+              Object.entries(scene.trackSettings).map(([trackId, settings]) => [trackId, { ...settings }]),
+            ) } : {}),
+          })),
           presets: world.audio.presets.map(preset => ({ ...preset })),
         }
       : createEmptyWorldAudio(),

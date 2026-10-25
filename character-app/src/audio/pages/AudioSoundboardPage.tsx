@@ -1,28 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { FileAudio, Link2, Music2, Pause, Play, Square, Trash2, Upload, Volume2, X } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
   addAudioAssets,
-  getTracksToStopForSceneActivation,
+  getAudioSceneTrack,
   duckOtherAudioTracks,
+  removeAudioScene,
   removeAudioAsset,
+  updateAudioSceneTrackSettings,
 } from '@/audio/services/audioLibraryService'
 import { createAudioAssetMetadata } from '@/audio/services/audioAssetImportService'
 import {
@@ -34,22 +20,33 @@ import {
   getAudioAssetAvailability,
   type AudioAssetAvailability,
 } from '@/audio/services/audioAssetAvailabilityService'
+import {
+  AudioEmptyWorldState,
+  AudioLibraryPanel,
+  AudioMixerPanel,
+  AudioScenesPanel,
+  AudioWorldHeader,
+} from '@/audio/components'
 import { createEmptyWorldAudio } from '@/world/types'
 import type { AudioAsset } from '@/world/types'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import {
   createAudioPlaybackService,
+  getAudioPlaybackInstanceId,
   getTransitionDurationMs,
   type AudioPresetId,
 } from '@/audio/services/audioPlaybackService'
 
 const EMPTY_AUDIO_ASSETS: AudioAsset[] = []
 
-function getAvailabilityLabel(
-  status: AudioAssetAvailability | undefined,
-): 'available' | 'missing' | 'changed' | 'permissionRequired' {
-  if (status === 'permission-required') return 'permissionRequired'
-  return status ?? 'missing'
+function createSceneTrackSettings(track: NonNullable<ReturnType<typeof getAudioSceneTrack>>) {
+  return {
+    loop: track.loop,
+    defaultVolume: track.defaultVolume,
+    muted: track.muted ?? false,
+    presetId: track.presetId ?? null,
+    transition: track.transition ?? null,
+  }
 }
 
 interface AudioFilePickerWindow extends Window {
@@ -67,11 +64,13 @@ interface PermissionedFileSystemHandle extends FileSystemFileHandle {
 type AudioErrorKey = 'unsupportedBrowser' | 'addFailed' | 'verifyFailed' | 'relinkFailed' | 'playbackFailed'
 
 export function AudioSoundboardPage() {
+  const navigate = useNavigate()
   const { t } = useTranslation('audio')
-  const { entries, activeWorldId, saveById } = useWorldLibrary()
+  const { entries, activeWorldId, saveById, setActiveWorldId } = useWorldLibrary()
   const [errorKey, setErrorKey] = useState<AudioErrorKey | null>(null)
   const [availability, setAvailability] = useState<Record<string, AudioAssetAvailability>>({})
   const [activeTrackIds, setActiveTrackIds] = useState<string[]>([])
+  const [activeSceneId, setActiveSceneId] = useState<string | null>(null)
   const [playingTrackIds, setPlayingTrackIds] = useState<string[]>([])
   const [sceneName, setSceneName] = useState('')
   const [crossfadeTargetId, setCrossfadeTargetId] = useState('')
@@ -91,9 +90,10 @@ export function AudioSoundboardPage() {
     }
     saveById(activeEntry!.id, { ...activeEntry!.world, audio: { ...audio, tracks: [...audio.tracks, track] } })
     setActiveTrackIds(ids => [...ids, track.id])
+    setActiveSceneId(null)
   }
 
-  async function getPlayableFile(trackId: string): Promise<{ file: File, track: typeof audio.tracks[number] } | undefined> {
+  async function getPlayableFile(trackId: string): Promise<File | undefined> {
     const track = audio.tracks.find(item => item.id === trackId)
     if (!track) return undefined
     const binding = await getLocalAudioAssetBinding(track.assetId)
@@ -101,12 +101,12 @@ export function AudioSoundboardPage() {
     const fileHandle = binding.fileHandle as PermissionedFileSystemHandle
     const permission = await fileHandle.queryPermission({ mode: 'read' })
     if (permission !== 'granted' && await fileHandle.requestPermission({ mode: 'read' }) !== 'granted') return undefined
-    return { file: await fileHandle.getFile(), track }
+    return fileHandle.getFile()
   }
 
-  async function playTrack(trackId: string): Promise<void> {
+  async function playTrack(trackId: string, sceneId = activeSceneId): Promise<void> {
     try {
-      const track = audio.tracks.find(item => item.id === trackId)
+      const track = getAudioSceneTrack(audio, sceneId, trackId)
       if (!track) return
       const binding = await getLocalAudioAssetBinding(track.assetId)
       if (!binding) {
@@ -121,15 +121,16 @@ export function AudioSoundboardPage() {
         return
       }
       const file = await binding.fileHandle.getFile()
+      const playbackTrackId = getAudioPlaybackInstanceId(trackId, sceneId ?? undefined)
       await playbackRef.current.play(
-        trackId,
+        playbackTrackId,
         file,
         track.loop,
         track.muted ? 0 : track.defaultVolume,
         track.presetId as AudioPresetId | undefined,
       )
       playbackRef.current.fadeIn(
-        trackId,
+        playbackTrackId,
         track.muted ? 0 : track.defaultVolume,
         getTransitionDurationMs(track.transition),
       )
@@ -141,14 +142,14 @@ export function AudioSoundboardPage() {
   }
 
   function pauseTrack(trackId: string): void {
-    playbackRef.current.pause(trackId)
+    playbackRef.current.pause(getAudioPlaybackInstanceId(trackId, activeSceneId ?? undefined))
     setPlayingTrackIds(ids => ids.filter(id => id !== trackId))
   }
 
   function stopTrack(trackId: string): void {
-    const track = audio.tracks.find(item => item.id === trackId)
+    const track = getAudioSceneTrack(audio, activeSceneId, trackId)
     void playbackRef.current.stopWithTransition(
-      trackId,
+      getAudioPlaybackInstanceId(trackId, activeSceneId ?? undefined),
       getTransitionDurationMs(track?.transition),
     )
     setPlayingTrackIds(ids => ids.filter(id => id !== trackId))
@@ -157,13 +158,31 @@ export function AudioSoundboardPage() {
   function removeTrackFromMixer(trackId: string): void {
     stopTrack(trackId)
     setActiveTrackIds(ids => ids.filter(id => id !== trackId))
+    setActiveSceneId(null)
   }
 
   function duckOtherTracks(foregroundTrackId: string): void {
-    const updatedAudio = duckOtherAudioTracks(audio, foregroundTrackId)
-    for (const track of updatedAudio.tracks) {
-      if (track.id !== foregroundTrackId) {
-        playbackRef.current.setVolume(track.id, track.muted ? 0 : track.defaultVolume)
+    const updatedAudio = activeSceneId
+      ? activeTrackIds.reduce((currentAudio, trackId) => {
+          if (trackId === foregroundTrackId) return currentAudio
+          const track = getAudioSceneTrack(currentAudio, activeSceneId, trackId)
+          return track
+            ? updateAudioSceneTrackSettings(currentAudio, activeSceneId, trackId, {
+                defaultVolume: Number((track.defaultVolume * 0.3).toFixed(2)),
+              })
+            : currentAudio
+        }, audio)
+      : duckOtherAudioTracks(audio, foregroundTrackId)
+
+    for (const trackId of activeTrackIds) {
+      if (trackId !== foregroundTrackId) {
+        const track = getAudioSceneTrack(updatedAudio, activeSceneId, trackId)
+        if (track) {
+          playbackRef.current.setVolume(
+            getAudioPlaybackInstanceId(trackId, activeSceneId ?? undefined),
+            track.muted ? 0 : track.defaultVolume,
+          )
+        }
       }
     }
     saveById(activeEntry!.id, { ...activeEntry!.world, audio: updatedAudio })
@@ -172,17 +191,21 @@ export function AudioSoundboardPage() {
   async function crossfadeToTarget(): Promise<void> {
     if (!crossfadeTargetId || activeTrackIds.length === 0) return
     try {
-      const target = await getPlayableFile(crossfadeTargetId)
-      if (!target) throw new Error('audio.asset.missing')
+      const targetFile = await getPlayableFile(crossfadeTargetId)
+      if (!targetFile) throw new Error('audio.asset.missing')
+      const targetTrack = getAudioSceneTrack(audio, activeSceneId, crossfadeTargetId)
+      if (!targetTrack) throw new Error('audio.track.missing')
       const outgoingTrackId = activeTrackIds.find(trackId => trackId !== crossfadeTargetId)
       if (!outgoingTrackId) return
+      const outgoingPlaybackId = getAudioPlaybackInstanceId(outgoingTrackId, activeSceneId ?? undefined)
+      const incomingPlaybackId = getAudioPlaybackInstanceId(crossfadeTargetId, activeSceneId ?? undefined)
       await playbackRef.current.crossfade(
-        outgoingTrackId,
-        crossfadeTargetId,
-        target.file,
-        target.track.loop,
-        target.track.muted ? 0 : target.track.defaultVolume,
-        target.track.presetId as AudioPresetId | undefined,
+        outgoingPlaybackId,
+        incomingPlaybackId,
+        targetFile,
+        targetTrack.loop,
+        targetTrack.muted ? 0 : targetTrack.defaultVolume,
+        targetTrack.presetId as AudioPresetId | undefined,
         1200,
       )
       setPlayingTrackIds(ids => [...new Set([...ids.filter(id => id !== outgoingTrackId), crossfadeTargetId])])
@@ -192,19 +215,27 @@ export function AudioSoundboardPage() {
   }
 
   function updateTrack(trackId: string, changes: Partial<typeof audio.tracks[number]>): void {
-    const track = audio.tracks.find(item => item.id === trackId)
+    const track = getAudioSceneTrack(audio, activeSceneId, trackId)
     if (track) {
       const updatedTrack = { ...track, ...changes }
+      const playbackTrackId = getAudioPlaybackInstanceId(trackId, activeSceneId ?? undefined)
       playbackRef.current.setVolume(
-        trackId,
+        playbackTrackId,
         updatedTrack.muted ? 0 : updatedTrack.defaultVolume,
       )
-      if (changes.presetId !== undefined || ('presetId' in changes && changes.presetId === undefined)) {
-        playbackRef.current.setPreset(trackId, updatedTrack.presetId)
+      if ('loop' in changes) playbackRef.current.setLoop(playbackTrackId, updatedTrack.loop)
+      if ('presetId' in changes) {
+        playbackRef.current.setPreset(playbackTrackId, updatedTrack.presetId)
       }
     }
 
-    saveById(activeEntry!.id, { ...activeEntry!.world, audio: { ...audio, tracks: audio.tracks.map(track => track.id === trackId ? { ...track, ...changes } : track) } })
+    const updatedAudio = activeSceneId
+      ? updateAudioSceneTrackSettings(audio, activeSceneId, trackId, changes)
+      : {
+          ...audio,
+          tracks: audio.tracks.map(track => track.id === trackId ? { ...track, ...changes } : track),
+        }
+    saveById(activeEntry!.id, { ...activeEntry!.world, audio: updatedAudio })
   }
 
   function saveScene(): void {
@@ -212,17 +243,44 @@ export function AudioSoundboardPage() {
     if (!name || activeTrackIds.length === 0) return
     saveById(activeEntry!.id, {
       ...activeEntry!.world,
-      audio: { ...audio, scenes: [...audio.scenes, { id: crypto.randomUUID(), name, trackIds: activeTrackIds }] },
+      audio: {
+        ...audio,
+        scenes: [
+          ...audio.scenes,
+          {
+            id: crypto.randomUUID(),
+            name,
+            trackIds: [...activeTrackIds],
+            trackSettings: Object.fromEntries(activeTrackIds.flatMap(trackId => {
+              const track = getAudioSceneTrack(audio, activeSceneId, trackId)
+              return track ? [[trackId, createSceneTrackSettings(track)]] : []
+            })),
+          },
+        ],
+      },
     })
     setSceneName('')
+  }
+
+  function deleteScene(sceneId: string): void {
+    if (!activeEntry) return
+    if (activeSceneId === sceneId) setActiveSceneId(null)
+    saveById(activeEntry.id, {
+      ...activeEntry.world,
+      audio: removeAudioScene(activeEntry.world.audio ?? createEmptyWorldAudio(), sceneId),
+    })
   }
 
   async function activateScene(sceneId: string): Promise<void> {
     const scene = audio.scenes.find(item => item.id === sceneId)
     if (!scene) return
-    getTracksToStopForSceneActivation(activeTrackIds, scene.trackIds).forEach(stopTrack)
+    for (const trackId of activeTrackIds) {
+      playbackRef.current.pause(getAudioPlaybackInstanceId(trackId, activeSceneId ?? undefined))
+    }
+    setPlayingTrackIds([])
+    setActiveSceneId(scene.id)
     setActiveTrackIds(scene.trackIds)
-    await Promise.all(scene.trackIds.map(playTrack))
+    await Promise.all(scene.trackIds.map(trackId => playTrack(trackId, scene.id)))
   }
 
   async function relinkAsset(asset: AudioAsset): Promise<void> {
@@ -306,32 +364,24 @@ export function AudioSoundboardPage() {
 
   if (!activeEntry) {
     return (
-      <div className="h-full w-full min-h-0 overflow-y-auto">
-        <div className="max-w-3xl mx-auto p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('noWorldTitle')}</CardTitle>
-              <CardDescription>{t('noWorldDescription')}</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </div>
+      <AudioEmptyWorldState
+        worlds={entries.map(entry => ({ id: entry.id, name: entry.world.name }))}
+        onSelectWorld={setActiveWorldId}
+        onCreateWorld={() => navigate('/worlds/new')}
+        onOpenWorlds={() => navigate('/worlds')}
+      />
     )
   }
 
   return (
-    <div className="h-full w-full min-h-0 overflow-y-auto">
-      <div className="max-w-5xl mx-auto p-6 flex flex-col gap-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
-            <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
-          </div>
-          <Button onClick={() => void addFiles()}>
-            <Upload data-icon="inline-start" />
-            {t('addFiles')}
-          </Button>
-        </div>
+    <div className="h-full w-full min-h-0 overflow-y-auto bg-background text-foreground">
+      <div className="mx-auto flex min-h-full w-full max-w-[1600px] flex-col gap-5 p-6 max-md:gap-4 max-md:px-3.5 max-md:py-4">
+        <AudioWorldHeader
+          activeWorldId={activeEntry.id}
+          activeWorldName={activeEntry.world.name}
+          worlds={entries.map(entry => ({ id: entry.id, name: entry.world.name }))}
+          onSelectWorld={setActiveWorldId}
+        />
 
         {errorKey && (
           <Alert variant="destructive">
@@ -340,157 +390,46 @@ export function AudioSoundboardPage() {
           </Alert>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('libraryTitle')}</CardTitle>
-            <CardDescription>{t('fileCount', { count: assets.length })}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {assets.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('emptyLibrary')}</p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {assets.map(asset => (
-                  <div key={asset.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <FileAudio className="size-4 shrink-0 text-muted-foreground" />
-                      <span className="truncate text-sm font-medium">{asset.filename}</span>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Badge variant="secondary">{asset.mediaType}</Badge>
-                      <Badge variant={availability[asset.id] === 'available' ? 'default' : 'outline'}>
-                        {t(getAvailabilityLabel(availability[asset.id]))}
-                      </Badge>
-                      <Button
-                        size="sm"
-                        disabled={availability[asset.id] === 'missing' || availability[asset.id] === 'changed'}
-                        onClick={() => addTrack(asset)}
-                      >
-                        <Play data-icon="inline-start" />
-                        {t('addToMixer')}
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => void relinkAsset(asset)}
-                        aria-label={t('relinkAsset')}
-                      >
-                        <Link2 />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            aria-label={t('removeAsset')}
-                          >
-                            <Trash2 />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>{t('removeAssetTitle')}</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {t('removeAssetDescription', { filename: asset.filename })}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => void removeAsset(asset.id)}>
-                              {t('removeAsset')}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-[minmax(235px,0.92fr)_minmax(340px,1.34fr)_minmax(225px,0.82fr)] items-start gap-3 max-[1180px]:grid-cols-2 max-md:grid-cols-1">
+          <AudioLibraryPanel
+            assets={assets}
+            availability={availability}
+            onAddFiles={() => void addFiles()}
+            onAddToMixer={addTrack}
+            onRelink={asset => void relinkAsset(asset)}
+            onRemove={assetId => void removeAsset(assetId)}
+          />
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Music2 className="size-4" />
-              {t('mixerTitle')}
-            </CardTitle>
-            <CardDescription>{t('mixerDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {activeTrackIds.length === 0 ? <p className="text-sm text-muted-foreground">{t('emptyMixer')}</p> : activeTrackIds.map(trackId => {
-              const track = audio.tracks.find(item => item.id === trackId)
-              if (!track) return null
-              const isPlaying = playingTrackIds.includes(trackId)
-              return <div key={trackId} className="flex items-center gap-3 rounded-md border p-3">
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">{track.name}</span>
-                <input aria-label={t('volume')} type="range" min="0" max="1" step="0.05" value={track.defaultVolume} onChange={event => updateTrack(trackId, { defaultVolume: Number(event.target.value) })} />
-                <Button size="icon" variant="outline" onClick={() => updateTrack(trackId, { muted: !track.muted })}><Volume2 /></Button>
-                <Button size="icon" variant="outline" onClick={() => updateTrack(trackId, { loop: !track.loop })}>{track.loop ? 'Loop' : 'Once'}</Button>
-                <Select value={track.transition ?? 'instant'} onValueChange={transition => updateTrack(trackId, { transition: transition as typeof track.transition })}>
-                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="instant">{t('transitionInstant')}</SelectItem>
-                    <SelectItem value="fade-short">{t('transitionShort')}</SelectItem>
-                    <SelectItem value="fade-medium">{t('transitionMedium')}</SelectItem>
-                    <SelectItem value="fade-long">{t('transitionLong')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={track.presetId ?? 'clean'} onValueChange={presetId => updateTrack(trackId, { presetId: presetId === 'clean' ? undefined : presetId })}>
-                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="clean">{t('presetClean')}</SelectItem>
-                    <SelectItem value="underwater">{t('presetUnderwater')}</SelectItem>
-                    <SelectItem value="tunnel">{t('presetTunnel')}</SelectItem>
-                    <SelectItem value="distortion">{t('presetDistortion')}</SelectItem>
-                    <SelectItem value="behind-door">{t('presetBehindDoor')}</SelectItem>
-                    <SelectItem value="cave">{t('presetCave')}</SelectItem>
-                    <SelectItem value="radio">{t('presetRadio')}</SelectItem>
-                    <SelectItem value="distant">{t('presetDistant')}</SelectItem>
-                    <SelectItem value="haunted">{t('presetHaunted')}</SelectItem>
-                    <SelectItem value="explosion-aftermath">{t('presetExplosionAftermath')}</SelectItem>
-                    <SelectItem value="dreamlike">{t('presetDreamlike')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button size="icon" onClick={() => void (isPlaying ? pauseTrack(trackId) : playTrack(trackId))}>{isPlaying ? <Pause /> : <Play />}</Button>
-                <Button size="icon" variant="outline" onClick={() => stopTrack(trackId)}><Square /></Button>
-                <Button size="sm" variant="outline" onClick={() => duckOtherTracks(trackId)}>{t('duckOthers')}</Button>
-                <Button size="icon" variant="outline" onClick={() => removeTrackFromMixer(trackId)} aria-label={t('removeFromMixer')}><X /></Button>
-              </div>
+          <AudioMixerPanel
+            tracks={activeTrackIds.flatMap(trackId => {
+              const track = getAudioSceneTrack(audio, activeSceneId, trackId)
+              return track ? [track] : []
             })}
-          </CardContent>
-          {activeTrackIds.length > 1 && (
-            <CardContent className="flex items-center gap-2 border-t pt-4">
-              <Select value={crossfadeTargetId} onValueChange={setCrossfadeTargetId}>
-                <SelectTrigger className="flex-1"><SelectValue placeholder={t('crossfadeTarget')} /></SelectTrigger>
-                <SelectContent>
-                  {activeTrackIds.map(trackId => {
-                    const track = audio.tracks.find(item => item.id === trackId)
-                    return track ? <SelectItem key={track.id} value={track.id}>{track.name}</SelectItem> : null
-                  })}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" disabled={!crossfadeTargetId} onClick={() => void crossfadeToTarget()}>{t('crossfade')}</Button>
-            </CardContent>
-          )}
-        </Card>
+            playingTrackIds={playingTrackIds}
+            crossfadeTargetId={crossfadeTargetId}
+            onTrackChange={updateTrack}
+            onPlayPause={trackId => {
+              if (playingTrackIds.includes(trackId)) pauseTrack(trackId)
+              else void playTrack(trackId)
+            }}
+            onRemove={removeTrackFromMixer}
+            onStop={stopTrack}
+            onDuck={duckOtherTracks}
+            onCrossfadeTargetChange={setCrossfadeTargetId}
+            onCrossfade={() => void crossfadeToTarget()}
+          />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('scenesTitle')}</CardTitle>
-            <CardDescription>{t('scenesDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <div className="flex gap-2">
-              <Input value={sceneName} onChange={event => setSceneName(event.target.value)} placeholder={t('sceneNamePlaceholder')} />
-              <Button onClick={saveScene}>{t('saveScene')}</Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {audio.scenes.map(scene => <Button key={scene.id} variant="outline" onClick={() => void activateScene(scene.id)}>{scene.name}</Button>)}
-            </div>
-          </CardContent>
-        </Card>
+          <AudioScenesPanel
+            scenes={audio.scenes}
+            activeSceneId={activeSceneId}
+            activeTrackIds={activeTrackIds}
+            sceneName={sceneName}
+            onSceneNameChange={setSceneName}
+            onSaveScene={saveScene}
+            onActivateScene={sceneId => void activateScene(sceneId)}
+            onRemoveScene={deleteScene}
+          />
+        </div>
       </div>
     </div>
   )

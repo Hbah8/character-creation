@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   addAudioAssets,
+  getAudioSceneTrack,
   getTracksToStopForSceneActivation,
   duckOtherAudioTracks,
   removeAudioAsset,
+  removeAudioScene,
+  updateAudioSceneTrackSettings,
 } from '@/audio/services/audioLibraryService'
 import { createEmptyWorldAudio } from '@/world/types'
 
@@ -19,6 +22,25 @@ describe('addAudioAssets', () => {
 
     expect(updated.assets).toHaveLength(1)
     expect(existing.assets).toEqual([])
+  })
+
+  describe('removeAudioScene', () => {
+    it('removes only the requested saved scene without changing the mixer', () => {
+      const audio = {
+        ...createEmptyWorldAudio(),
+        tracks: [{ id: 'track-1', assetId: 'asset-1', name: 'Rain', loop: true, defaultVolume: 1 }],
+        scenes: [
+          { id: 'scene-1', name: 'Storm', trackIds: ['track-1'] },
+          { id: 'scene-2', name: 'Dawn', trackIds: ['track-1'] },
+        ],
+      }
+
+      const updated = removeAudioScene(audio, 'scene-1')
+
+      expect(updated.scenes).toEqual([{ id: 'scene-2', name: 'Dawn', trackIds: ['track-1'] }])
+      expect(updated.tracks).toEqual(audio.tracks)
+      expect(audio.scenes).toHaveLength(2)
+    })
   })
 
   it('rejects asset ids already registered in the World', () => {
@@ -58,6 +80,23 @@ describe('addAudioAssets', () => {
     })
   })
 
+  it('removes only the requested saved scene without changing the mixer', () => {
+    const audio = {
+      ...createEmptyWorldAudio(),
+      tracks: [{ id: 'track-1', assetId: 'asset-1', name: 'Rain', loop: true, defaultVolume: 1 }],
+      scenes: [
+        { id: 'scene-1', name: 'Storm', trackIds: ['track-1'] },
+        { id: 'scene-2', name: 'Dawn', trackIds: ['track-1'] },
+      ],
+    }
+
+    const updated = removeAudioScene(audio, 'scene-1')
+
+    expect(updated.scenes).toEqual([{ id: 'scene-2', name: 'Dawn', trackIds: ['track-1'] }])
+    expect(updated.tracks).toEqual(audio.tracks)
+    expect(audio.scenes).toHaveLength(2)
+  })
+
   it('stops only outgoing tracks when activating another scene', () => {
     expect(getTracksToStopForSceneActivation(
       ['rain', 'tavern'],
@@ -80,5 +119,41 @@ describe('addAudioAssets', () => {
         { id: 'effect', defaultVolume: 0.8 },
       ],
     })
+  })
+
+  it('keeps track settings scoped to the scene being edited', () => {
+    const audio = {
+      ...createEmptyWorldAudio(),
+      tracks: [{
+        id: 'track-1',
+        assetId: 'asset-1',
+        name: 'Rain',
+        loop: true,
+        defaultVolume: 0.7,
+      }],
+      scenes: [
+        { id: 'scene-a', name: 'Storm', trackIds: ['track-1'] },
+        { id: 'scene-b', name: 'Dawn', trackIds: ['track-1'] },
+      ],
+    }
+
+    const updated = updateAudioSceneTrackSettings(audio, 'scene-a', 'track-1', {
+      presetId: 'tunnel',
+      defaultVolume: 0.25,
+      muted: true,
+      loop: false,
+    })
+
+    expect(getAudioSceneTrack(updated, 'scene-a', 'track-1')).toMatchObject({
+      presetId: 'tunnel',
+      defaultVolume: 0.25,
+      muted: true,
+      loop: false,
+    })
+    expect(getAudioSceneTrack(updated, 'scene-b', 'track-1')).toMatchObject({
+      defaultVolume: 0.7,
+      loop: true,
+    })
+    expect(updated.tracks[0]).toMatchObject({ defaultVolume: 0.7, loop: true })
   })
 })

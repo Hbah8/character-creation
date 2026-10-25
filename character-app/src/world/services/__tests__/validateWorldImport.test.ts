@@ -88,6 +88,7 @@ describe('validateWorldImport', () => {
             name: 'Cave ambience',
             loop: true,
             defaultVolume: 0.5,
+            muted: true,
           }],
           scenes: [],
           presets: [],
@@ -97,10 +98,54 @@ describe('validateWorldImport', () => {
       expect(world).toMatchObject({
         audio: {
           assets: [{ id: 'asset-1', filename: 'cave-ambience.mp3' }],
-          tracks: [{ id: 'track-1', assetId: 'asset-1', loop: true }],
+          tracks: [{ id: 'track-1', assetId: 'asset-1', loop: true, muted: true }],
         },
       })
       expect(JSON.stringify(world)).not.toContain('fileHandle')
+    })
+
+    it('preserves scene-specific track settings when importing a world', () => {
+      const world = validateWorldImport({
+        ...validWorld(),
+        audio: {
+          schemaVersion: 1,
+          assets: [{ id: 'asset-1', filename: 'rain.mp3', mediaType: 'audio/mpeg', byteLength: 42 }],
+          tracks: [{
+            id: 'track-1',
+            assetId: 'asset-1',
+            name: 'Rain',
+            loop: true,
+            defaultVolume: 0.7,
+          }],
+          scenes: [{
+            id: 'scene-1',
+            name: 'Storm',
+            trackIds: ['track-1'],
+            trackSettings: {
+              'track-1': {
+                loop: false,
+                defaultVolume: 0.25,
+                muted: true,
+                presetId: 'tunnel',
+                transition: 'fade-medium',
+              },
+            },
+          }],
+          presets: [],
+        },
+      })
+
+      expect(world.audio?.scenes[0]).toMatchObject({
+        trackSettings: {
+          'track-1': {
+            loop: false,
+            defaultVolume: 0.25,
+            muted: true,
+            presetId: 'tunnel',
+            transition: 'fade-medium',
+          },
+        },
+      })
     })
 
     it('rejects tracks that reference unknown audio assets', () => {
