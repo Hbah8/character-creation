@@ -194,7 +194,7 @@ export function AudioMixerPanel({
   const { t } = useTranslation('audio')
 
   return (
-    <Card className="gap-3.5 rounded-xl border border-border bg-card shadow-none">
+    <Card className="flex min-h-0 max-h-[calc(100dvh-10rem)] flex-col gap-3.5 overflow-hidden rounded-xl border border-border bg-card shadow-none max-md:max-h-[calc(100dvh-14rem)]">
       <CardHeader className="flex items-start justify-between gap-2 px-3.5">
         <div>
           <CardTitle className="flex items-center gap-2">
@@ -204,7 +204,7 @@ export function AudioMixerPanel({
           <CardDescription>{t('mixerTrackCount', { count: tracks.length })}</CardDescription>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2.5 px-3.5">
+      <CardContent className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-2.5 px-3.5">
         {tracks.length === 0 ? (
           <p className="m-0 text-xs leading-relaxed text-muted-foreground">{t('emptyMixer')}</p>
         ) : (

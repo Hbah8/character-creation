@@ -125,7 +125,7 @@ export function AudioLibraryPanel({
   ).length
 
   return (
-    <Card className="gap-3.5 rounded-xl border border-border bg-card shadow-none">
+    <Card className="flex min-h-0 max-h-[calc(100dvh-10rem)] flex-col gap-3.5 overflow-hidden rounded-xl border border-border bg-card shadow-none max-md:max-h-[calc(100dvh-14rem)]">
       <CardHeader className="flex items-start justify-between gap-2 px-3.5">
         <div>
           <CardTitle>{t('libraryTitle')}</CardTitle>
@@ -143,7 +143,7 @@ export function AudioLibraryPanel({
           {t('addFiles')}
         </Button>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2.5 px-3.5">
+      <CardContent className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-2.5 px-3.5">
         <p className="m-0 text-[10px] tracking-wide text-muted-foreground">{t('supportedFormats')}</p>
         {assets.length === 0 ? (
           <p className="m-0 text-xs leading-relaxed text-muted-foreground">{t('emptyLibrary')}</p>

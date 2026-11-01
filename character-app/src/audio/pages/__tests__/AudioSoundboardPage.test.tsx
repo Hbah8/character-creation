@@ -97,6 +97,13 @@ describe('AudioSoundboardPage component integration', () => {
     expect(html).not.toMatch(/class="dark(?:\s|")/)
   })
 
+  it('constrains audio panels and scrolls their content independently', () => {
+    const html = renderPage()
+
+    expect(html.match(/max-h-\[calc\(100dvh-10rem\)\]/g) ?? []).toHaveLength(3)
+    expect(html.match(/min-h-0[^"]*overflow-y-auto/g) ?? []).toHaveLength(4)
+  })
+
   it('renders a volume range that includes zero', () => {
     const html = renderToStaticMarkup(createElement(AudioTrackCard, {
       track: audioTrack,
