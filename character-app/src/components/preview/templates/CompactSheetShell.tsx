@@ -25,10 +25,10 @@ export function CompactSheetShell({ resolvedCharacter, layout, world }: SheetTem
           <SheetQuickStats combat={combat} modifierBreakdown={modifierBreakdown} variant="compact" />
         </div>
         <SheetAttributesSkills skills={skills} attributes={attributes} variant="compact" />
+        <SheetMarks combat={combat} />
         <section className="columns">
           <div className="column">
             {layout.weapons === 'left' && <SheetWeapons character={character} />}
-            <SheetMarks combat={combat} />
             {layout.edges === 'left' && <SheetEdges edges={edges} />}
             {layout.hindrances === 'left' && <SheetHindrances hindrances={hindrances} />}
             {layout.gear === 'left' && <SheetGear character={character} variant="compact" />}

@@ -40,13 +40,12 @@ export function SheetNotesAmmo({ character }: Props) {
             ))}
           </div>
         )}
-        {character.notes && (
-          <div className="compact-notes-text">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{character.notes}</ReactMarkdown>
-          </div>
-        )}
-        <div className="compact-notes-lines" aria-hidden="true">
-          {Array.from({ length: 10 }, (_, index) => <span key={index} />)}
+        <div className="compact-notes-writing-area">
+          {character.notes && (
+            <div className="compact-notes-text">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{character.notes}</ReactMarkdown>
+            </div>
+          )}
         </div>
       </div>
     </section>

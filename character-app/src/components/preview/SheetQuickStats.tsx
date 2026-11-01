@@ -95,7 +95,7 @@ export function SheetQuickStats({ combat, modifierBreakdown = [], variant = 'def
         </Popover>
       </div>
       <span className="qs-sep">/</span>
-      <div className="quick-stat">
+      <div className="quick-stat quick-stat--power-points">
         <span className="qs-label">{t('quickStats.mana')}</span>
         <Popover>
           <PopoverTrigger asChild>

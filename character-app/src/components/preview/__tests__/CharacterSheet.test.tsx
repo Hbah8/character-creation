@@ -71,6 +71,7 @@ describe('CharacterSheet', () => {
         source: {
           ...SOURCE_CHARACTER,
           gear: ['Medkit', 'Rations'],
+          notes: 'Background first line.\nSecond line.',
           specialRules: [{
             id: 'special-rule',
             name: 'Suppressive fire',
@@ -121,7 +122,12 @@ describe('CharacterSheet', () => {
 
     expect(html).toContain('sheet--compact')
     expect(html).toContain('Отметки')
+    expect(html).toContain('compact-mark-row')
+    expect(html).toContain('compact-mark-group--effects')
     expect(html).toContain('Заметки · боеприпасы')
+    expect(html).toContain('compact-notes-writing-area')
+    expect(html).not.toContain('compact-notes-blank-lines')
+    expect(html).not.toContain('compact-notes-lines')
     expect(html).toContain('Sturmgewehr')
     expect(html).toContain('data-ammo-capacity="30"')
     expect(html).toContain('--ammo-width:96mm')
@@ -129,9 +135,12 @@ describe('CharacterSheet', () => {
     expect(html).toContain('compact-gear-list')
     expect(html).toContain('quick-stats--compact')
     expect(html).toContain('compact-special-rule')
-    expect(html.match(/class="quick-stat"/g)).toHaveLength(6)
+    expect(html).toContain('class="quick-stat quick-stat--power-points"')
+    expect(html.match(/class="quick-stat(?: quick-stat--power-points)?"/g)).toHaveLength(6)
     expect(html).toContain('data-ammo-width="96mm"')
     expect(html).toContain('data-ammo-width="32mm"')
+    expect(html.indexOf('compact-attributes-skills')).toBeLessThan(html.indexOf('compact-marks'))
+    expect(html.indexOf('compact-marks')).toBeLessThan(html.indexOf('class="columns"'))
     expect(html).not.toContain('sheet-scale-wrapper')
     expect(html).not.toContain('transform:')
     expect(html).not.toContain('zoom:')

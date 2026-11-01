@@ -7,6 +7,7 @@
   --red: #a00000;
   --red-dark: #720000;
   width: 210mm;
+  height: 297mm;
   min-height: 297mm;
   padding: 6mm;
   background: var(--page-bg);
@@ -19,6 +20,8 @@
 }
 
 .sheet--compact .content {
+  height: 285mm;
+  min-height: 0;
   gap: 3mm;
 }
 
@@ -87,6 +90,11 @@
   height: 100%;
   padding: 1mm 0.8mm;
   border-left: 0.7pt solid var(--line);
+}
+
+.sheet--compact .quick-stats--compact .quick-stat--power-points {
+  flex: 1.5 1 0;
+  padding-right: 1.5mm;
 }
 
 .sheet--compact .qs-label {
@@ -269,14 +277,27 @@
 }
 
 .sheet--compact .compact-marks-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2mm;
-  padding: 2mm 2.5mm;
+  padding: 1.8mm 2.5mm;
 }
 
-.sheet--compact .markers-row {
-  gap: 1.5mm;
+.sheet--compact .compact-mark-row {
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  min-height: 5mm;
+}
+
+.sheet--compact .compact-mark-group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 1.3mm;
+  white-space: nowrap;
+}
+
+.sheet--compact .compact-mark-group--effects {
+  flex: 1 1 auto;
+  min-width: 20mm;
 }
 
 .sheet--compact .marker-label {
@@ -295,17 +316,11 @@
   font-size: 0;
 }
 
-.sheet--compact .marker-gap {
-  flex-basis: 3mm;
-}
-
-.sheet--compact .markers-effects {
-  gap: 1.5mm;
-  padding-top: 1.5mm;
-}
-
 .sheet--compact .marker-line {
+  flex: 1;
+  min-width: 0;
   height: 4mm;
+  border-bottom: 0.7pt solid var(--ink);
 }
 
 .sheet--compact .compact-gear-list {
@@ -356,13 +371,15 @@
   display: flex;
   flex: 1;
   flex-direction: column;
+  min-height: 0;
   padding: 2mm 2.5mm 2.3mm;
 }
 
 .sheet--compact .compact-notes-ammo {
   display: flex;
-  flex: 1 0 48mm;
+  flex: 1 1 0;
   flex-direction: column;
+  min-height: 0;
 }
 
 .sheet--compact .compact-ammunition {
@@ -403,24 +420,21 @@
 }
 
 .sheet--compact .compact-notes-text {
-  padding: 2mm 0;
+  padding: 0;
   font-size: 8pt;
+  line-height: 1.2;
 }
 
 .sheet--compact .compact-notes-text p {
-  margin: 0 0 1mm;
+  margin: 0;
+  line-height: inherit;
 }
 
-.sheet--compact .compact-notes-lines {
+.sheet--compact .compact-notes-writing-area {
   display: flex;
   flex: 1;
   flex-direction: column;
-}
-
-.sheet--compact .compact-notes-lines span {
-  flex: 1;
-  min-height: 3mm;
-  border-bottom: 0.6pt solid rgba(30, 30, 30, 0.25);
+  min-height: 0;
 }
 
 .sheet--compact .weapon-table th,
@@ -438,4 +452,44 @@
 
 .sheet--compact .weapon-table td:first-child {
   font-weight: 700;
+}
+
+@media print {
+  .sheet--compact {
+    height: 297mm !important;
+    min-height: 297mm !important;
+    padding: 4.5mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .sheet--compact .content {
+    height: 288mm;
+    gap: 1.8mm;
+  }
+
+  .sheet--compact .columns {
+    min-height: 0;
+    gap: 2mm;
+  }
+
+  .sheet--compact .column {
+    min-height: 0;
+    gap: 1.8mm;
+  }
+
+  .sheet--compact .compact-ammunition-track {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    background-color: #fff;
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--line) 0,
+      var(--line) 0.6pt,
+      transparent 0.6pt,
+      transparent 3.2mm
+    );
+  }
 }

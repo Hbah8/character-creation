@@ -39,7 +39,24 @@ export function SheetMarks({ combat }: { combat: MarkStats }) {
     <section className="section compact-marks">
       <div className="section-title">{t('sections.notes')}</div>
       <div className="compact-marks-body">
-        <SheetMarksContent combat={combat} />
+        <div className="compact-mark-row">
+          <div className="compact-mark-group">
+            <span className="marker-label">{t('notes.shock')}</span>
+            <span className="marker-box">□</span>
+          </div>
+          <div className="compact-mark-group">
+            <span className="marker-label">{t('notes.wounds')}</span>
+            {boxes(combat.maxWounds)}
+          </div>
+          <div className="compact-mark-group">
+            <span className="marker-label">{t('notes.fatigue')}</span>
+            {boxes(combat.maxFatigue)}
+          </div>
+          <div className="compact-mark-group compact-mark-group--effects">
+            <span className="marker-label">{t('notes.tempEffects')}</span>
+            <span className="marker-line" />
+          </div>
+        </div>
       </div>
     </section>
   )
