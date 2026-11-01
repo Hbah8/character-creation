@@ -7,6 +7,7 @@ import {
   removeMap,
   resetMapGridSettings,
   rotateMap,
+  zoomMap,
   updateMapGridSettings,
 } from '@/maps/services/mapStorageRepository'
 import { DEFAULT_MAP_GRID_SETTINGS } from '@/maps/types'
@@ -26,6 +27,7 @@ describe('mapStorageRepository', () => {
 
     expect(map.gridSettings).toEqual(DEFAULT_MAP_GRID_SETTINGS)
     expect(map.rotation).toBe(0)
+    expect(map.zoom).toBe(1)
     await expect(getMap('world-1', map.id)).resolves.toMatchObject({
       filename: 'village.png',
       image: blob,
@@ -88,5 +90,25 @@ describe('mapStorageRepository', () => {
 
     await rotateMap('world-1', first.id, 'counterclockwise')
     await expect(getMap('world-1', first.id)).resolves.toMatchObject({ rotation: 0 })
+  })
+
+  it('changes zoom in bounded steps and persists it only for the selected map', async () => {
+    const first = await addMap('world-1', 'village.png', new Blob(['one']))
+    const second = await addMap('world-1', 'dungeon.png', new Blob(['two']))
+
+    await expect(zoomMap('world-1', first.id, 'in')).resolves.toBe(1.25)
+    await expect(getMap('world-1', first.id)).resolves.toMatchObject({ zoom: 1.25 })
+    await expect(getMap('world-1', second.id)).resolves.toMatchObject({ zoom: 1 })
+
+    for (let step = 0; step < 20; step += 1) {
+      await zoomMap('world-1', first.id, 'in')
+    }
+    await expect(zoomMap('world-1', first.id, 'in')).resolves.toBe(4)
+
+    for (let step = 0; step < 20; step += 1) {
+      await zoomMap('world-1', first.id, 'out')
+    }
+    await expect(zoomMap('world-1', first.id, 'out')).resolves.toBe(0.25)
+    await expect(getMap('world-1', first.id)).resolves.toMatchObject({ zoom: 0.25 })
   })
 })

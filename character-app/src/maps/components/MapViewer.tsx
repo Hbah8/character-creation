@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Expand, Grid2X2, RotateCcw, RotateCw, X } from 'lucide-react'
+import { Expand, Grid2X2, RotateCcw, RotateCw, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useRef, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -8,13 +8,19 @@ import { Toggle } from '@/components/ui/toggle'
 import { MapGridSettingsPopover } from '@/maps/components/MapGridSettingsPopover'
 import type { MapListItem } from '@/maps/components/MapLibraryPanel'
 import { enterMapFullscreen, exitMapFullscreen } from '@/maps/services/mapFullscreenService'
-import type { MapGridSettings, MapRotationDirection } from '@/maps/types'
+import {
+  DEFAULT_MAP_ZOOM,
+  MAX_MAP_ZOOM,
+  MIN_MAP_ZOOM,
+} from '@/maps/types'
+import type { MapGridSettings, MapRotationDirection, MapZoomDirection } from '@/maps/types'
 
 interface MapViewerProps {
   selectedMap: MapListItem | undefined
   onGridSettingsChange: (settings: MapGridSettings) => void
   onResetGridSettings: () => void
   onRotate: (direction: MapRotationDirection) => void
+  onZoom: (direction: MapZoomDirection) => void
 }
 
 function MapImage({
@@ -32,9 +38,10 @@ function MapImage({
   const swapsDimensions = map.rotation === 90 || map.rotation === 270
   const availableWidth = swapsDimensions ? viewportSize.height : viewportSize.width
   const availableHeight = swapsDimensions ? viewportSize.width : viewportSize.height
-  const scale = imageSize && availableWidth > 0 && availableHeight > 0
+  const fitScale = imageSize && availableWidth > 0 && availableHeight > 0
     ? Math.min(1, availableWidth / imageSize.width, availableHeight / imageSize.height)
     : undefined
+  const scale = fitScale === undefined ? undefined : fitScale * (map.zoom ?? DEFAULT_MAP_ZOOM)
   const width = imageSize && scale !== undefined ? imageSize.width * scale : undefined
   const height = imageSize && scale !== undefined ? imageSize.height * scale : undefined
   const gridStyle: React.CSSProperties = {
@@ -96,7 +103,9 @@ function MapImage({
           className={fullscreen
             ? 'max-h-[calc(100dvh-2rem)] max-w-full object-contain'
             : 'max-h-[calc(100dvh-12rem)] max-w-full object-contain'}
-          style={{ transform: `rotate(${map.rotation}deg)` }}
+          style={{
+            transform: `rotate(${map.rotation}deg) scale(${map.zoom ?? DEFAULT_MAP_ZOOM})`,
+          }}
           onLoad={event => {
             const image = event.currentTarget
             setImageInfo({ mapId: map.id, width: image.naturalWidth, height: image.naturalHeight })
@@ -112,6 +121,7 @@ export function MapViewer({
   onGridSettingsChange,
   onResetGridSettings,
   onRotate,
+  onZoom,
 }: MapViewerProps) {
   const { t } = useTranslation('maps')
   const fullscreenRef = useRef<HTMLElement>(null)
@@ -138,6 +148,7 @@ export function MapViewer({
   }
 
   const { map } = selectedMap
+  const zoom = map.zoom ?? DEFAULT_MAP_ZOOM
 
   async function toggleFullscreen(): Promise<void> {
     try {
@@ -159,7 +170,28 @@ export function MapViewer({
         <span className="min-w-0 flex-1 truncate text-sm font-medium" title={map.filename}>
           {map.filename}
         </span>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+        <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-1">
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={t('zoomOut')}
+            disabled={zoom <= MIN_MAP_ZOOM}
+            onClick={() => onZoom('out')}
+          >
+            <ZoomOut />
+          </Button>
+          <span className="min-w-10 text-center text-xs text-muted-foreground" aria-live="polite">
+            {t('zoomPercent', { percent: Math.round(zoom * 100) })}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={t('zoomIn')}
+            disabled={zoom >= MAX_MAP_ZOOM}
+            onClick={() => onZoom('in')}
+          >
+            <ZoomIn />
+          </Button>
           <Button
             variant="outline"
             size="icon"

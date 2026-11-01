@@ -80,6 +80,7 @@ describe('MapsPage', () => {
         image: new Blob(['map']),
         gridSettings: DEFAULT_MAP_GRID_SETTINGS,
         rotation: 0,
+        zoom: 1,
         addedAt: '2026-11-01T00:00:00.000Z',
       },
     }
@@ -130,6 +131,7 @@ describe('MapsPage', () => {
           image: new Blob(['map']),
           gridSettings: DEFAULT_MAP_GRID_SETTINGS,
           rotation: 0,
+          zoom: 1,
           addedAt: '2026-11-01T00:00:00.000Z',
         },
       }],
@@ -168,6 +170,7 @@ describe('MapsPage', () => {
         image: new Blob(['map']),
         gridSettings: DEFAULT_MAP_GRID_SETTINGS,
         rotation: 0,
+        zoom: 1,
         addedAt: '2026-11-01T00:00:00.000Z',
       },
     }
@@ -177,6 +180,7 @@ describe('MapsPage', () => {
       onGridSettingsChange: vi.fn(),
       onResetGridSettings: vi.fn(),
       onRotate: vi.fn(),
+      onZoom: vi.fn(),
     }))
 
     expect(html).toContain('object-contain')
@@ -184,6 +188,8 @@ describe('MapsPage', () => {
     expect(html).toContain('aria-label="Open fullscreen view"')
     expect(html).toContain('aria-label="Rotate clockwise 90 degrees"')
     expect(html).toContain('aria-label="Rotate counterclockwise 90 degrees"')
+    expect(html).toContain('aria-label="Zoom in"')
+    expect(html).toContain('aria-label="Zoom out"')
     expect(html).not.toContain('data-slot="dialog"')
   })
 })

@@ -30,6 +30,9 @@ const maps = {
   fullscreenFailed: 'Fullscreen view could not be opened.',
   rotateClockwise: 'Rotate clockwise 90 degrees',
   rotateCounterclockwise: 'Rotate counterclockwise 90 degrees',
+  zoomIn: 'Zoom in',
+  zoomOut: 'Zoom out',
+  zoomPercent: '{{percent}}%',
   colors: {
     white: 'White',
     black: 'Black',

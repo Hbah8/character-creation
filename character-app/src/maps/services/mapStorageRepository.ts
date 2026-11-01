@@ -1,8 +1,15 @@
 import { DEFAULT_MAP_GRID_SETTINGS } from '@/maps/types'
+import {
+  DEFAULT_MAP_ZOOM,
+  MAP_ZOOM_STEP,
+  MAX_MAP_ZOOM,
+  MIN_MAP_ZOOM,
+} from '@/maps/types'
 import type {
   MapGridSettings,
   MapRotation,
   MapRotationDirection,
+  MapZoomDirection,
   StoredMap,
 } from '@/maps/types'
 
@@ -77,6 +84,7 @@ export async function addMap(worldId: string, filename: string, image: Blob): Pr
     image,
     gridSettings: { ...DEFAULT_MAP_GRID_SETTINGS },
     rotation: 0,
+    zoom: DEFAULT_MAP_ZOOM,
     addedAt: new Date().toISOString(),
   }
 
@@ -144,6 +152,28 @@ export function rotateMap(
       const rotation = ((currentRotation + increment) % 360) as MapRotation
       store.put({ ...map, rotation })
       setResult(rotation)
+    }
+  })
+}
+
+export function zoomMap(
+  worldId: string,
+  mapId: string,
+  direction: MapZoomDirection,
+): Promise<number> {
+  return runTransaction<number>('readwrite', (store, setResult) => {
+    const request = store.get([worldId, mapId])
+    request.onsuccess = () => {
+      const map = request.result as StoredMap | undefined
+      if (!map) {
+        store.transaction.abort()
+        return
+      }
+      const currentZoom = map.zoom ?? DEFAULT_MAP_ZOOM
+      const increment = direction === 'in' ? MAP_ZOOM_STEP : -MAP_ZOOM_STEP
+      const zoom = Math.min(MAX_MAP_ZOOM, Math.max(MIN_MAP_ZOOM, currentZoom + increment))
+      store.put({ ...map, zoom })
+      setResult(zoom)
     }
   })
 }

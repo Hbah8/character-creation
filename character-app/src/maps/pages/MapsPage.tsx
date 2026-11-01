@@ -18,9 +18,10 @@ import {
   resetMapGridSettings,
   rotateMap,
   updateMapGridSettings,
+  zoomMap,
 } from '@/maps/services/mapStorageRepository'
 import { DEFAULT_MAP_GRID_SETTINGS } from '@/maps/types'
-import type { MapGridSettings, MapRotationDirection } from '@/maps/types'
+import type { MapGridSettings, MapRotationDirection, MapZoomDirection } from '@/maps/types'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 
 type MapPageError = 'addFailed' | 'saveFailed'
@@ -175,6 +176,21 @@ export function MapsPage() {
     }
   }
 
+  async function zoomSelectedMap(direction: MapZoomDirection): Promise<void> {
+    if (!activeWorld || !selectedMapId) return
+    try {
+      const zoom = await zoomMap(activeWorld.id, selectedMapId, direction)
+      setMaps(current => current.map(item => (
+        item.map.id === selectedMapId
+          ? { ...item, map: { ...item.map, zoom } }
+          : item
+      )))
+      setPageError(null)
+    } catch {
+      setPageError({ worldId: activeWorld.id, key: 'saveFailed' })
+    }
+  }
+
   if (!activeWorld) {
     return (
       <main className="flex h-full min-h-0 flex-col gap-5 overflow-y-auto bg-background p-6 text-foreground max-md:px-3.5 max-md:py-4">
@@ -257,6 +273,7 @@ export function MapsPage() {
           onGridSettingsChange={settings => void saveGridSettings(settings)}
           onResetGridSettings={() => void resetSelectedGridSettings()}
           onRotate={direction => void rotateSelectedMap(direction)}
+          onZoom={direction => void zoomSelectedMap(direction)}
         />
       </div>
     </main>

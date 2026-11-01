@@ -32,6 +32,9 @@ const maps = {
   fullscreenFailed: 'Не удалось открыть полноэкранный просмотр.',
   rotateClockwise: 'Повернуть по часовой стрелке на 90 градусов',
   rotateCounterclockwise: 'Повернуть против часовой стрелки на 90 градусов',
+  zoomIn: 'Приблизить изображение',
+  zoomOut: 'Отдалить изображение',
+  zoomPercent: '{{percent}}%',
   colors: {
     white: 'Белый',
     black: 'Чёрный',

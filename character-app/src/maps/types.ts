@@ -18,6 +18,12 @@ export const MAP_ROTATIONS = [0, 90, 180, 270] as const
 export type MapRotation = typeof MAP_ROTATIONS[number]
 export type MapRotationDirection = 'clockwise' | 'counterclockwise'
 
+export const DEFAULT_MAP_ZOOM = 1
+export const MIN_MAP_ZOOM = 0.25
+export const MAX_MAP_ZOOM = 4
+export const MAP_ZOOM_STEP = 0.25
+export type MapZoomDirection = 'in' | 'out'
+
 export interface StoredMap {
   id: string
   worldId: string
@@ -27,5 +33,6 @@ export interface StoredMap {
   image: Blob
   gridSettings: MapGridSettings
   rotation: MapRotation
+  zoom: number
   addedAt: string
 }
