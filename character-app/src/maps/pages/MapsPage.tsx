@@ -15,6 +15,7 @@ import { MapViewer } from '@/maps/components/MapViewer'
 import {
   addMap,
   listWorldMaps,
+  removeMap,
   resetMapGridSettings,
   rotateMap,
   updateMapGridSettings,
@@ -24,7 +25,7 @@ import { DEFAULT_MAP_GRID_SETTINGS } from '@/maps/types'
 import type { MapGridSettings, MapRotationDirection, MapZoomDirection } from '@/maps/types'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 
-type MapPageError = 'addFailed' | 'saveFailed'
+type MapPageError = 'addFailed' | 'saveFailed' | 'removeFailed'
 
 export function MapsPage() {
   const navigate = useNavigate()
@@ -191,6 +192,28 @@ export function MapsPage() {
     }
   }
 
+  async function removeSelectedMap(mapId: string): Promise<void> {
+    if (!activeWorld) return
+    try {
+      await removeMap(activeWorld.id, mapId)
+      const removed = maps.find(item => item.map.worldId === activeWorld.id && item.map.id === mapId)
+      if (removed) {
+        URL.revokeObjectURL(removed.imageUrl)
+        imageUrlsRef.current.delete(removed.imageUrl)
+      }
+      const remainingMaps = maps.filter(item => item.map.worldId === activeWorld.id && item.map.id !== mapId)
+      setMaps(current => current.filter(item => (
+        item.map.worldId !== activeWorld.id || item.map.id !== mapId
+      )))
+      setSelectedMapId(current => (
+        current === mapId ? remainingMaps[0]?.map.id ?? null : current
+      ))
+      setPageError(null)
+    } catch {
+      setPageError({ worldId: activeWorld.id, key: 'removeFailed' })
+    }
+  }
+
   if (!activeWorld) {
     return (
       <main className="flex h-full min-h-0 flex-col gap-5 overflow-y-auto bg-background p-6 text-foreground max-md:px-3.5 max-md:py-4">
@@ -274,6 +297,7 @@ export function MapsPage() {
           onResetGridSettings={() => void resetSelectedGridSettings()}
           onRotate={direction => void rotateSelectedMap(direction)}
           onZoom={direction => void zoomSelectedMap(direction)}
+          onRemoveMap={mapId => void removeSelectedMap(mapId)}
         />
       </div>
     </main>

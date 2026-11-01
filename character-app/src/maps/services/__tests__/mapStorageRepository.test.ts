@@ -59,13 +59,15 @@ describe('mapStorageRepository', () => {
     })
   })
 
-  it('removes a map without affecting maps in another world', async () => {
+  it('removes only the selected map from its world', async () => {
     const first = await addMap('world-1', 'village.png', new Blob(['one']))
+    const second = await addMap('world-1', 'dungeon.png', new Blob(['two']))
     await addMap('world-2', 'castle.png', new Blob(['two']))
 
     await removeMap('world-1', first.id)
 
     await expect(getMap('world-1', first.id)).resolves.toBeUndefined()
+    await expect(listWorldMaps('world-1')).resolves.toEqual([second])
     await expect(listWorldMaps('world-2')).resolves.toHaveLength(1)
   })
 

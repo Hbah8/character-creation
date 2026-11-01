@@ -101,6 +101,9 @@ describe('MapsPage', () => {
     expect(html).toContain('>1 image</span>')
     expect(html).toContain('min-w-0 w-full truncate')
     expect(html).toContain('flex flex-col items-stretch gap-2')
+    expect(html).toContain('class="flex min-w-0 flex-col gap-1 rounded-lg p-1')
+    expect(html).not.toContain('items-start gap-1')
+    expect(html).not.toContain('aria-label="Delete very-long-village-map-filename.png"')
   })
 
   it('renders an empty-library state after a successful empty load', () => {
@@ -131,7 +134,7 @@ describe('MapsPage', () => {
           image: new Blob(['map']),
           gridSettings: DEFAULT_MAP_GRID_SETTINGS,
           rotation: 0,
-          zoom: 1,
+          zoom: 2.25,
           addedAt: '2026-11-01T00:00:00.000Z',
         },
       }],
@@ -181,15 +184,23 @@ describe('MapsPage', () => {
       onResetGridSettings: vi.fn(),
       onRotate: vi.fn(),
       onZoom: vi.fn(),
+      onRemoveMap: vi.fn(),
     }))
 
     expect(html).toContain('object-contain')
-    expect(html).toContain('aria-label="Toggle grid"')
+    expect(html).toContain('aria-label="Map actions"')
+    expect(html).toContain('data-slot="dropdown-menu-trigger"')
+    expect(html).not.toContain('aria-label="Delete village.png"')
+    expect(html).not.toContain('data-slot="alert-dialog-trigger"')
+    expect(html).not.toContain('bg-destructive')
+    expect(html).not.toContain('aria-label="Toggle grid"')
+    expect(html).toContain('aria-label="Grid settings"')
     expect(html).toContain('aria-label="Open fullscreen view"')
     expect(html).toContain('aria-label="Rotate clockwise 90 degrees"')
     expect(html).toContain('aria-label="Rotate counterclockwise 90 degrees"')
-    expect(html).toContain('aria-label="Zoom in"')
-    expect(html).toContain('aria-label="Zoom out"')
+    expect(html).toContain('rotate(0deg) scale(1)')
+    expect(html).not.toContain('aria-label="Zoom in"')
+    expect(html).not.toContain('aria-label="Zoom out"')
     expect(html).not.toContain('data-slot="dialog"')
   })
 })

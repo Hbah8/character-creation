@@ -1,10 +1,29 @@
 import * as React from 'react'
-import { Expand, Grid2X2, RotateCcw, RotateCw, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { Expand, Grid2X2, MoreHorizontal, RotateCcw, RotateCw, Trash2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useRef, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Toggle } from '@/components/ui/toggle'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { MapGridSettingsPopover } from '@/maps/components/MapGridSettingsPopover'
 import type { MapListItem } from '@/maps/components/MapLibraryPanel'
 import { enterMapFullscreen, exitMapFullscreen } from '@/maps/services/mapFullscreenService'
@@ -24,6 +43,7 @@ interface MapViewerProps {
   onResetGridSettings: () => void
   onRotate: (direction: MapRotationDirection) => void
   onZoom: (direction: MapZoomDirection) => void
+  onRemoveMap: (mapId: string) => void
 }
 
 function MapImage({
@@ -40,6 +60,7 @@ function MapImage({
   onPanChange: (offset: MapPanOffset) => void
 }) {
   const { map, imageUrl } = selectedMap
+  const displayZoom = fullscreen ? map.zoom ?? DEFAULT_MAP_ZOOM : DEFAULT_MAP_ZOOM
   const viewportRef = useRef<HTMLDivElement>(null)
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
   const [imageInfo, setImageInfo] = useState<{ mapId: string, width: number, height: number } | null>(null)
@@ -51,7 +72,7 @@ function MapImage({
   const fitScale = imageSize && availableWidth > 0 && availableHeight > 0
     ? Math.min(1, availableWidth / imageSize.width, availableHeight / imageSize.height)
     : undefined
-  const scale = fitScale === undefined ? undefined : fitScale * (map.zoom ?? DEFAULT_MAP_ZOOM)
+  const scale = fitScale === undefined ? undefined : fitScale * displayZoom
   const width = imageSize && scale !== undefined ? imageSize.width * scale : undefined
   const height = imageSize && scale !== undefined ? imageSize.height * scale : undefined
   const imageBounds = width !== undefined && height !== undefined
@@ -181,9 +202,7 @@ function MapImage({
           className={fullscreen
             ? 'max-h-[calc(100dvh-2rem)] max-w-full object-contain'
             : 'max-h-[calc(100dvh-12rem)] max-w-full object-contain'}
-          style={{
-            transform: `rotate(${map.rotation}deg) scale(${map.zoom ?? DEFAULT_MAP_ZOOM})`,
-          }}
+          style={{ transform: `rotate(${map.rotation}deg) scale(${displayZoom})` }}
           onLoad={event => {
             const image = event.currentTarget
             setImageInfo({ mapId: map.id, width: image.naturalWidth, height: image.naturalHeight })
@@ -200,6 +219,7 @@ export function MapViewer({
   onResetGridSettings,
   onRotate,
   onZoom,
+  onRemoveMap,
 }: MapViewerProps) {
   const { t } = useTranslation('maps')
   const fullscreenRef = useRef<HTMLElement>(null)
@@ -207,6 +227,7 @@ export function MapViewer({
   const [fullscreenContainer, setFullscreenContainer] = useState<HTMLElement | null>(null)
   const [pan, setPan] = useState<MapPanOffset>({ x: 0, y: 0 })
   const [fullscreenFailed, setFullscreenFailed] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -251,27 +272,31 @@ export function MapViewer({
           {map.filename}
         </span>
         <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label={t('zoomOut')}
-            disabled={zoom <= MIN_MAP_ZOOM}
-            onClick={() => onZoom('out')}
-          >
-            <ZoomOut />
-          </Button>
-          <span className="min-w-10 text-center text-xs text-muted-foreground" aria-live="polite">
-            {t('zoomPercent', { percent: Math.round(zoom * 100) })}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label={t('zoomIn')}
-            disabled={zoom >= MAX_MAP_ZOOM}
-            onClick={() => onZoom('in')}
-          >
-            <ZoomIn />
-          </Button>
+          {isFullscreen && (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={t('zoomOut')}
+                disabled={zoom <= MIN_MAP_ZOOM}
+                onClick={() => onZoom('out')}
+              >
+                <ZoomOut />
+              </Button>
+              <span className="min-w-10 text-center text-xs text-muted-foreground" aria-live="polite">
+                {t('zoomPercent', { percent: Math.round(zoom * 100) })}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={t('zoomIn')}
+                disabled={zoom >= MAX_MAP_ZOOM}
+                onClick={() => onZoom('in')}
+              >
+                <ZoomIn />
+              </Button>
+            </>
+          )}
           <Button
             variant="outline"
             size="icon"
@@ -288,19 +313,68 @@ export function MapViewer({
           >
             <RotateCw />
           </Button>
-          <Toggle
-            pressed={map.gridSettings.enabled}
-            aria-label={t('toggleGrid')}
-            onPressedChange={enabled => onGridSettingsChange({ ...map.gridSettings, enabled })}
-          >
-            <Grid2X2 />
-          </Toggle>
           <MapGridSettingsPopover
             settings={map.gridSettings}
             portalContainer={fullscreenContainer}
             onChange={onGridSettingsChange}
             onReset={onResetGridSettings}
           />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t('mapActions')}
+                title={t('mapActions')}
+              >
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" portalContainer={fullscreenContainer}>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>{t('mapActions')}</DropdownMenuLabel>
+                <DropdownMenuCheckboxItem
+                  checked={map.gridSettings.enabled}
+                  onCheckedChange={enabled => onGridSettingsChange({ ...map.gridSettings, enabled })}
+                >
+                  <Grid2X2 />
+                  {t('showGrid')}
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuGroup>
+              {!isFullscreen && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => setIsDeleteDialogOpen(true)}
+                    >
+                      <Trash2 />
+                      {t('deleteMap')}
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {!isFullscreen && (
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('deleteMapTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t('deleteMapDescription', { filename: map.filename })}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                  <AlertDialogAction variant="destructive" onClick={() => onRemoveMap(map.id)}>
+                    {t('deleteMap')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button
             variant="outline"
             size="icon"
