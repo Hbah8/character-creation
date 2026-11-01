@@ -11,18 +11,19 @@ describe('SheetTemplateControls', () => {
 
   afterAll(() => vi.unstubAllGlobals())
 
-  it('exposes independent preview and print selectors', async () => {
+  it('exposes one selector for the sheet template', async () => {
     const i18n = (await import('@/i18n')).default
     await i18n.changeLanguage('en')
 
     const html = renderToStaticMarkup(createElement(SheetTemplateControls, {
-      previewTemplate: 'compact',
-      printTemplate: 'classic',
-      onPreviewTemplateChange: () => undefined,
-      onPrintTemplateChange: () => undefined,
+      templateId: 'compact',
+      onTemplateChange: () => undefined,
     }))
 
-    expect(html).toContain('aria-label="Preview template"')
-    expect(html).toContain('aria-label="Print template"')
+    expect(html).toContain('aria-label="Sheet template"')
+    expect(html).not.toContain('>Sheet template</span>')
+    expect(html).not.toContain('Preview template')
+    expect(html).not.toContain('Print template')
+    expect(html.match(/aria-label="Sheet template"/g)).toHaveLength(1)
   })
 })

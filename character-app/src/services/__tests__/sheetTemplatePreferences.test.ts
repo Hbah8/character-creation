@@ -18,25 +18,39 @@ describe('sheet template preferences', () => {
     expect(loadSheetTemplatePreferences(createStorage())).toEqual(DEFAULT_SHEET_TEMPLATE_PREFERENCES)
   })
 
-  it('persists preview and print choices independently', () => {
+  it('persists one selected template for the sheet', () => {
     const storage = createStorage()
-    const preferences = { previewTemplate: 'compact', printTemplate: 'classic' } as const
+    const preferences = { templateId: 'compact' } as const
 
     saveSheetTemplatePreferences(preferences, storage)
 
     expect(loadSheetTemplatePreferences(storage)).toEqual(preferences)
   })
 
-  it('falls back to defaults for invalid stored template ids', () => {
+  it('migrates legacy preferences using the current preview template', () => {
+    const storage = createStorage()
+    storage.setItem('swade-sheet-template-preferences', JSON.stringify({
+      previewTemplate: 'compact',
+      printTemplate: 'classic',
+    }))
+
+    expect(loadSheetTemplatePreferences(storage)).toEqual({ templateId: 'compact' })
+  })
+
+  it('falls back to a valid legacy print template when the preview choice is invalid', () => {
     const storage = createStorage()
     storage.setItem('swade-sheet-template-preferences', JSON.stringify({
       previewTemplate: 'unknown',
       printTemplate: 'compact',
     }))
 
-    expect(loadSheetTemplatePreferences(storage)).toEqual({
-      ...DEFAULT_SHEET_TEMPLATE_PREFERENCES,
-      printTemplate: 'compact',
-    })
+    expect(loadSheetTemplatePreferences(storage)).toEqual({ templateId: 'compact' })
+  })
+
+  it('falls back to defaults for invalid stored template ids', () => {
+    const storage = createStorage()
+    storage.setItem('swade-sheet-template-preferences', JSON.stringify({ templateId: 'unknown' }))
+
+    expect(loadSheetTemplatePreferences(storage)).toEqual(DEFAULT_SHEET_TEMPLATE_PREFERENCES)
   })
 })

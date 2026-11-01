@@ -1,7 +1,7 @@
 ---
 description: This custom agent implements the plans created by the planner agent, writes red to green tests and implements the code to make the tests pass.
 model: GPT-5.6 Terra (copilot)
-agents: [agent]
+agents: [agent, ui-requirements]
 tools: [execute, read, edit, search, web, agent, todo]
 name: Developer
 handoffs:
@@ -132,6 +132,15 @@ Best design meeting requirements without over-engineering. Pragmatic craft (good
 
 - Execute plan step-by-step (plan is primary)
 - Report ambiguities to planner
+
+## UI Requirement Clarification
+
+For UI fixes, enhancements, or minor changes:
+- When the request is vague or informal, delegate requirement clarification to the `ui-requirements` subagent before implementation. This applies when the user also provides screenshots; use them as context rather than assuming they fully specify the desired change.
+- Include the user's request and relevant screenshot/context in the handoff, and ask for concrete, actionable requirements.
+- Implement from the clarified requirements while preserving the user's intent, constraints, and explicit exclusions.
+- If clarification leaves a material ambiguity, ask the user before implementing.
+- Do not delegate when the request is already clear and specific.
 
 **Distinctions**: Implementer=execute/code/tests; Planner=plans; 
 

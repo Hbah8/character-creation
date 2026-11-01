@@ -127,8 +127,7 @@ export function CharacterCreatorPage() {
   const loadedIdRef = useRef<string | undefined>(undefined)
   const printSheetRef = useRef<HTMLDivElement>(null)
 
-  const previewTemplate = templatePreferences.previewTemplate
-  const printTemplate = templatePreferences.printTemplate
+  const templateId = templatePreferences.templateId
 
   // Load character from library when navigating to /creator/:id
   useEffect(() => {
@@ -248,16 +247,16 @@ export function CharacterCreatorPage() {
     const updatedLayout = { ...layout, [block]: col }
     store.replaceCharacter({
       ...character,
-      layout: previewTemplate === 'classic' ? updatedLayout : character.layout,
+      layout: templateId === 'classic' ? updatedLayout : character.layout,
       templateLayouts: {
         ...character.templateLayouts,
-        [previewTemplate]: updatedLayout,
+        [templateId]: updatedLayout,
       },
     })
   }
 
-  function handleTemplatePreferenceChange(key: 'previewTemplate' | 'printTemplate', template: SheetTemplateId) {
-    const updatedPreferences = { ...templatePreferences, [key]: template }
+  function handleTemplatePreferenceChange(template: SheetTemplateId) {
+    const updatedPreferences = { templateId: template }
     saveSheetTemplatePreferences(updatedPreferences)
     setTemplatePreferences(updatedPreferences)
   }
@@ -270,8 +269,8 @@ export function CharacterCreatorPage() {
 
   const layout = resolveSheetLayout(
     character,
-    previewTemplate,
-    getSheetTemplate(previewTemplate).defaultLayout,
+    templateId,
+    getSheetTemplate(templateId).defaultLayout,
   )
   const characterWorldHandbook = worldEntries.find(entry => entry.id === character.worldId)?.world.worldHandbook ?? []
   const edgeDefinitions = resolveEdgeDefinitions(characterWorldHandbook)
@@ -616,10 +615,8 @@ export function CharacterCreatorPage() {
               <span>{tHeader('previewLabel')}</span>
             </div>
             <SheetTemplateControls
-              previewTemplate={previewTemplate}
-              printTemplate={printTemplate}
-              onPreviewTemplateChange={template => handleTemplatePreferenceChange('previewTemplate', template)}
-              onPrintTemplateChange={template => handleTemplatePreferenceChange('printTemplate', template)}
+              templateId={templateId}
+              onTemplateChange={handleTemplatePreferenceChange}
             />
             <ToggleGroup
               type="single"
@@ -636,7 +633,7 @@ export function CharacterCreatorPage() {
             <CharacterSheet
               resolvedCharacter={resolvedCharacter}
               scaleMode={scaleMode}
-              templateId={previewTemplate}
+              templateId={templateId}
             />
           </div>
         </div>
@@ -665,10 +662,8 @@ export function CharacterCreatorPage() {
             <div className="sticky top-2 right-2 z-10 flex justify-end px-2 mb-[-32px] pointer-events-none print:hidden">
               <div className="bg-background/90 backdrop-blur-sm border rounded-md p-1.5 shadow-sm pointer-events-auto flex flex-col gap-1.5">
                 <SheetTemplateControls
-                  previewTemplate={previewTemplate}
-                  printTemplate={printTemplate}
-                  onPreviewTemplateChange={template => handleTemplatePreferenceChange('previewTemplate', template)}
-                  onPrintTemplateChange={template => handleTemplatePreferenceChange('printTemplate', template)}
+                  templateId={templateId}
+                  onTemplateChange={handleTemplatePreferenceChange}
                 />
                 <ToggleGroup
                   type="single"
@@ -685,7 +680,7 @@ export function CharacterCreatorPage() {
             <CharacterSheet
               resolvedCharacter={resolvedCharacter}
               fitToContainer
-              templateId={previewTemplate}
+              templateId={templateId}
             />
           </div>
         </TabsContent>
@@ -694,7 +689,7 @@ export function CharacterCreatorPage() {
       <div ref={printSheetRef} className="sheet-print-source" aria-hidden="true">
         <CharacterSheet
           resolvedCharacter={resolvedCharacter}
-          templateId={printTemplate}
+          templateId={templateId}
           printMode
         />
       </div>

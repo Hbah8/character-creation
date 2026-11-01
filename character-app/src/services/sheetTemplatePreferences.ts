@@ -1,13 +1,11 @@
 import type { SheetTemplateId } from '@/types/character'
 
 export interface SheetTemplatePreferences {
-  previewTemplate: SheetTemplateId
-  printTemplate: SheetTemplateId
+  templateId: SheetTemplateId
 }
 
 export const DEFAULT_SHEET_TEMPLATE_PREFERENCES: SheetTemplatePreferences = {
-  previewTemplate: 'classic',
-  printTemplate: 'classic',
+  templateId: 'classic',
 }
 
 export const SHEET_TEMPLATE_PREFERENCES_KEY = 'swade-sheet-template-preferences'
@@ -39,14 +37,10 @@ export function loadSheetTemplatePreferences(
   }
 
   const values = parsed as Record<string, unknown>
-  return {
-    previewTemplate: isSheetTemplateId(values.previewTemplate)
-      ? values.previewTemplate
-      : DEFAULT_SHEET_TEMPLATE_PREFERENCES.previewTemplate,
-    printTemplate: isSheetTemplateId(values.printTemplate)
-      ? values.printTemplate
-      : DEFAULT_SHEET_TEMPLATE_PREFERENCES.printTemplate,
-  }
+  if (isSheetTemplateId(values.templateId)) return { templateId: values.templateId }
+  if (isSheetTemplateId(values.previewTemplate)) return { templateId: values.previewTemplate }
+  if (isSheetTemplateId(values.printTemplate)) return { templateId: values.printTemplate }
+  return { ...DEFAULT_SHEET_TEMPLATE_PREFERENCES }
 }
 
 export function saveSheetTemplatePreferences(
