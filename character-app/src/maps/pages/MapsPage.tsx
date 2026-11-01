@@ -16,6 +16,7 @@ import {
   addMap,
   listWorldMaps,
   removeMap,
+  renameMap,
   resetMapGridSettings,
   rotateMap,
   updateMapGridSettings,
@@ -25,7 +26,7 @@ import { DEFAULT_MAP_GRID_SETTINGS } from '@/maps/types'
 import type { MapGridSettings, MapRotationDirection, MapZoomDirection } from '@/maps/types'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 
-type MapPageError = 'addFailed' | 'saveFailed' | 'removeFailed'
+type MapPageError = 'addFailed' | 'saveFailed' | 'removeFailed' | 'renameFailed'
 
 export function MapsPage() {
   const navigate = useNavigate()
@@ -214,6 +215,23 @@ export function MapsPage() {
     }
   }
 
+  async function renameSelectedMap(mapId: string, name: string): Promise<boolean> {
+    if (!activeWorld) return false
+    try {
+      await renameMap(activeWorld.id, mapId, name)
+      setMaps(current => current.map(item => (
+        item.map.id === mapId
+          ? { ...item, map: { ...item.map, name: name.trim() } }
+          : item
+      )))
+      setPageError(null)
+      return true
+    } catch {
+      setPageError({ worldId: activeWorld.id, key: 'renameFailed' })
+      return false
+    }
+  }
+
   if (!activeWorld) {
     return (
       <main className="flex h-full min-h-0 flex-col gap-5 overflow-y-auto bg-background p-6 text-foreground max-md:px-3.5 max-md:py-4">
@@ -298,6 +316,7 @@ export function MapsPage() {
           onRotate={direction => void rotateSelectedMap(direction)}
           onZoom={direction => void zoomSelectedMap(direction)}
           onRemoveMap={mapId => void removeSelectedMap(mapId)}
+          onRenameMap={renameSelectedMap}
         />
       </div>
     </main>

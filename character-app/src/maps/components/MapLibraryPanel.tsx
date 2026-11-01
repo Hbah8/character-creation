@@ -67,8 +67,11 @@ export function MapLibraryPanel({
                   alt=""
                   className="aspect-[4/3] w-full rounded-md border border-border object-cover"
                 />
-                <span className="min-w-0 w-full truncate px-1 text-sm" title={map.filename}>
-                  {map.filename}
+                <span
+                  className="min-w-0 w-full truncate px-1 text-sm"
+                  title={map.name?.trim() || map.filename}
+                >
+                  {map.name?.trim() || map.filename}
                 </span>
               </button>
             ))}

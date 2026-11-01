@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Expand, Grid2X2, MoreHorizontal, RotateCcw, RotateCw, Trash2, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { Expand, Grid2X2, MoreHorizontal, Pencil, RotateCcw, RotateCw, Trash2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useRef, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -15,6 +15,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -24,6 +33,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { MapGridSettingsPopover } from '@/maps/components/MapGridSettingsPopover'
 import type { MapListItem } from '@/maps/components/MapLibraryPanel'
 import { enterMapFullscreen, exitMapFullscreen } from '@/maps/services/mapFullscreenService'
@@ -44,6 +55,7 @@ interface MapViewerProps {
   onRotate: (direction: MapRotationDirection) => void
   onZoom: (direction: MapZoomDirection) => void
   onRemoveMap: (mapId: string) => void
+  onRenameMap: (mapId: string, name: string) => Promise<boolean>
 }
 
 function MapImage({
@@ -60,6 +72,7 @@ function MapImage({
   onPanChange: (offset: MapPanOffset) => void
 }) {
   const { map, imageUrl } = selectedMap
+  const mapName = map.name?.trim() || map.filename
   const displayZoom = fullscreen ? map.zoom ?? DEFAULT_MAP_ZOOM : DEFAULT_MAP_ZOOM
   const viewportRef = useRef<HTMLDivElement>(null)
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
@@ -177,7 +190,7 @@ function MapImage({
           >
             <img
               src={imageUrl}
-              alt={map.filename}
+              alt={mapName}
               className="size-full object-contain"
               draggable={false}
               onLoad={event => {
@@ -197,7 +210,7 @@ function MapImage({
       ) : (
         <img
           src={imageUrl}
-          alt={map.filename}
+          alt={mapName}
           draggable={false}
           className={fullscreen
             ? 'max-h-[calc(100dvh-2rem)] max-w-full object-contain'
@@ -220,6 +233,7 @@ export function MapViewer({
   onRotate,
   onZoom,
   onRemoveMap,
+  onRenameMap,
 }: MapViewerProps) {
   const { t } = useTranslation('maps')
   const fullscreenRef = useRef<HTMLElement>(null)
@@ -228,6 +242,9 @@ export function MapViewer({
   const [pan, setPan] = useState<MapPanOffset>({ x: 0, y: 0 })
   const [fullscreenFailed, setFullscreenFailed] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false)
+  const [mapNameDraft, setMapNameDraft] = useState('')
+  const [isRenaming, setIsRenaming] = useState(false)
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -250,6 +267,7 @@ export function MapViewer({
 
   const { map } = selectedMap
   const zoom = map.zoom ?? DEFAULT_MAP_ZOOM
+  const mapName = map.name?.trim() || map.filename
 
   async function toggleFullscreen(): Promise<void> {
     try {
@@ -261,6 +279,19 @@ export function MapViewer({
     }
   }
 
+  async function saveMapName(event: React.FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault()
+    const name = mapNameDraft.trim()
+    if (!name) return
+
+    setIsRenaming(true)
+    try {
+      if (await onRenameMap(map.id, name)) setIsRenameDialogOpen(false)
+    } finally {
+      setIsRenaming(false)
+    }
+  }
+
   return (
     <section
       ref={fullscreenRef}
@@ -268,9 +299,53 @@ export function MapViewer({
       style={isFullscreen ? { height: '100dvh', width: '100vw' } : undefined}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="min-w-0 flex-1 truncate text-sm font-medium" title={map.filename}>
-          {map.filename}
-        </span>
+        <div className="flex min-w-0 flex-1 items-center gap-1">
+          <span className="min-w-0 truncate text-sm font-medium" title={mapName}>
+            {mapName}
+          </span>
+          {!isFullscreen && (
+            <Dialog
+              open={isRenameDialogOpen}
+              onOpenChange={open => {
+                setIsRenameDialogOpen(open)
+                if (open) setMapNameDraft(mapName)
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label={t('renameMap')}>
+                  <Pencil />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <form className="flex flex-col gap-4" onSubmit={event => void saveMapName(event)}>
+                  <DialogHeader>
+                    <DialogTitle>{t('renameMapTitle')}</DialogTitle>
+                    <DialogDescription>{t('renameMapDescription')}</DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="map-name">{t('mapName')}</Label>
+                    <Input
+                      id="map-name"
+                      value={mapNameDraft}
+                      maxLength={120}
+                      required
+                      autoFocus
+                      onChange={event => setMapNameDraft(event.currentTarget.value)}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsRenameDialogOpen(false)}>
+                      {t('cancel')}
+                    </Button>
+                    <Button type="submit" disabled={isRenaming || !mapNameDraft.trim()}>
+                      {t('saveMapName')}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
         <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-1">
           {isFullscreen && (
             <>
@@ -363,7 +438,7 @@ export function MapViewer({
                 <AlertDialogHeader>
                   <AlertDialogTitle>{t('deleteMapTitle')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {t('deleteMapDescription', { filename: map.filename })}
+                    {t('deleteMapDescription', { filename: mapName })}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

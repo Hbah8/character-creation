@@ -167,6 +167,7 @@ describe('MapsPage', () => {
       map: {
         id: 'map-1',
         worldId: 'world-1',
+        name: 'Old Village',
         filename: 'village.png',
         mediaType: 'image/png',
         byteLength: 10,
@@ -185,9 +186,13 @@ describe('MapsPage', () => {
       onRotate: vi.fn(),
       onZoom: vi.fn(),
       onRemoveMap: vi.fn(),
+      onRenameMap: vi.fn().mockResolvedValue(true),
     }))
 
     expect(html).toContain('object-contain')
+    expect(html).toContain('Old Village')
+    expect(html).not.toContain('>village.png</span>')
+    expect(html).toContain('aria-label="Rename map"')
     expect(html).toContain('aria-label="Map actions"')
     expect(html).toContain('data-slot="dropdown-menu-trigger"')
     expect(html).not.toContain('aria-label="Delete village.png"')

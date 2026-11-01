@@ -78,6 +78,7 @@ export async function addMap(worldId: string, filename: string, image: Blob): Pr
   const map: StoredMap = {
     id: crypto.randomUUID(),
     worldId,
+    name: filename,
     filename,
     mediaType: image.type,
     byteLength: image.size,
@@ -109,6 +110,23 @@ export function getMap(worldId: string, mapId: string): Promise<StoredMap | unde
   return runTransaction<StoredMap | undefined>('readonly', (store, setResult) => {
     const request = store.get([worldId, mapId])
     request.onsuccess = () => setResult(request.result as StoredMap | undefined)
+  })
+}
+
+export async function renameMap(worldId: string, mapId: string, name: string): Promise<void> {
+  const trimmedName = name.trim()
+  if (!trimmedName) throw new Error('maps.storage.invalidName')
+
+  return runTransaction<void>('readwrite', store => {
+    const request = store.get([worldId, mapId])
+    request.onsuccess = () => {
+      const map = request.result as StoredMap | undefined
+      if (!map) {
+        store.transaction.abort()
+        return
+      }
+      store.put({ ...map, name: trimmedName })
+    }
   })
 }
 

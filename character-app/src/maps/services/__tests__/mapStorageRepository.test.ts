@@ -5,6 +5,7 @@ import {
   getMap,
   listWorldMaps,
   removeMap,
+  renameMap,
   resetMapGridSettings,
   rotateMap,
   zoomMap,
@@ -34,6 +35,29 @@ describe('mapStorageRepository', () => {
     })
     await expect(listWorldMaps('world-1')).resolves.toEqual([map])
     await expect(listWorldMaps('world-2')).resolves.toEqual([])
+  })
+
+  it('saves a human-readable name without changing the source filename or other maps', async () => {
+    const first = await addMap('world-1', 'random-id-8374.png', new Blob(['one']))
+    const second = await addMap('world-1', 'dungeon.png', new Blob(['two']))
+
+    await renameMap('world-1', first.id, ' Old Village ')
+
+    await expect(getMap('world-1', first.id)).resolves.toMatchObject({
+      filename: 'random-id-8374.png',
+      name: 'Old Village',
+    })
+    await expect(getMap('world-1', second.id)).resolves.toMatchObject({
+      filename: 'dungeon.png',
+      name: 'dungeon.png',
+    })
+  })
+
+  it('rejects an empty map name', async () => {
+    const map = await addMap('world-1', 'village.png', new Blob(['map']))
+
+    await expect(renameMap('world-1', map.id, '  ')).rejects.toThrow('maps.storage.invalidName')
+    await expect(getMap('world-1', map.id)).resolves.toMatchObject({ name: 'village.png' })
   })
 
   it('updates and resets only the selected map grid settings', async () => {

@@ -27,6 +27,7 @@ export type MapZoomDirection = 'in' | 'out'
 export interface StoredMap {
   id: string
   worldId: string
+  name?: string
   filename: string
   mediaType: string
   byteLength: number
