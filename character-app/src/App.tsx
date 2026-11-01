@@ -1,36 +1,73 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route, useLocation, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { DashboardPage } from '@/pages/DashboardPage'
-import { CharacterCreatorPage } from '@/pages/CharacterCreatorPage'
-import { CombatTrackerPage } from '@/combat/pages/CombatTrackerPage'
-import { WorldLibraryPage } from '@/world/pages/WorldLibraryPage'
-import { WorldBuilderPage } from '@/world/pages/WorldBuilderPage'
-import { HandbooksPage } from '@/handbooks/pages/HandbooksPage'
-import { RaceBuilderPage } from '@/racebuilder/pages/RaceBuilderPage'
-import { AudioSoundboardPage } from '@/audio/pages/AudioSoundboardPage'
-import { MapsPage } from '@/maps/pages/MapsPage'
-function App() {
+import { NotFoundPage } from '@/pages/NotFoundPage'
+import { RouteErrorBoundary } from '@/routing/RouteErrorBoundary'
+import { entityEditorKey } from '@/routing/routeKeys'
+
+const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(module => ({ default: module.DashboardPage })))
+const CharacterCreatorPage = lazy(() => import('@/pages/CharacterCreatorPage').then(module => ({ default: module.CharacterCreatorPage })))
+const CombatTrackerPage = lazy(() => import('@/combat/pages/CombatTrackerPage').then(module => ({ default: module.CombatTrackerPage })))
+const WorldLibraryPage = lazy(() => import('@/world/pages/WorldLibraryPage').then(module => ({ default: module.WorldLibraryPage })))
+const WorldBuilderPage = lazy(() => import('@/world/pages/WorldBuilderPage').then(module => ({ default: module.WorldBuilderPage })))
+const HandbooksPage = lazy(() => import('@/handbooks/pages/HandbooksPage').then(module => ({ default: module.HandbooksPage })))
+const RaceBuilderPage = lazy(() => import('@/racebuilder/pages/RaceBuilderPage').then(module => ({ default: module.RaceBuilderPage })))
+const RaceLibraryPage = lazy(() => import('@/racebuilder/pages/RaceLibraryPage').then(module => ({ default: module.RaceLibraryPage })))
+const AudioSoundboardPage = lazy(() => import('@/audio/pages/AudioSoundboardPage').then(module => ({ default: module.AudioSoundboardPage })))
+const MapsPage = lazy(() => import('@/maps/pages/MapsPage').then(module => ({ default: module.MapsPage })))
+
+function CharacterCreatorRoute() {
+  const { id } = useParams<{ id?: string }>()
+  return <CharacterCreatorPage key={entityEditorKey(id)} />
+}
+
+function WorldBuilderRoute() {
+  const { id } = useParams<{ id?: string }>()
+  return <WorldBuilderPage key={entityEditorKey(id)} />
+}
+
+function RaceBuilderRoute() {
+  const { raceId } = useParams<{ raceId?: string }>()
+  return <RaceBuilderPage key={entityEditorKey(raceId)} />
+}
+
+function AppRoutes() {
+  const { t } = useTranslation('navigation')
+  const location = useLocation()
+
   return (
-    <BrowserRouter basename="/character-creation">
-      <TooltipProvider>
+    <RouteErrorBoundary key={location.pathname}>
+      <Suspense fallback={<div className="p-6 text-sm text-muted-foreground" role="status">{t('loadingPage')}</div>}>
         <Routes>
           <Route element={<AppLayout />}>
             <Route index element={<DashboardPage />} />
             <Route path="combat" element={<CombatTrackerPage />} />
             <Route path="worlds" element={<WorldLibraryPage />} />
             <Route path="handbooks" element={<HandbooksPage />} />
-            <Route path="races" element={<RaceBuilderPage />} />
-            <Route path="races/new" element={<RaceBuilderPage mode="create" />} />
-            <Route path="races/:raceId" element={<RaceBuilderPage mode="edit" />} />
+            <Route path="races" element={<RaceLibraryPage />} />
+            <Route path="races/new" element={<RaceBuilderRoute />} />
+            <Route path="races/:raceId" element={<RaceBuilderRoute />} />
             <Route path="audio" element={<AudioSoundboardPage />} />
             <Route path="maps" element={<MapsPage />} />
           </Route>
-          <Route path="creator" element={<CharacterCreatorPage key="new" />} />
-          <Route path="creator/:id" element={<CharacterCreatorPage key="edit" />} />
-          <Route path="worlds/new" element={<WorldBuilderPage />} />
-          <Route path="worlds/:id" element={<WorldBuilderPage />} />
+          <Route path="creator" element={<CharacterCreatorRoute />} />
+          <Route path="creator/:id" element={<CharacterCreatorRoute />} />
+          <Route path="worlds/new" element={<WorldBuilderRoute />} />
+          <Route path="worlds/:id" element={<WorldBuilderRoute />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
+      </Suspense>
+    </RouteErrorBoundary>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <TooltipProvider>
+        <AppRoutes />
       </TooltipProvider>
     </BrowserRouter>
   )

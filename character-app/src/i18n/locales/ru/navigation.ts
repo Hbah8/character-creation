@@ -13,6 +13,16 @@ const navigation = {
   powers: 'Силы',
   audio: 'Аудио',
   maps: 'Карты',
+  loadingPage: 'Загрузка страницы…',
+  notFound: {
+    title: 'Страница не найдена',
+    description: 'Проверьте адрес или вернитесь к обзору приложения.',
+    backHome: 'На главную',
+  },
+  routeError: {
+    title: 'Не удалось отобразить страницу',
+    description: 'Произошла непредвиденная ошибка. Вернитесь к обзору и продолжите работу.',
+  },
 } as const
 
 export default navigation
