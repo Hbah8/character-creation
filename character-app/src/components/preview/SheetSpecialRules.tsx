@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
+import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
 import type { Character } from '@/types/character'
 
@@ -16,12 +17,12 @@ export function SheetSpecialRules({ character, variant = 'default' }: Props) {
       <div className="section-title">{t('sections.specialRules')}</div>
       <div className={variant === 'compact' ? 'list compact-special-rules-list' : 'list'}>
         {character.specialRules.map(rule => (
-          <div key={rule.id} className={variant === 'compact' ? 'item compact-special-rule' : 'item'}>
+          <div key={rule.id} className={variant === 'compact' ? 'item compact-special-rule compact-markerless-item' : 'item'}>
             <strong>{rule.name}</strong>
             {rule.description ? (
               <div className={variant === 'compact' ? 'item-description compact-special-rule-description' : 'item-description'}>
                 {variant === 'compact' ? ' ' : null}
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                   {rule.description}
                 </ReactMarkdown>
               </div>

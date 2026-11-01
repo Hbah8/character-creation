@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
+import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
 import type { Character } from '@/types/character'
 import type { ResolvedCombatStats } from '@/services/resolveEffectiveCharacter'
@@ -20,7 +21,7 @@ export function SheetNotes({ character, combat }: Props) {
         <SheetMarksContent combat={combat} />
         {character.notes && (
           <div className="markers-notes">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{character.notes}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{character.notes}</ReactMarkdown>
           </div>
         )}
       </div>

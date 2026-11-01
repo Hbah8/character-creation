@@ -498,13 +498,29 @@ button.qs-value:focus-visible {
 .markers-notes ul,
 .markers-notes ol,
 .list .item ul,
-.list .item ol {
+.list .item ol,
+.compact-notes-text ul,
+.compact-notes-text ol {
   margin: 0.5mm 0 1mm 3mm;
   padding-left: 3mm;
+  list-style-position: outside;
+}
+
+.markers-notes ul,
+.list .item ul,
+.compact-notes-text ul {
+  list-style-type: disc;
+}
+
+.markers-notes ol,
+.list .item ol,
+.compact-notes-text ol {
+  list-style-type: decimal;
 }
 
 .markers-notes li,
-.list .item li {
+.list .item li,
+.compact-notes-text li {
   margin-bottom: 0.5mm;
 }
 

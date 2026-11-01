@@ -3,17 +3,18 @@ import type { ResolvedCharacterEdge } from '@/handbooks/services/resolveCharacte
 
 interface Props {
   edges: ResolvedCharacterEdge[]
+  variant?: 'default' | 'compact'
 }
 
-export function SheetEdges({ edges }: Props) {
+export function SheetEdges({ edges, variant = 'default' }: Props) {
   const { t } = useTranslation('preview')
   if (edges.length === 0) return null
   return (
-    <section className="section">
+    <section className={variant === 'compact' ? 'section compact-edges' : 'section'}>
       <div className="section-title">{t('sections.edges')}</div>
-      <div className="list">
+      <div className={variant === 'compact' ? 'list compact-edges-list' : 'list'}>
         {edges.map(edge => (
-          <p key={edge.id} className="item">
+          <p key={edge.id} className={variant === 'compact' ? 'item compact-markerless-item' : 'item'}>
             <strong>{edge.name}</strong>
             {edge.description ? ` - ${edge.description}` : ''}
           </p>

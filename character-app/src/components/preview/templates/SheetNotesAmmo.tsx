@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
+import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
 import type { Character } from '@/types/character'
 import { getMagazineCapacity } from './ammunition'
@@ -43,7 +44,7 @@ export function SheetNotesAmmo({ character }: Props) {
         <div className="compact-notes-writing-area">
           {character.notes && (
             <div className="compact-notes-text">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{character.notes}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{character.notes}</ReactMarkdown>
             </div>
           )}
         </div>

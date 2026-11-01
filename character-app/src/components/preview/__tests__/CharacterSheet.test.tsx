@@ -71,11 +71,11 @@ describe('CharacterSheet', () => {
         source: {
           ...SOURCE_CHARACTER,
           gear: ['Medkit', 'Rations'],
-          notes: 'Background first line.\nSecond line.',
+          notes: 'Background first line.\nSecond line.\n\n1. First note\n2. **Second note**',
           specialRules: [{
             id: 'special-rule',
-            name: 'Suppressive fire',
-            description: 'Requires ammunition.',
+            name: 'Лазерный резак',
+            description: 'Имеет два режима:\n\n- Режет **металлические решётки** и листы.\n- Стрельба лазерными пучками на короткую дистанцию.',
           }],
           weapons: [
             {
@@ -100,8 +100,20 @@ describe('CharacterSheet', () => {
         },
         attributes: { agility: 'd8', strength: 'd6', smarts: 'd6', spirit: 'd6', vigor: 'd6' },
         skills: [],
-        edges: [],
-        hindrances: [],
+        edges: [{
+          id: 'compact-edge',
+          edgeId: 'bditelnost',
+          name: 'Vigilant',
+          description: 'Notice every detail.',
+          type: 'Background',
+          source: 'system',
+        }],
+        hindrances: [{
+          id: 'compact-hindrance',
+          name: 'Bad Eyes',
+          severity: 'minor',
+          description: 'Needs corrective lenses.',
+        }],
         modifierBreakdown: [],
         combat: {
           pace: 6,
@@ -133,8 +145,16 @@ describe('CharacterSheet', () => {
     expect(html).toContain('--ammo-width:96mm')
     expect(html).toContain('--ammo-width:32mm')
     expect(html).toContain('compact-gear-list')
+    expect(html.match(/compact-markerless-item/g)).toHaveLength(3)
+    expect(html).toContain('<p class="item">Medkit</p>')
     expect(html).toContain('quick-stats--compact')
     expect(html).toContain('compact-special-rule')
+    expect(html).toContain('Имеет два режима:')
+    expect(html).toContain('<ul>')
+    expect(html).toContain('<strong>металлические решётки</strong>')
+    expect(html).toContain('Background first line.<br/>')
+    expect(html).toContain('<ol>')
+    expect(html).toContain('<strong>Second note</strong>')
     expect(html).toContain('class="quick-stat quick-stat--power-points"')
     expect(html.match(/class="quick-stat(?: quick-stat--power-points)?"/g)).toHaveLength(6)
     expect(html).toContain('data-ammo-width="96mm"')

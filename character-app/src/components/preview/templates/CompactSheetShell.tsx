@@ -29,16 +29,16 @@ export function CompactSheetShell({ resolvedCharacter, layout, world }: SheetTem
         <section className="columns">
           <div className="column">
             {layout.weapons === 'left' && <SheetWeapons character={character} />}
-            {layout.edges === 'left' && <SheetEdges edges={edges} />}
-            {layout.hindrances === 'left' && <SheetHindrances hindrances={hindrances} />}
+            {layout.edges === 'left' && <SheetEdges edges={edges} variant="compact" />}
+            {layout.hindrances === 'left' && <SheetHindrances hindrances={hindrances} variant="compact" />}
             {layout.gear === 'left' && <SheetGear character={character} variant="compact" />}
             {layout.specialRules === 'left' && <SheetSpecialRules character={character} variant="compact" />}
             {layout.powers === 'left' && <SheetPowers character={character} />}
           </div>
           <div className="column">
             {layout.weapons === 'right' && <SheetWeapons character={character} />}
-            {layout.edges === 'right' && <SheetEdges edges={edges} />}
-            {layout.hindrances === 'right' && <SheetHindrances hindrances={hindrances} />}
+            {layout.edges === 'right' && <SheetEdges edges={edges} variant="compact" />}
+            {layout.hindrances === 'right' && <SheetHindrances hindrances={hindrances} variant="compact" />}
             {layout.gear === 'right' && <SheetGear character={character} variant="compact" />}
             {layout.specialRules === 'right' && <SheetSpecialRules character={character} variant="compact" />}
             {layout.powers === 'right' && <SheetPowers character={character} />}

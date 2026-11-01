@@ -329,27 +329,21 @@
   column-gap: 3mm;
 }
 
-.sheet--compact .compact-special-rule {
-  padding-left: 3.5mm;
-}
-
 .sheet--compact .compact-special-rule-description {
-  display: inline;
+  display: contents;
 }
 
-.sheet--compact .compact-special-rule-description p {
+.sheet--compact .compact-special-rule-description > p:first-child {
   display: inline;
   margin: 0;
 }
 
-.sheet--compact .compact-special-rule-description p::before {
+.sheet--compact .compact-special-rule-description > p:first-child::before {
   content: " — ";
 }
 
-.sheet--compact .compact-special-rule-description ul,
-.sheet--compact .compact-special-rule-description ol,
-.sheet--compact .compact-special-rule-description blockquote {
-  display: block;
+.sheet--compact .compact-special-rule-description > p:not(:first-child) {
+  margin: 0 0 1mm;
 }
 
 .sheet--compact .list {
@@ -365,6 +359,14 @@
 .sheet--compact .item strong {
   font-size: 8.8pt;
   font-weight: 700;
+}
+
+.sheet--compact .compact-markerless-item {
+  padding-left: 0;
+}
+
+.sheet--compact .compact-markerless-item::before {
+  display: none;
 }
 
 .sheet--compact .compact-notes-ammo-body {
@@ -425,9 +427,17 @@
   line-height: 1.2;
 }
 
-.sheet--compact .compact-notes-text p {
-  margin: 0;
+.sheet--compact .compact-notes-text > p {
+  margin: 0 0 1mm;
   line-height: inherit;
+}
+
+.sheet--compact .compact-notes-text > p:last-child {
+  margin-bottom: 0;
+}
+
+.sheet--compact .compact-notes-text li p {
+  margin: 0;
 }
 
 .sheet--compact .compact-notes-writing-area {
