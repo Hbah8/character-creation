@@ -94,6 +94,19 @@ function numberOrZero(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0
 }
 
+function normalizeCharacterLayout(value: unknown): CharacterLayout | undefined {
+  if (!isObject(value)) return undefined
+
+  const layout: Partial<CharacterLayout> = {}
+  const keys: (keyof CharacterLayout)[] = ['weapons', 'edges', 'hindrances', 'gear', 'specialRules', 'powers']
+  const sides: ColumnSide[] = ['left', 'right']
+  for (const key of keys) {
+    const side = value[key]
+    layout[key] = sides.includes(side as ColumnSide) ? side as ColumnSide : DEFAULT_LAYOUT[key]
+  }
+  return layout as CharacterLayout
+}
+
 function validateCombatModifiers(value: unknown): CombatModifier[] | undefined {
   if (!isArray(value)) return undefined
   return value.flatMap((item): CombatModifier[] => {
@@ -245,17 +258,15 @@ export function validateCharacterImport(raw: unknown, worldHandbook: readonly St
     throw new Error('validation.import.arcaneBackgroundWithoutMysticGift')
   }
 
-  const COLUMN_SIDES: ColumnSide[] = ['left', 'right']
-  const LAYOUT_KEYS: (keyof CharacterLayout)[] = ['weapons', 'edges', 'hindrances', 'gear', 'specialRules', 'powers']
-
-  let layout: CharacterLayout = { ...DEFAULT_LAYOUT }
-  if (isObject(raw.layout)) {
-    const partial: Partial<CharacterLayout> = {}
-    for (const key of LAYOUT_KEYS) {
-      const val = (raw.layout as Record<string, unknown>)[key]
-      partial[key] = COLUMN_SIDES.includes(val as ColumnSide) ? (val as ColumnSide) : DEFAULT_LAYOUT[key]
+  const layout = normalizeCharacterLayout(raw.layout) ?? { ...DEFAULT_LAYOUT }
+  let templateLayouts: Character['templateLayouts']
+  if (isObject(raw.templateLayouts)) {
+    const normalized: NonNullable<Character['templateLayouts']> = {}
+    for (const id of ['classic', 'compact'] as const) {
+      const templateLayout = normalizeCharacterLayout(raw.templateLayouts[id])
+      if (templateLayout) normalized[id] = templateLayout
     }
-    layout = partial as CharacterLayout
+    if (Object.keys(normalized).length > 0) templateLayouts = normalized
   }
 
   const powers: CharacterPower[] = isArray(raw.powers)
@@ -295,6 +306,7 @@ export function validateCharacterImport(raw: unknown, worldHandbook: readonly St
     isWildCard: raw.isWildCard,
     arcaneBackground,
     layout,
+    templateLayouts,
     powers,
     pace: isString(raw.pace) ? raw.pace : '',
     parry: isString(raw.parry) ? raw.parry : '',

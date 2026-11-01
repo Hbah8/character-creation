@@ -7,6 +7,9 @@ import { useCharacterLibrary } from '@/store/useCharacterLibrary'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import { CharacterSheet } from '@/components/preview/CharacterSheet'
 import type { ScaleMode } from '@/components/preview/CharacterSheet'
+import { SheetTemplateControls } from '@/components/preview/SheetTemplateControls'
+import { getSheetTemplate } from '@/components/preview/templates/sheetTemplateRegistry'
+import { resolveSheetLayout } from '@/components/preview/templates/sheetTemplateLayout'
 import { IdentityForm } from '@/components/form/IdentityForm'
 import { AttributesForm } from '@/components/form/AttributesForm'
 import { CombatForm } from '@/components/form/CombatForm'
@@ -49,10 +52,11 @@ import { resolveEdgeDefinitions } from '@/handbooks/services/resolveCharacterEdg
 import { encodeCharacterToHash, decodeCharacterFromHash, buildShareUrl } from '@/services/shareService'
 import type { Character, Edge, Skill } from '@/types/character'
 import { DEFAULT_LAYOUT } from '@/types/character'
-import type { ColumnSide } from '@/types/character'
+import type { ColumnSide, SheetTemplateId } from '@/types/character'
 import { detectInitialLocale, changeLocale } from '@/i18n/index'
 import { getDefaultCharacter } from '@/data/defaultCharacter'
 import type { Locale } from '@/i18n/types'
+import { loadSheetTemplatePreferences, saveSheetTemplatePreferences } from '@/services/sheetTemplatePreferences'
 
 const initialLocale = detectInitialLocale()
 
@@ -117,9 +121,14 @@ export function CharacterCreatorPage() {
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [activeSection, setActiveSection] = useState<string>('identity')
   const [scaleMode, setScaleMode] = useState<ScaleMode>('fit-width')
+  const [templatePreferences, setTemplatePreferences] = useState(loadSheetTemplatePreferences)
   const [pendingCharacterChange, setPendingCharacterChange] = useState<PendingCharacterChange | null>(null)
   const copyLinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const loadedIdRef = useRef<string | undefined>(undefined)
+  const printSheetRef = useRef<HTMLDivElement>(null)
+
+  const previewTemplate = templatePreferences.previewTemplate
+  const printTemplate = templatePreferences.printTemplate
 
   // Load character from library when navigating to /creator/:id
   useEffect(() => {
@@ -236,10 +245,34 @@ export function CharacterCreatorPage() {
   }
 
   function handleLayoutChange(block: keyof typeof DEFAULT_LAYOUT, col: ColumnSide) {
-    store.updateField('layout', { ...(character.layout ?? DEFAULT_LAYOUT), [block]: col })
+    const updatedLayout = { ...layout, [block]: col }
+    store.replaceCharacter({
+      ...character,
+      layout: previewTemplate === 'classic' ? updatedLayout : character.layout,
+      templateLayouts: {
+        ...character.templateLayouts,
+        [previewTemplate]: updatedLayout,
+      },
+    })
   }
 
-  const layout = character.layout ?? DEFAULT_LAYOUT
+  function handleTemplatePreferenceChange(key: 'previewTemplate' | 'printTemplate', template: SheetTemplateId) {
+    const updatedPreferences = { ...templatePreferences, [key]: template }
+    saveSheetTemplatePreferences(updatedPreferences)
+    setTemplatePreferences(updatedPreferences)
+  }
+
+  function handleExportPdf() {
+    const sheet = printSheetRef.current?.querySelector<HTMLElement>('.sheet')
+    if (!sheet) throw new Error('Print sheet is not mounted')
+    exportToPdf(sheet)
+  }
+
+  const layout = resolveSheetLayout(
+    character,
+    previewTemplate,
+    getSheetTemplate(previewTemplate).defaultLayout,
+  )
   const characterWorldHandbook = worldEntries.find(entry => entry.id === character.worldId)?.world.worldHandbook ?? []
   const edgeDefinitions = resolveEdgeDefinitions(characterWorldHandbook)
 
@@ -524,7 +557,7 @@ export function CharacterCreatorPage() {
             {tLibrary('save')}
           </Button>
           <ExportDropdown
-            onExportPdf={() => exportToPdf()}
+            onExportPdf={handleExportPdf}
             onExportJson={() => exportToJson(character)}
             onImportJson={handleImportJson}
             onCopyLink={handleCopyLink}
@@ -577,11 +610,17 @@ export function CharacterCreatorPage() {
 
         {/* Preview panel */}
         <div className="flex-1 min-w-0 flex flex-col min-h-0 print:flex print:w-full print:h-auto">
-          <div className="shrink-0 border-b flex items-center justify-between px-3 py-1.5 bg-background print:hidden">
+          <div className="shrink-0 border-b flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 bg-background print:hidden">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Eye className="size-3.5" />
               <span>{tHeader('previewLabel')}</span>
             </div>
+            <SheetTemplateControls
+              previewTemplate={previewTemplate}
+              printTemplate={printTemplate}
+              onPreviewTemplateChange={template => handleTemplatePreferenceChange('previewTemplate', template)}
+              onPrintTemplateChange={template => handleTemplatePreferenceChange('printTemplate', template)}
+            />
             <ToggleGroup
               type="single"
               size="sm"
@@ -594,7 +633,11 @@ export function CharacterCreatorPage() {
             </ToggleGroup>
           </div>
           <div className="flex-1 min-h-0 bg-[#d0d0d0] overflow-hidden print:overflow-visible">
-            <CharacterSheet resolvedCharacter={resolvedCharacter} scaleMode={scaleMode} />
+            <CharacterSheet
+              resolvedCharacter={resolvedCharacter}
+              scaleMode={scaleMode}
+              templateId={previewTemplate}
+            />
           </div>
         </div>
       </div>
@@ -620,7 +663,13 @@ export function CharacterCreatorPage() {
         <TabsContent value="preview" className="flex-1 min-h-0 flex flex-col mt-0">
           <div className="relative flex-1 bg-[#d0d0d0] overflow-y-auto overflow-x-hidden">
             <div className="sticky top-2 right-2 z-10 flex justify-end px-2 mb-[-32px] pointer-events-none print:hidden">
-              <div className="bg-background/90 backdrop-blur-sm border rounded-md px-1 py-0.5 shadow-sm pointer-events-auto">
+              <div className="bg-background/90 backdrop-blur-sm border rounded-md p-1.5 shadow-sm pointer-events-auto flex flex-col gap-1.5">
+                <SheetTemplateControls
+                  previewTemplate={previewTemplate}
+                  printTemplate={printTemplate}
+                  onPreviewTemplateChange={template => handleTemplatePreferenceChange('previewTemplate', template)}
+                  onPrintTemplateChange={template => handleTemplatePreferenceChange('printTemplate', template)}
+                />
                 <ToggleGroup
                   type="single"
                   size="sm"
@@ -633,10 +682,22 @@ export function CharacterCreatorPage() {
                 </ToggleGroup>
               </div>
             </div>
-            <CharacterSheet resolvedCharacter={resolvedCharacter} fitToContainer />
+            <CharacterSheet
+              resolvedCharacter={resolvedCharacter}
+              fitToContainer
+              templateId={previewTemplate}
+            />
           </div>
         </TabsContent>
       </Tabs>
+
+      <div ref={printSheetRef} className="sheet-print-source" aria-hidden="true">
+        <CharacterSheet
+          resolvedCharacter={resolvedCharacter}
+          templateId={printTemplate}
+          printMode
+        />
+      </div>
 
       <WelcomeDialog open={welcomeOpen} onClose={handleWelcomeClose} />
       <ImportErrorDialog

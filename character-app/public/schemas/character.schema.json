@@ -177,6 +177,10 @@
     "layout": {
       "$ref": "#/$defs/characterLayout",
       "description": "Column placement overrides for collections on the print sheet. Absent or null sections fall back to defaults."
+    },
+    "templateLayouts": {
+      "$ref": "#/$defs/templateLayouts",
+      "description": "Optional column placement overrides saved independently for each sheet template."
     }
   },
 
@@ -437,6 +441,20 @@
         },
         "powers": {
           "$ref": "#/$defs/columnSide"
+        }
+      },
+
+      "templateLayouts": {
+        "type": "object",
+        "description": "Per-template column placement overrides.",
+        "additionalProperties": false,
+        "properties": {
+          "classic": {
+            "$ref": "#/$defs/characterLayout"
+          },
+          "compact": {
+            "$ref": "#/$defs/characterLayout"
+          }
         }
       }
     }

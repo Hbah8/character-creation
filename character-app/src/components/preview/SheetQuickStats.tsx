@@ -7,9 +7,10 @@ import { SheetModifierOverlay } from './SheetModifierOverlay'
 interface Props {
   combat: ResolvedCombatStats
   modifierBreakdown?: ResolvedModifierBreakdown[]
+  variant?: 'default' | 'compact'
 }
 
-export function SheetQuickStats({ combat, modifierBreakdown = [] }: Props) {
+export function SheetQuickStats({ combat, modifierBreakdown = [], variant = 'default' }: Props) {
   const { t } = useTranslation('preview')
   const showCalculationLabel = t('quickStats.showCalculation')
   const paceModifiers = modifierBreakdown.filter(modifier => modifier.stat === 'pace')
@@ -28,7 +29,7 @@ export function SheetQuickStats({ combat, modifierBreakdown = [] }: Props) {
   const powerPointsBase = combat.powerPoints - powerPointModifiers.reduce((total, modifier) => total + modifier.amount, 0)
 
   return (
-    <div className="quick-stats">
+    <div className={variant === 'compact' ? 'quick-stats quick-stats--compact' : 'quick-stats'}>
       <div className="quick-stat">
         <span className="qs-label">{t('quickStats.pace')}</span>
         <Popover>
@@ -105,7 +106,7 @@ export function SheetQuickStats({ combat, modifierBreakdown = [] }: Props) {
           </PopoverContent>
         </Popover>
       </div>
-      {!!combat.size && (
+      {variant === 'default' && !!combat.size && (
         <>
           <span className="qs-sep">/</span>
           <div className="quick-stat">

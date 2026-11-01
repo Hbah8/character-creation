@@ -11,6 +11,7 @@ const preview = {
     specialRules: 'Special Rules',
     racialAbilities: 'Racial Abilities',
     notes: 'Notes',
+    notesAndAmmo: 'Notes · Ammunition',
   },
   header: {
     fileNoPrefix: 'File: ',
@@ -68,6 +69,7 @@ const preview = {
     wounds: 'Wounds',
     fatigue: 'Fatigue',
     tempEffects: 'Temporary Effects:',
+    ammunitionCapacity: '{{name}} ammunition capacity: {{capacity}}',
   },
   hindrances: {
     severityMinor: 'Minor',

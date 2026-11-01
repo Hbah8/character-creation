@@ -99,6 +99,7 @@ export interface CharacterPower {
 }
 
 export type ColumnSide = 'left' | 'right'
+export type SheetTemplateId = 'classic' | 'compact'
 
 export interface CharacterLayout {
   weapons: ColumnSide
@@ -184,4 +185,5 @@ export interface Character {
 
   // Layout
   layout?: CharacterLayout
+  templateLayouts?: Partial<Record<SheetTemplateId, CharacterLayout>>
 }

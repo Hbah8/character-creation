@@ -61,4 +61,79 @@ describe('CharacterSheet', () => {
     expect(html).toContain('Notice every detail.')
     expect(html).not.toContain('99')
   })
+
+  it('renders the compact shell with fixed marks and ammunition strips', async () => {
+    const i18n = (await import('@/i18n')).default
+    await i18n.changeLanguage('ru')
+
+    const html = renderToStaticMarkup(createElement(CharacterSheet, {
+      resolvedCharacter: {
+        source: {
+          ...SOURCE_CHARACTER,
+          gear: ['Medkit', 'Rations'],
+          specialRules: [{
+            id: 'special-rule',
+            name: 'Suppressive fire',
+            description: 'Requires ammunition.',
+          }],
+          weapons: [
+            {
+              id: 'rifle',
+              name: 'Sturmgewehr',
+              range: '24/48/96',
+              damage: '2d8+1',
+              ap: '2',
+              rof: '3',
+              magazine: '30',
+            },
+            {
+              id: 'pistol',
+              name: 'Pistole',
+              range: '12/24/48',
+              damage: '2d6',
+              ap: '1',
+              rof: '1',
+              magazine: '10',
+            },
+          ],
+        },
+        attributes: { agility: 'd8', strength: 'd6', smarts: 'd6', spirit: 'd6', vigor: 'd6' },
+        skills: [],
+        edges: [],
+        hindrances: [],
+        modifierBreakdown: [],
+        combat: {
+          pace: 6,
+          parry: 5,
+          toughness: 7,
+          armor: 2,
+          runningDie: 'd8',
+          size: 0,
+          bennies: 3,
+          maxWounds: 3,
+          maxFatigue: 2,
+          powerPoints: 0,
+        },
+      },
+      templateId: 'compact',
+      printMode: true,
+    }))
+
+    expect(html).toContain('sheet--compact')
+    expect(html).toContain('Отметки')
+    expect(html).toContain('Заметки · боеприпасы')
+    expect(html).toContain('Sturmgewehr')
+    expect(html).toContain('data-ammo-capacity="30"')
+    expect(html).toContain('--ammo-width:96mm')
+    expect(html).toContain('--ammo-width:32mm')
+    expect(html).toContain('compact-gear-list')
+    expect(html).toContain('quick-stats--compact')
+    expect(html).toContain('compact-special-rule')
+    expect(html.match(/class="quick-stat"/g)).toHaveLength(6)
+    expect(html).toContain('data-ammo-width="96mm"')
+    expect(html).toContain('data-ammo-width="32mm"')
+    expect(html).not.toContain('sheet-scale-wrapper')
+    expect(html).not.toContain('transform:')
+    expect(html).not.toContain('zoom:')
+  })
 })

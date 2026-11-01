@@ -32,10 +32,7 @@ export function exportToJson(character: Character): void {
   URL.revokeObjectURL(url)
 }
 
-export function exportToPdf(): void {
-  const sheet = document.querySelector<HTMLElement>('.sheet-outer-wrapper')
-  if (!sheet) return
-
+export function exportToPdf(sheet: HTMLElement): void {
   // Clone the sheet to a top-level element so nothing else in the DOM
   // (sidebar, header, form, dialogs) can bleed into the printed output.
   const printRoot = document.createElement('div')

@@ -11,6 +11,7 @@ const preview = {
     specialRules: 'Особые правила персонажа',
     racialAbilities: 'Расовые особенности',
     notes: 'Отметки',
+    notesAndAmmo: 'Заметки · боеприпасы',
   },
   header: {
     fileNoPrefix: 'Файл: ',
@@ -68,6 +69,7 @@ const preview = {
     wounds: 'Раны',
     fatigue: 'Усталость',
     tempEffects: 'Временные эффекты:',
+    ammunitionCapacity: 'Боезапас {{name}}: {{capacity}}',
   },
   hindrances: {
     severityMinor: 'М',

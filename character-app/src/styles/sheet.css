@@ -12,9 +12,26 @@
 
   .sheet-scale-wrapper {
     transform: none !important;
+    zoom: 1 !important;
     margin-bottom: 0 !important;
     width: 210mm !important;
   }
+
+  .sheet {
+    transform: none !important;
+    zoom: 1 !important;
+    width: 210mm !important;
+    margin: 0 !important;
+  }
+}
+
+.sheet-print-source {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 210mm;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 :root {

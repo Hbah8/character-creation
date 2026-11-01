@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { DEFAULT_LAYOUT } from '@/types/character'
 import { validateCharacterImport } from '../validateImport'
 
 // Minimal valid character without powers (legacy JSON shape)
@@ -109,5 +110,16 @@ describe('validateCharacterImport — powers backward compatibility', () => {
   it('preserves layout.powers: left when provided', () => {
     const result = validateCharacterImport({ ...BASE, layout: { powers: 'left' } })
     expect(result.layout?.powers).toBe('left')
+  })
+
+  it('normalizes and preserves a compact-specific layout independently from classic', () => {
+    const result = validateCharacterImport({
+      ...BASE,
+      layout: { weapons: 'right' },
+      templateLayouts: { compact: { edges: 'left' } },
+    })
+
+    expect(result.layout?.weapons).toBe('right')
+    expect(result.templateLayouts?.compact).toEqual({ ...DEFAULT_LAYOUT, edges: 'left' })
   })
 })

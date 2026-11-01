@@ -1,145 +1,115 @@
 import { useRef, useEffect, useState } from 'react'
-import { DEFAULT_LAYOUT } from '@/types/character'
+import type { SheetTemplateId } from '@/types/character'
 import type { ResolvedCharacter } from '@/services/resolveEffectiveCharacter'
 import '@/styles/sheet.css'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
-import { SheetHeader } from './SheetHeader'
-import { SheetQuickStats } from './SheetQuickStats'
-import { SheetAttributesSkills } from './SheetAttributesSkills'
-import { SheetEdges } from './SheetEdges'
-import { SheetHindrances } from './SheetHindrances'
-import { SheetWeapons } from './SheetWeapons'
-import { SheetGear } from './SheetGear'
-import { SheetSpecialRules } from './SheetSpecialRules'
-import { SheetPowers } from './SheetPowers'
-import { SheetNotes } from './SheetNotes'
-import { SheetRacialAbilities } from './SheetRacialAbilities'
+import { getSheetTemplate } from './templates/sheetTemplateRegistry'
+import { resolveSheetLayout } from './templates/sheetTemplateLayout'
 
-// A4 at 96dpi: 210mm = ~794px
 const SHEET_WIDTH_PX = 794
 
 export type ScaleMode = 'fit-width' | 'full-page' | '100%'
 
 interface Props {
   resolvedCharacter: ResolvedCharacter
-  /** Scale to fit both width and height of the container (mobile preview). Default: scale by width only. */
   fitToContainer?: boolean
-  /** Controls how the desktop preview scales. Default: 'fit-width'. Ignored when fitToContainer=true. */
   scaleMode?: ScaleMode
+  templateId?: SheetTemplateId
+  printMode?: boolean
 }
 
-export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scaleMode = 'fit-width' }: Props) {
+export function CharacterSheet({
+  resolvedCharacter,
+  fitToContainer = false,
+  scaleMode = 'fit-width',
+  templateId = 'classic',
+  printMode = false,
+}: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
   const [sheetHeight, setSheetHeight] = useState(0)
-  const { source: character, attributes, skills, edges, hindrances, combat, modifierBreakdown } = resolvedCharacter
-
+  const { source: character } = resolvedCharacter
   const { entries } = useWorldLibrary()
-  const world = entries.find(e => e.id === character.worldId)?.world ?? null
-  const race = character.raceId ? (world?.races.find(r => r.id === character.raceId) ?? null) : null
+  const world = entries.find(entry => entry.id === character.worldId)?.world ?? null
+  const template = getSheetTemplate(templateId)
+  const layout = resolveSheetLayout(character, template.id, template.defaultLayout)
+  const Shell = template.Shell
 
-  // fitToContainer mode: measure actual viewport width via visualViewport to avoid DOM layout
-  // jitter (e.g. iOS Safari address bar animation when tapping buttons) from triggering rescales.
-  // Non-fitToContainer mode: use ResizeObserver on the wrapper element as before.
   useEffect(() => {
+    if (printMode) return
+
     if (fitToContainer) {
       const update = () => {
-        const vv = window.visualViewport
-        const w = vv ? vv.width : window.innerWidth
-        const h = vv ? vv.height : window.innerHeight
-        setContainerSize({ width: w, height: h })
+        const viewport = window.visualViewport
+        const width = viewport ? viewport.width : window.innerWidth
+        const height = viewport ? viewport.height : window.innerHeight
+        setContainerSize({ width, height })
       }
       update()
-      const vv = window.visualViewport
-      const target: EventTarget = vv ?? window
+      const viewport = window.visualViewport
+      const target: EventTarget = viewport ?? window
       target.addEventListener('resize', update)
       return () => target.removeEventListener('resize', update)
     }
 
-    const el = wrapperRef.current
-    if (!el) return
-    let rafId: number
+    const element = wrapperRef.current
+    if (!element) return
+    let frameId: number
     const observer = new ResizeObserver(([entry]) => {
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
+      cancelAnimationFrame(frameId)
+      frameId = requestAnimationFrame(() => {
         const { width, height } = entry.contentRect
         setContainerSize({ width, height })
       })
     })
-    observer.observe(el)
-    return () => { observer.disconnect(); cancelAnimationFrame(rafId) }
-  }, [fitToContainer])
+    observer.observe(element)
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(frameId)
+    }
+  }, [fitToContainer, printMode])
 
   useEffect(() => {
-    const el = sheetRef.current
-    if (!el) return
-    const observer = new ResizeObserver(([entry]) => {
-      setSheetHeight(entry.contentRect.height)
-    })
-    observer.observe(el)
+    if (printMode) return
+    const element = sheetRef.current
+    if (!element) return
+    const observer = new ResizeObserver(([entry]) => setSheetHeight(entry.contentRect.height))
+    observer.observe(element)
     return () => observer.disconnect()
-  }, [])
+  }, [printMode])
 
   const widthScale = containerSize.width > 0 ? containerSize.width / SHEET_WIDTH_PX : 1
   const heightScale = containerSize.height > 0 && sheetHeight > 0 ? containerSize.height / sheetHeight : 1
-  // Never upscale beyond 100% — preview should match PDF size, only scale down for narrow containers
   const scale = scaleMode === '100%'
     ? 1
     : scaleMode === 'full-page'
-    ? Math.min(widthScale, heightScale, 1)
-    : Math.min(widthScale, 1)
-
-  // Compensate for blank layout space left by transform: scale() — only needed in scrollable mode
+      ? Math.min(widthScale, heightScale, 1)
+      : Math.min(widthScale, 1)
   const bottomCompensation = !fitToContainer && sheetHeight > 0 ? -sheetHeight * (1 - scale) : 0
 
-  // fitToContainer: use CSS zoom so the sheet is in document flow at the correct size.
-  // zoom affects layout (unlike transform: scale), so the container tracks the actual
-  // rendered size — no overflow, no clipping, no absolute positioning needed.
+  if (printMode) {
+    return <Shell resolvedCharacter={resolvedCharacter} layout={layout} world={world} />
+  }
+
+  const shell = (
+    <Shell
+      resolvedCharacter={resolvedCharacter}
+      layout={layout}
+      world={world}
+      mobile={fitToContainer && template.id === 'classic'}
+    />
+  )
+
   if (fitToContainer) {
-    const layout = character.layout ?? DEFAULT_LAYOUT
     return (
-      <div
-        ref={wrapperRef}
-        className="sheet-outer-wrapper"
-        style={{ width: '100%' }}
-      >
+      <div ref={wrapperRef} className="sheet-outer-wrapper" style={{ width: '100%' }}>
         <div
           ref={sheetRef}
           className="sheet-scale-wrapper"
-          style={{
-            zoom: scale,
-            width: SHEET_WIDTH_PX,
-            margin: '0 auto',
-          }}
+          style={{ zoom: scale, width: SHEET_WIDTH_PX, margin: '0 auto' }}
         >
-          <main className="sheet sheet--mobile">
-            <div className="content">
-              <SheetHeader character={character} />
-              <SheetQuickStats combat={combat} modifierBreakdown={modifierBreakdown} />
-              <section className="columns">
-                <div className="column">
-                  <SheetAttributesSkills skills={skills} attributes={attributes} />
-                  {layout.weapons === 'left' && <SheetWeapons character={character} />}
-                  {layout.edges === 'left' && <SheetEdges edges={edges} />}
-                  {layout.hindrances === 'left' && <SheetHindrances hindrances={hindrances} />}
-                  {layout.gear === 'left' && <SheetGear character={character} />}
-                  {layout.specialRules === 'left' && <SheetSpecialRules character={character} />}
-                  {layout.powers === 'left' && <SheetPowers character={character} />}
-                </div>
-                <div className="column">
-                  {layout.weapons === 'right' && <SheetWeapons character={character} />}
-                  {layout.edges === 'right' && <SheetEdges edges={edges} />}
-                  {layout.hindrances === 'right' && <SheetHindrances hindrances={hindrances} />}
-                  {layout.gear === 'right' && <SheetGear character={character} />}
-                  {layout.specialRules === 'right' && <SheetSpecialRules character={character} />}
-                  {layout.powers === 'right' && <SheetPowers character={character} />}
-                  <SheetRacialAbilities race={race} world={world} />
-                </div>
-              </section>
-              <SheetNotes character={character} combat={combat} />
-            </div>
-          </main>
+          {shell}
         </div>
       </div>
     )
@@ -170,40 +140,7 @@ export function CharacterSheet({ resolvedCharacter, fitToContainer = false, scal
           marginBottom: bottomCompensation,
         }}
       >
-        <main className="sheet">
-          <div className="content">
-            <SheetHeader character={character} />
-            <SheetQuickStats combat={combat} modifierBreakdown={modifierBreakdown} />
-            <section className="columns">
-              {(() => {
-                const layout = character.layout ?? DEFAULT_LAYOUT
-                return (
-                  <>
-                    <div className="column">
-                      <SheetAttributesSkills skills={skills} attributes={attributes} />
-                      {layout.weapons === 'left' && <SheetWeapons character={character} />}
-                      {layout.edges === 'left' && <SheetEdges edges={edges} />}
-                      {layout.hindrances === 'left' && <SheetHindrances hindrances={hindrances} />}
-                      {layout.gear === 'left' && <SheetGear character={character} />}
-                      {layout.specialRules === 'left' && <SheetSpecialRules character={character} />}
-                      {layout.powers === 'left' && <SheetPowers character={character} />}
-                    </div>
-                    <div className="column">
-                      {layout.weapons === 'right' && <SheetWeapons character={character} />}
-                      {layout.edges === 'right' && <SheetEdges edges={edges} />}
-                      {layout.hindrances === 'right' && <SheetHindrances hindrances={hindrances} />}
-                      {layout.gear === 'right' && <SheetGear character={character} />}
-                      {layout.specialRules === 'right' && <SheetSpecialRules character={character} />}
-                      {layout.powers === 'right' && <SheetPowers character={character} />}
-                      <SheetRacialAbilities race={race} world={world} />
-                    </div>
-                  </>
-                )
-              })()}
-            </section>
-            <SheetNotes character={character} combat={combat} />
-          </div>
-        </main>
+        {shell}
       </div>
     </div>
   )

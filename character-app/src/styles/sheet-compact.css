@@ -1,0 +1,441 @@
+.sheet--compact {
+  --page-bg: #efebe1;
+  --paper: #f7f5ef;
+  --ink: #191919;
+  --sheet-muted: #777;
+  --line: #444;
+  --red: #a00000;
+  --red-dark: #720000;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 6mm;
+  background: var(--page-bg);
+  font-size: 8pt;
+  line-height: 1.2;
+}
+
+.sheet--compact::after {
+  display: none;
+}
+
+.sheet--compact .content {
+  gap: 3mm;
+}
+
+.sheet--compact .compact-top {
+  display: grid;
+  grid-template-columns: 20mm 66mm minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: stretch;
+  min-height: 24mm;
+  border: 1.1pt solid var(--line);
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.sheet--compact .header {
+  display: contents;
+}
+
+.sheet--compact .titlebar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.sheet--compact .header-body {
+  display: contents;
+}
+
+.sheet--compact .portrait {
+  grid-column: 1;
+  grid-row: 2;
+  min-height: 17mm;
+  border-right: 0.7pt solid var(--line);
+}
+
+.sheet--compact .id-block {
+  grid-column: 2;
+  grid-row: 2;
+  padding: 2mm 3mm;
+  border-right: 0.7pt solid var(--line);
+}
+
+.sheet--compact .titlebar {
+  padding: 1.7mm 2.7mm;
+}
+
+.sheet--compact .titlebar .main-title {
+  font-size: 16pt;
+}
+
+.sheet--compact .id-callsign {
+  font-size: 15pt;
+}
+
+.sheet--compact .quick-stats {
+  grid-column: 3;
+  grid-row: 2;
+  align-self: stretch;
+  border: 0;
+  padding: 0;
+  gap: 0;
+}
+
+.sheet--compact .quick-stats--compact .quick-stat {
+  flex: 1 1 0;
+  justify-content: center;
+  min-width: 0;
+  height: 100%;
+  padding: 1mm 0.8mm;
+  border-left: 0.7pt solid var(--line);
+}
+
+.sheet--compact .qs-label {
+  font-size: 6.8pt;
+  white-space: nowrap;
+}
+
+.sheet--compact .qs-value {
+  font-size: 11pt;
+}
+
+.sheet--compact .quick-stats--compact .qs-sep {
+  display: none;
+}
+
+.sheet--compact .columns {
+  grid-template-columns: 0.92fr 1.08fr;
+  gap: 3mm;
+}
+
+.sheet--compact .column {
+  gap: 3mm;
+}
+
+.sheet--compact .section-title {
+  padding: 1.35mm 2mm 1.2mm;
+  font-size: 10.5pt;
+  line-height: 1.1;
+  letter-spacing: 0.4pt;
+}
+
+.sheet--compact .table th,
+.sheet--compact .table td {
+  padding: 1mm 1.2mm;
+}
+
+.sheet--compact .compact-attribute-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(24mm, 0.78fr);
+  grid-template-rows: 1fr 1fr;
+  min-height: 36mm;
+}
+
+.sheet--compact .compact-attribute-grid--has-derived-skills {
+  grid-template-rows: auto auto;
+  align-content: start;
+  min-height: 0;
+}
+
+.sheet--compact .compact-attribute-card {
+  min-width: 0;
+  display: block;
+  border-right: 0.7pt solid var(--line);
+  border-bottom: 0.7pt solid var(--line);
+}
+
+.sheet--compact .compact-attribute-card[data-attribute="agility"] {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.sheet--compact .compact-attribute-card[data-attribute="smarts"] {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.sheet--compact .compact-attribute-card[data-attribute="spirit"] {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  border-right: 0.7pt solid var(--line);
+}
+
+.sheet--compact .compact-attribute-card[data-attribute="strength"] {
+  grid-column: 4;
+  grid-row: 1;
+  border-right: 0;
+}
+
+.sheet--compact .compact-attribute-card[data-attribute="vigor"] {
+  grid-column: 4;
+  grid-row: 2;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.sheet--compact .compact-attribute-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5mm;
+  padding: 1.3mm 1.8mm 0.8mm;
+  font-family: var(--font-head);
+  font-size: 8pt;
+  font-weight: 700;
+  color: var(--red);
+  text-transform: uppercase;
+}
+
+.sheet--compact .compact-attribute-card[data-attribute="agility"] .compact-attribute-column,
+.sheet--compact .compact-attribute-card[data-attribute="smarts"] .compact-attribute-column,
+.sheet--compact .compact-attribute-card[data-attribute="spirit"] .compact-attribute-column {
+  height: 100%;
+}
+
+.sheet--compact .compact-attribute-heading strong {
+  color: var(--ink);
+  font-size: 9.5pt;
+}
+
+.sheet--compact .compact-attribute-skills {
+  padding: 0 1.8mm 1.3mm;
+}
+
+.sheet--compact .compact-attribute-skill-table {
+  width: 100%;
+}
+
+.sheet--compact .compact-skill-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5mm;
+  padding: 0.7mm 0;
+  border-top: 0.5pt solid rgba(30, 30, 30, 0.2);
+  font-size: 7.6pt;
+  line-height: 1.15;
+}
+
+.sheet--compact .compact-attribute-skill-table .compact-skill-row {
+  border-top: 0;
+  border-bottom: 0.6pt solid rgba(30, 30, 30, 0.28);
+}
+
+.sheet--compact .compact-skill-row strong {
+  flex: 0 0 auto;
+  font-family: var(--font-head);
+  font-weight: 700;
+}
+
+.sheet--compact .compact-attribute-card--derived .compact-attribute-column {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sheet--compact .compact-attribute-card--derived .compact-attribute-heading {
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5mm;
+  padding: 1mm;
+  text-align: center;
+}
+
+.sheet--compact .compact-attribute-card--derived .compact-attribute-heading strong {
+  font-size: 13pt;
+}
+
+.sheet--compact .compact-attribute-card--derived-with-skills .compact-attribute-column--derived {
+  display: block;
+  height: auto;
+}
+
+.sheet--compact .compact-attribute-card--derived-with-skills .compact-attribute-heading {
+  height: auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5mm;
+  padding: 1.3mm 1.8mm 0.8mm;
+  text-align: left;
+}
+
+.sheet--compact .compact-attribute-card--derived-with-skills .compact-attribute-heading strong {
+  font-size: 9.5pt;
+}
+
+.sheet--compact .compact-attribute-card--derived-with-skills .compact-attribute-skills {
+  padding-bottom: 1.3mm;
+}
+
+.sheet--compact .compact-marks-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2mm;
+  padding: 2mm 2.5mm;
+}
+
+.sheet--compact .markers-row {
+  gap: 1.5mm;
+}
+
+.sheet--compact .marker-label {
+  font-size: 7.2pt;
+}
+
+.sheet--compact .marker-box {
+  display: inline-flex;
+  flex: 0 0 4mm;
+  align-items: center;
+  justify-content: center;
+  width: 4mm;
+  height: 4mm;
+  border: 0.7pt solid var(--ink);
+  color: transparent;
+  font-size: 0;
+}
+
+.sheet--compact .marker-gap {
+  flex-basis: 3mm;
+}
+
+.sheet--compact .markers-effects {
+  gap: 1.5mm;
+  padding-top: 1.5mm;
+}
+
+.sheet--compact .marker-line {
+  height: 4mm;
+}
+
+.sheet--compact .compact-gear-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 3mm;
+}
+
+.sheet--compact .compact-special-rule {
+  padding-left: 3.5mm;
+}
+
+.sheet--compact .compact-special-rule-description {
+  display: inline;
+}
+
+.sheet--compact .compact-special-rule-description p {
+  display: inline;
+  margin: 0;
+}
+
+.sheet--compact .compact-special-rule-description p::before {
+  content: " — ";
+}
+
+.sheet--compact .compact-special-rule-description ul,
+.sheet--compact .compact-special-rule-description ol,
+.sheet--compact .compact-special-rule-description blockquote {
+  display: block;
+}
+
+.sheet--compact .list {
+  padding: 2mm 2.5mm;
+}
+
+.sheet--compact .item {
+  margin-bottom: 1.8mm;
+  font-size: 8pt;
+  line-height: 1.2;
+}
+
+.sheet--compact .item strong {
+  font-size: 8.8pt;
+  font-weight: 700;
+}
+
+.sheet--compact .compact-notes-ammo-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 2mm 2.5mm 2.3mm;
+}
+
+.sheet--compact .compact-notes-ammo {
+  display: flex;
+  flex: 1 0 48mm;
+  flex-direction: column;
+}
+
+.sheet--compact .compact-ammunition {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5mm;
+  padding-bottom: 2mm;
+  border-bottom: 0.7pt solid rgba(30, 30, 30, 0.25);
+}
+
+.sheet--compact .compact-ammunition-row {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  min-height: 5mm;
+  font-family: var(--font-head);
+  font-size: 7.2pt;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sheet--compact .compact-ammunition-label {
+  flex: 0 0 40mm;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheet--compact .compact-ammunition-track {
+  display: block;
+  flex: 0 1 auto;
+  width: var(--ammo-width);
+  max-width: calc(100% - 42mm);
+  height: 3.2mm;
+  border: 0.7pt solid var(--line);
+  background-image: linear-gradient(to right, var(--line) 0.6px, transparent 0.6px);
+  background-size: 3.2mm 100%;
+}
+
+.sheet--compact .compact-notes-text {
+  padding: 2mm 0;
+  font-size: 8pt;
+}
+
+.sheet--compact .compact-notes-text p {
+  margin: 0 0 1mm;
+}
+
+.sheet--compact .compact-notes-lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.sheet--compact .compact-notes-lines span {
+  flex: 1;
+  min-height: 3mm;
+  border-bottom: 0.6pt solid rgba(30, 30, 30, 0.25);
+}
+
+.sheet--compact .weapon-table th,
+.sheet--compact .weapon-table td {
+  border-right: 0;
+  padding: 1.3mm 0.9mm;
+  font-size: 7.4pt;
+}
+
+.sheet--compact .weapon-table th {
+  background: transparent;
+  font-size: 7pt;
+  border-bottom: 0.9pt solid var(--line);
+}
+
+.sheet--compact .weapon-table td:first-child {
+  font-weight: 700;
+}
