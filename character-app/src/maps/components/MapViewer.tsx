@@ -8,6 +8,9 @@ import { Toggle } from '@/components/ui/toggle'
 import { MapGridSettingsPopover } from '@/maps/components/MapGridSettingsPopover'
 import type { MapListItem } from '@/maps/components/MapLibraryPanel'
 import { enterMapFullscreen, exitMapFullscreen } from '@/maps/services/mapFullscreenService'
+import { clampMapPan } from '@/maps/services/mapPan'
+import type { MapPanOffset } from '@/maps/services/mapPan'
+import { cn } from '@/lib/utils'
 import {
   DEFAULT_MAP_ZOOM,
   MAX_MAP_ZOOM,
@@ -26,14 +29,21 @@ interface MapViewerProps {
 function MapImage({
   selectedMap,
   fullscreen = false,
+  interactive = false,
+  pan,
+  onPanChange,
 }: {
   selectedMap: MapListItem
   fullscreen?: boolean
+  interactive?: boolean
+  pan: MapPanOffset
+  onPanChange: (offset: MapPanOffset) => void
 }) {
   const { map, imageUrl } = selectedMap
   const viewportRef = useRef<HTMLDivElement>(null)
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
   const [imageInfo, setImageInfo] = useState<{ mapId: string, width: number, height: number } | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
   const imageSize = imageInfo?.mapId === map.id ? imageInfo : null
   const swapsDimensions = map.rotation === 90 || map.rotation === 270
   const availableWidth = swapsDimensions ? viewportSize.height : viewportSize.width
@@ -44,6 +54,26 @@ function MapImage({
   const scale = fitScale === undefined ? undefined : fitScale * (map.zoom ?? DEFAULT_MAP_ZOOM)
   const width = imageSize && scale !== undefined ? imageSize.width * scale : undefined
   const height = imageSize && scale !== undefined ? imageSize.height * scale : undefined
+  const imageBounds = width !== undefined && height !== undefined
+    ? {
+        width: swapsDimensions ? height : width,
+        height: swapsDimensions ? width : height,
+      }
+    : undefined
+  const canPan = Boolean(
+    interactive &&
+    imageBounds &&
+    (imageBounds.width > viewportSize.width || imageBounds.height > viewportSize.height),
+  )
+  const boundedPan = imageBounds
+    ? clampMapPan(pan, imageBounds, viewportSize)
+    : { x: 0, y: 0 }
+  const dragRef = useRef<{
+    pointerId: number
+    startX: number
+    startY: number
+    pan: MapPanOffset
+  } | null>(null)
   const gridStyle: React.CSSProperties = {
     backgroundImage: `linear-gradient(to right, ${map.gridSettings.color} 1px, transparent 1px), linear-gradient(to bottom, ${map.gridSettings.color} 1px, transparent 1px)`,
     backgroundSize: `${map.gridSettings.cellSize}px ${map.gridSettings.cellSize}px`,
@@ -60,19 +90,65 @@ function MapImage({
     return () => observer.disconnect()
   }, [])
 
+  function handlePointerDown(event: React.PointerEvent<HTMLDivElement>): void {
+    if (!canPan || event.button !== 0) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      pan: boundedPan,
+    }
+    setIsDragging(true)
+  }
+
+  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>): void {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId || !imageBounds) return
+    onPanChange(clampMapPan({
+      x: drag.pan.x + event.clientX - drag.startX,
+      y: drag.pan.y + event.clientY - drag.startY,
+    }, imageBounds, viewportSize))
+  }
+
+  function handlePointerEnd(event: React.PointerEvent<HTMLDivElement>): void {
+    if (dragRef.current?.pointerId !== event.pointerId) return
+    dragRef.current = null
+    setIsDragging(false)
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
   return (
-    <div ref={viewportRef} className="relative flex h-full w-full items-center justify-center overflow-hidden">
+    <div
+      ref={viewportRef}
+      className={cn(
+        'relative flex h-full w-full items-center justify-center overflow-hidden',
+        canPan && (isDragging ? 'cursor-grabbing touch-none' : 'cursor-grab touch-none'),
+      )}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+      onLostPointerCapture={event => {
+        if (dragRef.current?.pointerId === event.pointerId) {
+          dragRef.current = null
+          setIsDragging(false)
+        }
+      }}
+    >
       {width !== undefined && height !== undefined ? (
         <div
           className="relative shrink-0"
-          style={{
-            width: swapsDimensions ? height : width,
-            height: swapsDimensions ? width : height,
-          }}
+          style={imageBounds}
         >
           <div
-            className="absolute left-1/2 top-1/2"
+            className="absolute"
             style={{
+              left: `calc(50% + ${boundedPan.x}px)`,
+              top: `calc(50% + ${boundedPan.y}px)`,
               width,
               height,
               transform: `translate(-50%, -50%) rotate(${map.rotation}deg)`,
@@ -82,6 +158,7 @@ function MapImage({
               src={imageUrl}
               alt={map.filename}
               className="size-full object-contain"
+              draggable={false}
               onLoad={event => {
                 const image = event.currentTarget
                 setImageInfo({ mapId: map.id, width: image.naturalWidth, height: image.naturalHeight })
@@ -100,6 +177,7 @@ function MapImage({
         <img
           src={imageUrl}
           alt={map.filename}
+          draggable={false}
           className={fullscreen
             ? 'max-h-[calc(100dvh-2rem)] max-w-full object-contain'
             : 'max-h-[calc(100dvh-12rem)] max-w-full object-contain'}
@@ -127,6 +205,7 @@ export function MapViewer({
   const fullscreenRef = useRef<HTMLElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [fullscreenContainer, setFullscreenContainer] = useState<HTMLElement | null>(null)
+  const [pan, setPan] = useState<MapPanOffset>({ x: 0, y: 0 })
   const [fullscreenFailed, setFullscreenFailed] = useState(false)
 
   useEffect(() => {
@@ -134,6 +213,7 @@ export function MapViewer({
       const isMapFullscreen = document.fullscreenElement === fullscreenRef.current
       setIsFullscreen(isMapFullscreen)
       setFullscreenContainer(isMapFullscreen ? fullscreenRef.current : null)
+      if (!isMapFullscreen) setPan({ x: 0, y: 0 })
     }
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
@@ -237,7 +317,13 @@ export function MapViewer({
         </Alert>
       )}
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/20">
-        <MapImage selectedMap={selectedMap} fullscreen={isFullscreen} />
+        <MapImage
+          selectedMap={selectedMap}
+          fullscreen={isFullscreen}
+          interactive={isFullscreen}
+          pan={pan}
+          onPanChange={setPan}
+        />
       </div>
     </section>
   )
