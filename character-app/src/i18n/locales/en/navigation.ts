@@ -12,6 +12,7 @@ const navigation = {
   edit: 'Edit',
   powers: 'Powers',
   audio: 'Audio',
+  maps: 'Maps',
 } as const
 
 export default navigation

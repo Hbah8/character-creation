@@ -12,6 +12,7 @@ const navigation = {
   edit: 'Правка',
   powers: 'Силы',
   audio: 'Аудио',
+  maps: 'Карты',
 } as const
 
 export default navigation

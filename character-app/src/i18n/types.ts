@@ -14,6 +14,7 @@ import type enShare from './locales/en/share'
 import type enHandbooks from './locales/en/handbooks'
 import type enRaceBuilder from './locales/en/raceBuilder'
 import type enAudio from './locales/en/audio'
+import type enMaps from './locales/en/maps'
 
 declare module 'i18next' {
   interface CustomTypeOptions {
@@ -30,6 +31,7 @@ declare module 'i18next' {
       handbooks: typeof enHandbooks
       raceBuilder: typeof enRaceBuilder
       audio: typeof enAudio
+      maps: typeof enMaps
     }
   }
 }

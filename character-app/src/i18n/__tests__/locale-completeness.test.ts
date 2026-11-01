@@ -10,6 +10,7 @@ import enLibrary from '../locales/en/library'
 import enRaceBuilder from '../locales/en/raceBuilder'
 import enHandbooks from '../locales/en/handbooks'
 import enAudio from '../locales/en/audio'
+import enMaps from '../locales/en/maps'
 
 import ruCommon from '../locales/ru/common'
 import ruHeader from '../locales/ru/header'
@@ -21,6 +22,7 @@ import ruLibrary from '../locales/ru/library'
 import ruRaceBuilder from '../locales/ru/raceBuilder'
 import ruHandbooks from '../locales/ru/handbooks'
 import ruAudio from '../locales/ru/audio'
+import ruMaps from '../locales/ru/maps'
 
 type AnyObject = Record<string, unknown>
 
@@ -52,6 +54,7 @@ const namespaces: Array<[string, AnyObject, AnyObject]> = [
   ['raceBuilder', enRaceBuilder as AnyObject, ruRaceBuilder as AnyObject],
   ['handbooks', enHandbooks as AnyObject, ruHandbooks as AnyObject],
   ['audio', enAudio as AnyObject, ruAudio as AnyObject],
+  ['maps', enMaps as AnyObject, ruMaps as AnyObject],
 ]
 
 describe('locale completeness', () => {

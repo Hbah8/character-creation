@@ -9,6 +9,7 @@ import { WorldBuilderPage } from '@/world/pages/WorldBuilderPage'
 import { HandbooksPage } from '@/handbooks/pages/HandbooksPage'
 import { RaceBuilderPage } from '@/racebuilder/pages/RaceBuilderPage'
 import { AudioSoundboardPage } from '@/audio/pages/AudioSoundboardPage'
+import { MapsPage } from '@/maps/pages/MapsPage'
 function App() {
   return (
     <BrowserRouter basename="/character-creation">
@@ -23,6 +24,7 @@ function App() {
             <Route path="races/new" element={<RaceBuilderPage mode="create" />} />
             <Route path="races/:raceId" element={<RaceBuilderPage mode="edit" />} />
             <Route path="audio" element={<AudioSoundboardPage />} />
+            <Route path="maps" element={<MapsPage />} />
           </Route>
           <Route path="creator" element={<CharacterCreatorPage key="new" />} />
           <Route path="creator/:id" element={<CharacterCreatorPage key="edit" />} />
