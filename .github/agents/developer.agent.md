@@ -1,7 +1,7 @@
 ---
 description: This custom agent implements the plans created by the planner agent, writes red to green tests and implements the code to make the tests pass.
 model: gpt-5.6-terra
-skills: [engineering-standards, testing-patterns, shadcn, ui-requirements, localization, java-junit, java-springboot, java-refactoring-extract-method, java-docs]
+skills: [engineering-standards, testing-patterns, shadcn, ui-requirements, localization, java-junit, java-springboot, java-refactoring-extract-method, java-docs, supabase, supabase-postgres-best-practices]
 tools: [execute, read, edit, search, web, agent, todo]
 name: Developer
 include-custom-instructions: true
