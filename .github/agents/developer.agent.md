@@ -1,15 +1,11 @@
 ---
 description: This custom agent implements the plans created by the planner agent, writes red to green tests and implements the code to make the tests pass.
-model: GPT-5.6 Terra (copilot)
-agents: [agent, ui-requirements]
+model: gpt-5.6-terra
+skills: [engineering-standards, testing-patterns, shadcn, ui-requirements, localization, java-junit, java-springboot, java-refactoring-extract-method, java-docs]
 tools: [execute, read, edit, search, web, agent, todo]
 name: Developer
-handoffs:
-  - label: Return to Planner
-    agent: Planner
-    prompt: Update the plan based on implementation progress and any blockers encountered
-    send: true
-    model: GPT-5.6 Terra (copilot)
+include-custom-instructions: true
+target: github-copilot
 ---
 
 ## State Contract (MANDATORY)
