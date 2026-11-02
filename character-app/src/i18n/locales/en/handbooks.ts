@@ -113,6 +113,25 @@ const handbooks = {
     description: 'Description',
     damage: 'Damage',
     range: 'Range',
+    rangeType: 'Range type',
+    rangeTypes: {
+      none: 'No range',
+      bands: 'Distance bands',
+      melee: 'Melee reach',
+    },
+    shortRange: 'Short',
+    mediumRange: 'Medium',
+    longRange: 'Long',
+    extremeRange: 'Extreme range allowed',
+    reach: 'Reach',
+    areaTemplate: 'Area template',
+    areaTemplates: {
+      none: 'None',
+      cone: 'Cone',
+      small: 'Small',
+      medium: 'Medium',
+      large: 'Large',
+    },
     ap: 'AP',
     rof: 'RoF',
     weight: 'Weight',
@@ -125,11 +144,59 @@ const handbooks = {
     handling: 'Handling',
     points: 'Points',
     category: 'Category',
+    selectWeaponCategory: 'Select a weapon category',
+    unknownWeaponCategory: 'Category not specified',
     wildCardOnly: 'Wild Card Only',
     linkedAttribute: 'Linked attribute',
     coreSkill: 'Core skill',
     yes: 'Yes',
     no: 'No',
+  },
+  weaponsCatalog: {
+    knife: {
+      name: 'Knife',
+      description: 'A small blade suitable for cutting or close-quarters fighting.',
+    },
+    'short-sword': {
+      name: 'Short Sword',
+      description: 'A versatile one-handed blade. Standard sidearm for many warriors.',
+    },
+    'great-sword': {
+      name: 'Great Sword',
+      description: 'A massive two-handed sword requiring considerable strength to wield effectively.',
+    },
+    'hand-axe': {
+      name: 'Hand Axe',
+      description: 'A one-handed axe used in melee. Can also be thrown at close range.',
+    },
+    'short-bow': {
+      name: 'Short Bow',
+      description: 'A compact bow suitable for mounted use. Requires two hands to fire.',
+    },
+    pistol: {
+      name: 'Pistol (Semi-Auto)',
+      description: 'A standard semi-automatic handgun chambered in 9mm.',
+    },
+    rifle: {
+      name: 'Hunting Rifle',
+      description: 'A bolt-action rifle effective at long range.',
+    },
+    'throwing-knife': {
+      name: 'Throwing Knife',
+      description: 'A balanced knife designed for accurate throwing.',
+    },
+    javelin: {
+      name: 'Javelin',
+      description: 'A light spear designed for throwing, used since ancient times.',
+    },
+    unarmed: {
+      name: 'Unarmed Strike',
+      description: 'A basic punch, kick, or headbutt. Non-Wild Cards doing unarmed damage are considered Unarmed and can be Parried by a weapon.',
+    },
+    'brass-knuckles': {
+      name: 'Brass Knuckles',
+      description: 'Metal reinforcement worn over the knuckles, increasing the damage of unarmed strikes.',
+    },
   },
   modifiers: {
     title: 'Modifiers',

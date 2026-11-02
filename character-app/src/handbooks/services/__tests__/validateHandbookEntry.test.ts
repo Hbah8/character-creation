@@ -103,4 +103,116 @@ describe('validateHandbookEntry', () => {
       isCore: false,
     })).toThrow('validation.handbook.missingRequiredField')
   })
+
+  it('converts legacy weapon distance strings into structured ranges', () => {
+    const entry = validateHandbookEntry({
+      mode: 'custom',
+      id: 'legacy-rifle',
+      handbookCategory: 'weapon',
+      name: 'Legacy Rifle',
+      description: '',
+      category: 'Ranged',
+      damage: '2d8',
+      range: '24/48/96',
+    })
+
+    expect(entry).toMatchObject({
+      range: { type: 'bands', short: 24, medium: 48, long: 96 },
+    })
+  })
+
+  it('converts legacy melee range labels into reach ranges', () => {
+    const entry = validateHandbookEntry({
+      mode: 'custom',
+      id: 'legacy-melee',
+      handbookCategory: 'weapon',
+      name: 'Legacy Melee Weapon',
+      description: '',
+      category: 'Melee',
+      damage: 'Str+d4',
+      range: 'ближ.',
+    })
+
+    expect(entry).toMatchObject({ range: { type: 'melee' } })
+  })
+
+  it('accepts weapon ranges combined with an area template', () => {
+    const entry = validateHandbookEntry({
+      mode: 'custom',
+      id: 'grenade',
+      handbookCategory: 'weapon',
+      name: 'Grenade',
+      description: '',
+      category: 'Thrown',
+      damage: '3d6',
+      range: { type: 'bands', short: 5, medium: 10, long: 20 },
+      areaTemplate: 'small',
+    })
+
+    expect(entry).toMatchObject({
+      range: { type: 'bands', short: 5, medium: 10, long: 20 },
+      areaTemplate: 'small',
+    })
+  })
+
+  it('accepts cone as an area template alongside distance bands', () => {
+    const entry = validateHandbookEntry({
+      mode: 'custom',
+      id: 'flamethrower',
+      handbookCategory: 'weapon',
+      name: 'Flamethrower',
+      description: '',
+      category: 'Ranged',
+      damage: '3d6',
+      range: { type: 'bands', short: 6, medium: 6, long: 6 },
+      areaTemplate: 'cone',
+    })
+
+    expect(entry).toMatchObject({
+      range: { type: 'bands', short: 6, medium: 6, long: 6 },
+      areaTemplate: 'cone',
+    })
+  })
+
+  it('migrates the previous cone range representation to an area template', () => {
+    const entry = validateHandbookEntry({
+      mode: 'custom',
+      id: 'legacy-flamethrower',
+      handbookCategory: 'weapon',
+      name: 'Legacy Flamethrower',
+      description: '',
+      category: 'Ranged',
+      damage: '3d6',
+      range: { type: 'template', shape: 'cone' },
+    })
+
+    expect(entry).toMatchObject({ areaTemplate: 'cone' })
+    expect(entry).not.toHaveProperty('range')
+  })
+
+  it('rejects malformed weapon ranges', () => {
+    expect(() => validateHandbookEntry({
+      mode: 'custom',
+      id: 'invalid-range',
+      handbookCategory: 'weapon',
+      name: 'Invalid Range',
+      description: '',
+      category: 'Ranged',
+      damage: '2d6',
+      range: { type: 'bands', short: 12, medium: -1, long: 48 },
+    })).toThrow('validation.handbook.invalidRange')
+  })
+
+  it('rejects extreme range for thrown weapons', () => {
+    expect(() => validateHandbookEntry({
+      mode: 'custom',
+      id: 'extreme-throwing-knife',
+      handbookCategory: 'weapon',
+      name: 'Extreme Throwing Knife',
+      description: '',
+      category: 'Thrown',
+      damage: 'Str+d4',
+      range: { type: 'bands', short: 3, medium: 6, long: 12, extreme: true },
+    })).toThrow('validation.handbook.invalidRange')
+  })
 })

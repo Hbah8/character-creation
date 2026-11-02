@@ -1,4 +1,10 @@
-import type { ArcaneBackground, Rank } from '@/types/handbook'
+import type {
+  ArcaneBackground,
+  Rank,
+  WeaponAreaTemplate,
+  WeaponCategory,
+  WeaponRange,
+} from '@/types/handbook'
 
 // d12+1 and d12+2 represent above-maximum attribute values granted by racial bonuses.
 // The app hard-caps display at d12+2. These values are only used in the effective character
@@ -69,11 +75,15 @@ export interface ResolvedCharacterHindrance extends Hindrance {
 export interface Weapon {
   id: string
   name: string
-  range: string
+  range: string | WeaponRange
   damage: string
   ap: string
   rof: string
   magazine: string
+  category?: WeaponCategory
+  areaTemplate?: WeaponAreaTemplate
+  weight?: number
+  cost?: number
 }
 
 export interface SpecialRule {

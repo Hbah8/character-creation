@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import type { Character } from '@/types/character'
+import { formatWeaponRange } from '@/handbooks/utils/weaponRange'
 
 interface Props {
   character: Character
@@ -26,7 +27,16 @@ export function SheetWeapons({ character }: Props) {
           {character.weapons.map(w => (
             <tr key={w.id}>
               <td>{w.name}</td>
-              <td>{w.range}</td>
+              <td>
+                {formatWeaponRange(w.range, {
+                  melee: t('weapons.meleeRange'),
+                  reach: t('weapons.reach'),
+                  extreme: t('weapons.extremeRange'),
+                })}
+                {w.areaTemplate && (
+                  <div>{t(`weapons.areaTemplates.${w.areaTemplate}`)}</div>
+                )}
+              </td>
               <td>{w.damage}</td>
               <td>{w.ap}</td>
               <td>{w.rof}</td>

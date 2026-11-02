@@ -63,6 +63,15 @@ const preview = {
     columnAp: 'AP',
     columnRof: 'RoF',
     columnMag: 'Маг.',
+    meleeRange: 'Ближняя',
+    reach: 'Досягаемость',
+    extremeRange: 'Предельная дистанция',
+    areaTemplates: {
+      cone: 'Конус',
+      small: 'Малый',
+      medium: 'Средний',
+      large: 'Большой',
+    },
   },
   notes: {
     shock: 'Шок',

@@ -14,7 +14,9 @@ import {
 } from '@/components/ui/table'
 import { HandbookEntryDetail } from '@/handbooks/components/HandbookEntryDetail'
 import type { AnyHandbookEntry } from '@/handbooks/types'
-import type { HandbookSource, ResolvedEntry } from '@/types/handbook'
+import { isWeaponCategory, type HandbookSource, type ResolvedEntry } from '@/types/handbook'
+import { formatWeaponRange } from '@/handbooks/utils/weaponRange'
+import { WEAPON_CATEGORY_LABEL_KEYS } from '@/handbooks/utils/handbookTranslationKeys'
 import { isGear, isMount, isWeapon } from '@/handbooks/types'
 
 interface Props {
@@ -39,6 +41,8 @@ function useColumnHeaders(entries: AnyHandbookEntry[]) {
     t('fields.damage'),
     t('fields.range'),
     t('fields.ap'),
+    t('fields.rof'),
+    t('fields.weight'),
     t('fields.cost'),
   ]
   if (isGear(first)) return [
@@ -62,14 +66,32 @@ function useColumnHeaders(entries: AnyHandbookEntry[]) {
 function StatCells({ entry }: { entry: AnyHandbookEntry }) {
   const { t } = useTranslation('handbooks')
   if (isWeapon(entry)) {
+    const range = formatWeaponRange(entry.range, {
+      melee: t('fields.rangeTypes.melee'),
+      reach: t('fields.reach'),
+      extreme: t('fields.extremeRange'),
+    })
+    const areaTemplate = entry.areaTemplate
+      ? t(`fields.areaTemplates.${entry.areaTemplate}`)
+      : undefined
     return (
       <>
         <TableCell>
-          <Badge variant="outline" className="text-xs">{t(`enums.weaponCategory.${entry.category}`)}</Badge>
+          <Badge variant="outline" className="text-xs">
+            {isWeaponCategory(entry.category)
+              ? t(WEAPON_CATEGORY_LABEL_KEYS[entry.category])
+              : t('fields.unknownWeaponCategory')}
+          </Badge>
         </TableCell>
         <TableCell className="font-mono text-xs">{entry.damage}</TableCell>
-        <TableCell className="text-xs text-muted-foreground">{entry.range ?? '—'}</TableCell>
+        <TableCell className="text-xs text-muted-foreground">
+          {[range, areaTemplate].filter(Boolean).join(' · ') || '—'}
+        </TableCell>
         <TableCell className="text-xs text-muted-foreground">{entry.ap ?? '—'}</TableCell>
+        <TableCell className="text-xs text-muted-foreground">{entry.rof ?? '—'}</TableCell>
+        <TableCell className="text-xs text-muted-foreground">
+          {entry.weight != null ? `${entry.weight} lb` : '—'}
+        </TableCell>
         <TableCell className="text-xs text-muted-foreground">
           {entry.cost != null ? `$${entry.cost}` : '—'}
         </TableCell>
@@ -159,17 +181,17 @@ function DetailPanel({ entry, source, activeWorldName, onClose, onOverride, onEd
         <HandbookEntryDetail entry={entry} />
       </div>
       {activeWorldName && (
-        <div className="p-3 border-t flex gap-2">
+        <div className="p-3 border-t flex flex-col gap-2">
           {!isWorld ? (
-            <Button size="sm" variant="outline" onClick={onOverride}>
+            <Button size="sm" variant="outline" className="h-auto min-h-7 w-full justify-start whitespace-normal py-1 text-left" onClick={onOverride}>
               {t('actions.override')}
             </Button>
           ) : (
             <>
-              <Button size="sm" variant="outline" onClick={onEditOverride}>
+              <Button size="sm" variant="outline" className="h-auto min-h-7 w-full justify-start whitespace-normal py-1 text-left" onClick={onEditOverride}>
                 {t('actions.editOverride')}
               </Button>
-              <Button size="sm" variant="destructive" onClick={onDeleteOverride}>
+              <Button size="sm" variant="destructive" className="h-auto min-h-7 w-full justify-start whitespace-normal py-1 text-left" onClick={onDeleteOverride}>
                 {t('actions.deleteOverride')}
               </Button>
             </>

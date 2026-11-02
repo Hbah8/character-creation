@@ -5,6 +5,9 @@ import { SWADE_HINDRANCES } from '@/data/handbooks/hindrances'
 import { SWADE_SKILLS } from '@/data/handbooks/skills'
 import type { AnyHandbookEntry } from '@/handbooks/types'
 import type { EdgeRequirementCondition, HandbookModifier } from '@/types/handbook'
+import { isWeaponCategory } from '@/types/handbook'
+import { formatWeaponRange } from '@/handbooks/utils/weaponRange'
+import { WEAPON_CATEGORY_LABEL_KEYS } from '@/handbooks/utils/handbookTranslationKeys'
 import {
   isEdge,
   isGear,
@@ -175,16 +178,31 @@ export function HandbookEntryDetail({ entry, skillReferences = [] }: Props) {
   }
 
   if (isWeapon(entry)) {
+    const range = formatWeaponRange(entry.range, {
+      melee: t('fields.rangeTypes.melee'),
+      reach: t('fields.reach'),
+      extreme: t('fields.extremeRange'),
+    })
     return (
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         <span className="text-muted-foreground">{t('fields.category')}</span>
-        <span>{t(`enums.weaponCategory.${entry.category}`)}</span>
+        <span>
+          {isWeaponCategory(entry.category)
+            ? t(WEAPON_CATEGORY_LABEL_KEYS[entry.category])
+            : t('fields.unknownWeaponCategory')}
+        </span>
         <span className="text-muted-foreground">{t('fields.damage')}</span>
         <span>{entry.damage}</span>
-        {entry.range && (
+        {range && (
           <>
             <span className="text-muted-foreground">{t('fields.range')}</span>
-            <span>{entry.range}</span>
+            <span>{range}</span>
+          </>
+        )}
+        {entry.areaTemplate && (
+          <>
+            <span className="text-muted-foreground">{t('fields.areaTemplate')}</span>
+            <span>{t(`fields.areaTemplates.${entry.areaTemplate}`)}</span>
           </>
         )}
         {entry.ap !== undefined && (

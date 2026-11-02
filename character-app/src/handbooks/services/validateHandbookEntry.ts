@@ -10,7 +10,9 @@ import type {
   HandbookModifier,
   Rank,
   WorldHandbookEntry,
+  WeaponRange,
 } from '@/types/handbook'
+import { parseLegacyWeaponRange } from '@/handbooks/utils/weaponRange'
 
 const HANDBOOK_CATEGORIES: readonly HandbookCategory[] = [
   'edge', 'hindrance', 'skill', 'weapon', 'gear', 'power', 'mount', 'racialAbility',
@@ -119,6 +121,65 @@ function validateModifiers(raw: unknown): HandbookModifier[] | undefined {
   })
 }
 
+function validateWeaponRange(raw: unknown): WeaponRange | undefined {
+  if (raw === undefined || raw === null || raw === '') return undefined
+  if (typeof raw === 'string') return parseLegacyWeaponRange(raw)
+  if (!isObject(raw)) throw new Error('validation.handbook.invalidRange')
+
+  if (raw.type === 'bands') {
+    if (
+      [raw.short, raw.medium, raw.long].some(
+        distance => typeof distance !== 'number' || !Number.isFinite(distance) || distance <= 0,
+      )
+      || (raw.extreme !== undefined && typeof raw.extreme !== 'boolean')
+    ) {
+      throw new Error('validation.handbook.invalidRange')
+    }
+    return {
+      type: 'bands',
+      short: raw.short as number,
+      medium: raw.medium as number,
+      long: raw.long as number,
+      ...(raw.extreme === true ? { extreme: true } : {}),
+    }
+  }
+
+  if (raw.type === 'melee') {
+    if (raw.reach !== undefined && (
+      typeof raw.reach !== 'number' || !Number.isFinite(raw.reach) || raw.reach <= 0
+    )) {
+      throw new Error('validation.handbook.invalidRange')
+    }
+    return { type: 'melee', ...(raw.reach === undefined ? {} : { reach: raw.reach as number }) }
+  }
+
+  throw new Error('validation.handbook.invalidRange')
+}
+
+function validateWeaponFields(raw: Record<string, unknown>) {
+  const legacyConeRange = isObject(raw.range)
+    && raw.range.type === 'template'
+    && raw.range.shape === 'cone'
+  const range = legacyConeRange ? undefined : validateWeaponRange(raw.range)
+  if (raw.category === 'Thrown' && range?.type === 'bands' && range.extreme) {
+    throw new Error('validation.handbook.invalidRange')
+  }
+  const areaTemplate = raw.areaTemplate ?? (legacyConeRange ? 'cone' : undefined)
+  if (
+    areaTemplate !== undefined
+    && areaTemplate !== 'cone'
+    && areaTemplate !== 'small'
+    && areaTemplate !== 'medium'
+    && areaTemplate !== 'large'
+  ) {
+    throw new Error('validation.handbook.invalidAreaTemplate')
+  }
+  return {
+    ...(raw.range === undefined || legacyConeRange ? {} : { range }),
+    ...(areaTemplate === undefined ? {} : { areaTemplate }),
+  }
+}
+
 export function validateHandbookEntry(raw: unknown): WorldHandbookEntry {
   if (!isObject(raw)) throw new Error('validation.handbook.notAnObject')
   if (raw.mode !== 'custom' && raw.mode !== 'override') {
@@ -135,6 +196,13 @@ export function validateHandbookEntry(raw: unknown): WorldHandbookEntry {
   const requirements = raw.handbookCategory === 'edge'
     ? validateEdgeRequirements(raw.requirements)
     : undefined
+  const weaponFields = raw.handbookCategory === 'weapon' ? validateWeaponFields(raw) : {}
+  const isLegacyConeRange = raw.handbookCategory === 'weapon'
+    && isObject(raw.range)
+    && raw.range.type === 'template'
+    && raw.range.shape === 'cone'
+  const { range: _legacyRange, ...rawWithoutLegacyConeRange } = raw
+  const normalizedRaw = isLegacyConeRange ? rawWithoutLegacyConeRange : raw
   if (
     modifiers
     && raw.handbookCategory !== 'edge'
@@ -144,14 +212,14 @@ export function validateHandbookEntry(raw: unknown): WorldHandbookEntry {
     throw new Error('validation.handbook.modifiersNotSupported')
   }
   if (raw.mode === 'override') {
-    return { ...raw, modifiers, ...(requirements ? { requirements } : {}) } as WorldHandbookEntry
+    return { ...normalizedRaw, ...weaponFields, modifiers, ...(requirements ? { requirements } : {}) } as WorldHandbookEntry
   }
   if (typeof raw.name !== 'string' || typeof raw.description !== 'string') {
     throw new Error('validation.handbook.missingRequiredField')
   }
     validateCustomCategoryFields(raw)
 
-  return { ...raw, modifiers, ...(requirements ? { requirements } : {}) } as WorldHandbookEntry
+  return { ...normalizedRaw, ...weaponFields, modifiers, ...(requirements ? { requirements } : {}) } as WorldHandbookEntry
 }
 
   function isOneOf(value: unknown, values: readonly string[]): value is string {

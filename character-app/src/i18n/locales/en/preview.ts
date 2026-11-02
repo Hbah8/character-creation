@@ -63,6 +63,15 @@ const preview = {
     columnAp: 'AP',
     columnRof: 'RoF',
     columnMag: 'Mag.',
+    meleeRange: 'Melee',
+    reach: 'Reach',
+    extremeRange: 'Extreme range allowed',
+    areaTemplates: {
+      cone: 'Cone',
+      small: 'Small',
+      medium: 'Medium',
+      large: 'Large',
+    },
   },
   notes: {
     shock: 'Shock',

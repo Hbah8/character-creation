@@ -49,6 +49,10 @@ import { exportToJson, exportToPdf } from '@/services/exportService'
 import { importFromJson } from '@/services/importService'
 import { getDependentEdges, removeEdgeReference } from '@/services/characterEdgeService'
 import { resolveEdgeDefinitions } from '@/handbooks/services/resolveCharacterEdges'
+import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
+import { localizeStandardWeapon } from '@/handbooks/utils/localizeStandardWeapon'
+import { SWADE_WEAPONS } from '@/data/handbooks/weapons'
+import { createCharacterWeaponFromHandbook } from '@/services/characterWeaponService'
 import { encodeCharacterToHash, decodeCharacterFromHash, buildShareUrl } from '@/services/shareService'
 import type { Character, Edge, Skill } from '@/types/character'
 import { DEFAULT_LAYOUT } from '@/types/character'
@@ -107,6 +111,7 @@ export function CharacterCreatorPage() {
   const { t: tHeader } = useTranslation('header')
   const { t: tLibrary } = useTranslation('library')
   const { t: tForm } = useTranslation('form')
+  const { t: tHandbooks } = useTranslation('handbooks')
 
   const [importError, setImportError] = useState<string | null>(null)
   const [importWarnings, setImportWarnings] = useState<string[]>([])
@@ -273,7 +278,15 @@ export function CharacterCreatorPage() {
     getSheetTemplate(templateId).defaultLayout,
   )
   const characterWorldHandbook = worldEntries.find(entry => entry.id === character.worldId)?.world.worldHandbook ?? []
+  const availableWeapons = resolveHandbookEntries('weapon', characterWorldHandbook, [...SWADE_WEAPONS])
+    .map(weapon => localizeStandardWeapon(weapon, weapon.source, key => tHandbooks(key)))
   const edgeDefinitions = resolveEdgeDefinitions(characterWorldHandbook)
+
+  function handleAddWeaponFromHandbook(weaponId: string) {
+    const weapon = availableWeapons.find(entry => entry.id === weaponId)
+    if (!weapon) throw new Error(`Unknown handbook weapon: ${weaponId}`)
+    store.addWeapon(createCharacterWeaponFromHandbook(weapon, crypto.randomUUID()))
+  }
 
   function requestCharacterChange(nextCharacter: Character) {
     const dependentEdges = getDependentEdges(character, nextCharacter, edgeDefinitions)
@@ -405,7 +418,9 @@ export function CharacterCreatorPage() {
         return (
           <WeaponsForm
             weapons={character.weapons}
-            onAdd={store.addWeapon}
+            availableWeapons={availableWeapons}
+            onAdd={() => store.addWeapon()}
+            onAddFromHandbook={handleAddWeaponFromHandbook}
             onUpdate={store.updateWeapon}
             onRemove={store.removeWeapon}
             column={layout.weapons}

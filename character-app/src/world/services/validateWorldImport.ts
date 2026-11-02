@@ -25,6 +25,7 @@ import {
 } from '@/world/types'
 import type { HandbookCategory, HandbookOverride, StoredHandbookEntry } from '@/types/handbook'
 import { validateHandbookEntry } from '@/handbooks/services/validateHandbookEntry'
+import { parseLegacyWeaponRange } from '@/handbooks/utils/weaponRange'
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -131,7 +132,14 @@ function validateWorldHandbook(raw: unknown): StoredHandbookEntry[] {
     } else {
       if (!isString(item.id) || item.id.trim() === '') continue
       if (!isHandbookCategory(item.category)) continue
-      entry = item as HandbookOverride
+      entry = item.category === 'weapon' && typeof item.range === 'string'
+        ? {
+          ...item,
+          id: item.id,
+          category: 'weapon',
+          range: parseLegacyWeaponRange(item.range),
+        } as Extract<HandbookOverride, { category: 'weapon' }>
+        : item as HandbookOverride
     }
     const category = 'handbookCategory' in entry ? entry.handbookCategory : entry.category
     const identity = `${category}:${entry.id}`

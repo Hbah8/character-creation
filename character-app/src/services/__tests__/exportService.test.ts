@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createCharacterExportPayload } from '@/services/exportService'
+import { validateCharacterImport } from '@/services/validateImport'
 import type { Character } from '@/types/character'
 
 const character: Character = {
@@ -27,5 +28,25 @@ describe('createCharacterExportPayload', () => {
     expect(payload).not.toHaveProperty('fatigue')
     expect(payload).not.toHaveProperty('mana')
     expect(payload).not.toHaveProperty('importWarnings')
+  })
+
+  it('preserves a handbook weapon through JSON export and import', () => {
+    const weapon: Character['weapons'][number] = {
+      id: 'character-rifle',
+      name: 'Hunting Rifle',
+      range: { type: 'bands', short: 24, medium: 48, long: 96, extreme: true },
+      damage: '2d8',
+      ap: '2',
+      rof: '1',
+      magazine: '',
+      category: 'Ranged',
+      weight: 8,
+      cost: 500,
+    }
+
+    const exported = createCharacterExportPayload({ ...character, weapons: [weapon] })
+    const imported = validateCharacterImport(JSON.parse(JSON.stringify(exported)))
+
+    expect(imported.weapons).toEqual([weapon])
   })
 })

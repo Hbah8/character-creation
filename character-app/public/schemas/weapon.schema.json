@@ -2,6 +2,33 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "/character-creation/schemas/weapon.schema.json",
   "title": "SWADE Weapon Handbook Entry",
+  "$defs": {
+    "range": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "short", "medium", "long"],
+          "properties": {
+            "type": { "const": "bands" },
+            "short": { "type": "number", "exclusiveMinimum": 0 },
+            "medium": { "type": "number", "exclusiveMinimum": 0 },
+            "long": { "type": "number", "exclusiveMinimum": 0 },
+            "extreme": { "type": "boolean" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "melee" },
+            "reach": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        }
+      ]
+    }
+  },
   "oneOf": [
     {
       "type": "object", "additionalProperties": false,
@@ -9,8 +36,24 @@
       "properties": {
         "mode": { "const": "custom" }, "id": { "type": "string", "minLength": 1 }, "handbookCategory": { "const": "weapon" },
         "name": { "type": "string" }, "description": { "type": "string" }, "category": { "enum": ["Melee", "Ranged", "Thrown", "Unarmed"] },
-        "damage": { "type": "string" }, "range": { "type": "string" }, "ap": { "type": "number" }, "rof": { "type": "number" }, "weight": { "type": "number" }, "cost": { "type": "number" }
-      }
+        "damage": { "type": "string" }, "range": { "$ref": "#/$defs/range" }, "areaTemplate": { "enum": ["cone", "small", "medium", "large"] }, "ap": { "type": "number" }, "rof": { "type": "number" }, "weight": { "type": "number" }, "cost": { "type": "number" }
+      },
+      "allOf": [{
+        "if": { "properties": { "category": { "const": "Thrown" } }, "required": ["category"] },
+        "then": {
+          "properties": {
+            "range": {
+              "not": {
+                "properties": {
+                  "type": { "const": "bands" },
+                  "extreme": { "const": true }
+                },
+                "required": ["type", "extreme"]
+              }
+            }
+          }
+        }
+      }]
     },
     {
       "type": "object", "additionalProperties": false,
@@ -18,8 +61,24 @@
       "properties": {
         "mode": { "const": "override" }, "id": { "type": "string", "minLength": 1 }, "handbookCategory": { "const": "weapon" },
         "name": { "type": "string" }, "description": { "type": "string" }, "category": { "enum": ["Melee", "Ranged", "Thrown", "Unarmed"] },
-        "damage": { "type": "string" }, "range": { "type": "string" }, "ap": { "type": "number" }, "rof": { "type": "number" }, "weight": { "type": "number" }, "cost": { "type": "number" }
-      }
+        "damage": { "type": "string" }, "range": { "$ref": "#/$defs/range" }, "areaTemplate": { "enum": ["cone", "small", "medium", "large"] }, "ap": { "type": "number" }, "rof": { "type": "number" }, "weight": { "type": "number" }, "cost": { "type": "number" }
+      },
+      "allOf": [{
+        "if": { "properties": { "category": { "const": "Thrown" } }, "required": ["category"] },
+        "then": {
+          "properties": {
+            "range": {
+              "not": {
+                "properties": {
+                  "type": { "const": "bands" },
+                  "extreme": { "const": true }
+                },
+                "required": ["type", "extreme"]
+              }
+            }
+          }
+        }
+      }]
     }
   ]
 }

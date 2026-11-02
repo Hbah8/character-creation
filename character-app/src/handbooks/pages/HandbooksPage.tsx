@@ -14,6 +14,7 @@ import { HandbookFilterPanel } from '@/handbooks/components/HandbookFilterPanel'
 import { HandbookList } from '@/handbooks/components/HandbookList'
 import { HandbookStatList } from '@/handbooks/components/HandbookStatList'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
+import { localizeStandardWeapon } from '@/handbooks/utils/localizeStandardWeapon'
 import type { EdgeRequirementReferences } from '@/handbooks/components/EdgeRequirementsEditor'
 import {
   createEmptyHandbookFilters,
@@ -21,7 +22,7 @@ import {
   hasActiveHandbookFilters,
 } from '@/handbooks/utils/filterHandbookEntries'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
-import type { AnyHandbookEntry } from '@/handbooks/types'
+import { isWeapon, type AnyHandbookEntry } from '@/handbooks/types'
 import type { HandbookCategory, StoredHandbookEntry, WorldHandbookEntry } from '@/types/handbook'
 
 type TabLayout = 'cards' | 'stat'
@@ -144,7 +145,12 @@ export function HandbooksPage() {
           <div className="flex-1 min-h-0 overflow-hidden">
             {TABS.map(tab => {
               const resolved = resolveHandbookEntries(tab.category, worldHandbook, tab.entries)
-              const filtered = filterHandbookEntries(resolved, filters)
+              const displayEntries = tab.category === 'weapon'
+                ? resolved.map(entry => isWeapon(entry)
+                  ? localizeStandardWeapon(entry, entry.source, key => t(key))
+                  : entry)
+                : resolved
+              const filtered = filterHandbookEntries<AnyHandbookEntry>(displayEntries, filters)
               const hasActiveFilters = hasActiveHandbookFilters(filters)
 
               return (

@@ -17,6 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { computeOverrideDiff } from '@/handbooks/utils/computeOverrideDiff'
 import { buildHandbookEntry } from '@/handbooks/services/buildHandbookEntry'
 import { HandbookModifierFields } from '@/handbooks/components/HandbookModifierFields'
+import { parseLegacyWeaponRange } from '@/handbooks/utils/weaponRange'
 import {
   EdgeRequirementsEditor,
   type EdgeRequirementReferences,
@@ -42,6 +43,8 @@ import type {
   MountCategory,
   RacialAbilityType,
   WeaponCategory,
+  WeaponRange,
+  WeaponAreaTemplate,
   HandbookModifier,
   EdgeRequirements,
   AttributeKey,
@@ -138,6 +141,18 @@ const EDGE_TYPES: EdgeType[] = [
 ]
 const HINDRANCE_TYPES: HindranceType[] = ['Major', 'Minor']
 const WEAPON_CATEGORIES: WeaponCategory[] = ['Melee', 'Ranged', 'Thrown', 'Unarmed']
+const WEAPON_RANGE_TYPE_LABEL_KEYS = {
+  none: 'fields.rangeTypes.none',
+  bands: 'fields.rangeTypes.bands',
+  melee: 'fields.rangeTypes.melee',
+} as const
+const AREA_TEMPLATE_LABEL_KEYS = {
+  none: 'fields.areaTemplates.none',
+  cone: 'fields.areaTemplates.cone',
+  small: 'fields.areaTemplates.small',
+  medium: 'fields.areaTemplates.medium',
+  large: 'fields.areaTemplates.large',
+} as const
 const GEAR_CATEGORIES: GearCategory[] = ['Adventuring', 'Clothing', 'Food', 'Tools', 'Other']
 const MOUNT_CATEGORIES: MountCategory[] = ['animal', 'vehicle']
 const RACIAL_ABILITY_TYPES: RacialAbilityType[] = ['positive', 'negative']
@@ -217,21 +232,83 @@ function HindranceFields({ values, set }: { values: FormValues; set: (k: string,
 
 function WeaponFields({ values, set }: { values: FormValues; set: (k: string, v: unknown) => void }) {
   const { t } = useTranslation('handbooks')
+  const range = values.range as WeaponRange | undefined
+  const rangeType = range?.type ?? 'none'
+  const areaTemplate = (values.areaTemplate as WeaponAreaTemplate | undefined) ?? 'none'
+  const category = values.category as WeaponCategory
+
+  function setRangeType(type: string) {
+    if (type === 'none') {
+      set('range', undefined)
+    } else if (type === 'bands') {
+      set('range', { type, short: undefined, medium: undefined, long: undefined })
+    } else if (type === 'melee') {
+      set('range', { type })
+    }
+  }
+
+  function setBandDistance(key: 'short' | 'medium' | 'long', value: number | undefined) {
+    const bands = range?.type === 'bands'
+      ? range
+      : { type: 'bands' as const, short: undefined, medium: undefined, long: undefined }
+    set('range', { ...bands, [key]: value })
+  }
+
   return (
     <>
       <SelectField
         label={t('fields.category')}
-        value={(values.category as string) ?? WEAPON_CATEGORIES[0]}
-        options={WEAPON_CATEGORIES}
-        getLabel={v => t(WEAPON_CATEGORY_LABEL_KEYS[v as WeaponCategory])}
-        onChange={v => set('category', v)}
+        value={(values.category as string) ?? ''}
+        options={['', ...WEAPON_CATEGORIES]}
+        getLabel={v => v
+          ? t(WEAPON_CATEGORY_LABEL_KEYS[v as WeaponCategory])
+          : t('fields.selectWeaponCategory')}
+        onChange={v => {
+          set('category', v)
+          if (v === 'Thrown' && range?.type === 'bands' && range.extreme) {
+            set('range', { ...range, extreme: undefined })
+          }
+        }}
       />
       <FieldRow label={t('fields.damage')}>
         <Input value={(values.damage as string) ?? ''} onChange={e => set('damage', e.target.value)} />
       </FieldRow>
-      <FieldRow label={t('fields.range')}>
-        <Input value={(values.range as string) ?? ''} onChange={e => set('range', e.target.value || undefined)} />
-      </FieldRow>
+      <SelectField
+        label={t('fields.rangeType')}
+        value={rangeType}
+        options={Object.keys(WEAPON_RANGE_TYPE_LABEL_KEYS)}
+        getLabel={value => t(WEAPON_RANGE_TYPE_LABEL_KEYS[value as keyof typeof WEAPON_RANGE_TYPE_LABEL_KEYS])}
+        onChange={setRangeType}
+      />
+      {range?.type === 'bands' && (
+        <div className="grid grid-cols-3 gap-3">
+          <NumberField label={t('fields.shortRange')} value={range.short ?? ''} onChange={v => setBandDistance('short', v)} />
+          <NumberField label={t('fields.mediumRange')} value={range.medium ?? ''} onChange={v => setBandDistance('medium', v)} />
+          <NumberField label={t('fields.longRange')} value={range.long ?? ''} onChange={v => setBandDistance('long', v)} />
+        </div>
+      )}
+      {range?.type === 'bands' && category !== 'Thrown' && (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="weapon-extreme-range"
+            checked={range.extreme === true}
+            onCheckedChange={checked => set('range', { ...range, extreme: checked === true || undefined })}
+          />
+          <Label htmlFor="weapon-extreme-range" className="cursor-pointer text-xs">
+            {t('fields.extremeRange')}
+          </Label>
+        </div>
+      )}
+      {range?.type === 'melee' && (
+        <NumberField label={t('fields.reach')} value={range.reach ?? ''} onChange={reach => set('range', { ...range, reach })} />
+      )}
+      <SelectField
+        label={t('fields.areaTemplate')}
+        value={areaTemplate}
+        options={Object.keys(AREA_TEMPLATE_LABEL_KEYS)}
+        getLabel={value => t(AREA_TEMPLATE_LABEL_KEYS[value as keyof typeof AREA_TEMPLATE_LABEL_KEYS])}
+        onChange={value => set('areaTemplate', value === 'none' ? undefined : value)}
+      />
       <NumberField label={t('fields.ap')} value={(values.ap as number | '')} onChange={v => set('ap', v)} />
       <NumberField label={t('fields.rof')} value={(values.rof as number | '')} onChange={v => set('rof', v)} />
       <NumberField label={t('fields.weight')} value={(values.weight as number | '')} onChange={v => set('weight', v)} />
@@ -361,6 +438,9 @@ function buildInitialValues(
     const existingCategory = (baseEntry as { category?: string } | undefined)?.category
       ?? (existingOverride as { category?: string } | undefined)?.category
     if (existingCategory !== undefined) merged.category = existingCategory
+  }
+  if (category === 'weapon' && typeof merged.range === 'string') {
+    merged.range = parseLegacyWeaponRange(merged.range)
   }
 
   if (!baseEntry && !existingOverride) {

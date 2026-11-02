@@ -20,6 +20,18 @@ export type HindranceType = 'Major' | 'Minor'
 
 export type WeaponCategory = 'Melee' | 'Ranged' | 'Thrown' | 'Unarmed'
 
+const WEAPON_CATEGORIES: readonly WeaponCategory[] = ['Melee', 'Ranged', 'Thrown', 'Unarmed']
+
+export function isWeaponCategory(value: unknown): value is WeaponCategory {
+  return WEAPON_CATEGORIES.includes(value as WeaponCategory)
+}
+
+export type WeaponRange =
+  | { type: 'bands'; short: number; medium: number; long: number; extreme?: boolean }
+  | { type: 'melee'; reach?: number }
+
+export type WeaponAreaTemplate = 'cone' | 'small' | 'medium' | 'large'
+
 export type GearCategory = 'Adventuring' | 'Clothing' | 'Food' | 'Tools' | 'Other'
 
 export type MountCategory = 'animal' | 'vehicle'
@@ -125,7 +137,8 @@ export interface Hindrance extends HandbookEntry {
 export interface Weapon extends HandbookEntry {
   category: WeaponCategory
   damage: string
-  range?: string
+  range?: WeaponRange
+  areaTemplate?: WeaponAreaTemplate
   ap?: number
   rof?: number
   weight?: number

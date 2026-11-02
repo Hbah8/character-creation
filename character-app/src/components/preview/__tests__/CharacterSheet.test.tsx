@@ -81,11 +81,12 @@ describe('CharacterSheet', () => {
             {
               id: 'rifle',
               name: 'Sturmgewehr',
-              range: '24/48/96',
+              range: { type: 'bands', short: 24, medium: 48, long: 96, extreme: true },
               damage: '2d8+1',
               ap: '2',
               rof: '3',
               magazine: '30',
+              areaTemplate: 'cone',
             },
             {
               id: 'pistol',
@@ -141,6 +142,9 @@ describe('CharacterSheet', () => {
     expect(html).not.toContain('compact-notes-blank-lines')
     expect(html).not.toContain('compact-notes-lines')
     expect(html).toContain('Sturmgewehr')
+    expect(html).toContain('24/48/96 (Предельная дистанция)')
+    expect(html).toContain('Конус')
+    expect(html).not.toContain('[object Object]')
     expect(html).toContain('data-ammo-capacity="30"')
     expect(html).toContain('--ammo-width:96mm')
     expect(html).toContain('--ammo-width:32mm')

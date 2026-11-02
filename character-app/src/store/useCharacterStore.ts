@@ -58,12 +58,12 @@ export function useCharacterStore(initialCharacter?: Character) {
   }, [])
 
   // Weapons
-  const addWeapon = useCallback(() => {
+  const addWeapon = useCallback((weapon?: Weapon) => {
     setCharacter(prev => ({
       ...prev,
       weapons: [
         ...prev.weapons,
-        { id: crypto.randomUUID(), name: '', range: '', damage: '', ap: '', rof: '', magazine: '' } satisfies Weapon,
+        weapon ?? { id: crypto.randomUUID(), name: '', range: '', damage: '', ap: '', rof: '', magazine: '' } satisfies Weapon,
       ],
     }))
   }, [])

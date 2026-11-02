@@ -215,6 +215,23 @@ describe('validateWorldImport', () => {
       expect('category' in world.worldHandbook[0] && world.worldHandbook[0].category).toBe('edge')
     })
 
+    it('migrates legacy weapon distance strings while importing a world', () => {
+      const world = validateWorldImport({
+        ...validWorld(),
+        worldHandbook: [{
+          id: 'legacy-rifle',
+          category: 'weapon',
+          name: 'Legacy Rifle',
+          range: '24/48/96',
+        }],
+      })
+
+      expect(world.worldHandbook[0]).toMatchObject({
+        category: 'weapon',
+        range: { type: 'bands', short: 24, medium: 48, long: 96 },
+      })
+    })
+
     it('preserves an explicit custom handbook entry', () => {
       const world = validateWorldImport({
         ...validWorld(),

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
-import type { Edge, SkillDefinition } from '@/types/handbook'
+import type { Edge, SkillDefinition, Weapon } from '@/types/handbook'
 
 const systemEdges: Edge[] = [
   { id: 'level-headed', name: 'Level Headed', description: 'Draw two action cards, choose one.', type: 'Combat' },
@@ -9,6 +9,10 @@ const systemEdges: Edge[] = [
 
 const systemSkills: SkillDefinition[] = [
   { id: 'athletics', name: 'Athletics', description: 'Physical movement and exertion.', linkedAttribute: 'agility', isCore: true },
+]
+
+const systemWeapons: Weapon[] = [
+  { id: 'flamethrower', name: 'Flamethrower', description: '', category: 'Ranged', damage: '3d6' },
 ]
 
 describe('resolveHandbookEntries', () => {
@@ -142,5 +146,30 @@ describe('resolveHandbookEntries', () => {
       expect.objectContaining({
         id: 'spellcasting', source: 'world' }),
     ])
+  })
+
+  it('preserves weapon category when resolving a custom world weapon', () => {
+    const result = resolveHandbookEntries('weapon', [{
+      mode: 'custom',
+      id: 'world-flamethrower',
+      handbookCategory: 'weapon',
+      name: 'Flamethrower',
+      description: '',
+      category: 'Ranged',
+      damage: '3d6',
+    }], systemWeapons)
+
+    expect(result.find(entry => entry.id === 'world-flamethrower')?.category).toBe('Ranged')
+  })
+
+  it('preserves weapon category when resolving a system weapon override', () => {
+    const result = resolveHandbookEntries('weapon', [{
+      mode: 'override',
+      id: 'flamethrower',
+      handbookCategory: 'weapon',
+      category: 'Thrown',
+    }], systemWeapons)
+
+    expect(result[0].category).toBe('Thrown')
   })
 })

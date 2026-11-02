@@ -19,8 +19,9 @@ function getHandbookCategory(entry: StoredHandbookEntry): HandbookCategory {
 }
 
 function toEntryFields(entry: StoredHandbookEntry): object {
-  const { category: _category, handbookCategory: _handbookCategory, mode: _mode, ...fields } =
-    entry as unknown as Record<string, unknown>
+  const record = entry as unknown as Record<string, unknown>
+  const { handbookCategory: _handbookCategory, mode: _mode, ...fields } = record
+  if (!('handbookCategory' in record)) delete fields.category
   return fields
 }
 

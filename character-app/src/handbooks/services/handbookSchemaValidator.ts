@@ -62,6 +62,32 @@ const edgeSchema = {
   ],
 } as const
 
+const weaponRangeSchema = {
+  oneOf: [
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['type', 'short', 'medium', 'long'],
+      properties: {
+        type: { const: 'bands' },
+        short: { type: 'number', exclusiveMinimum: 0 },
+        medium: { type: 'number', exclusiveMinimum: 0 },
+        long: { type: 'number', exclusiveMinimum: 0 },
+        extreme: { type: 'boolean' },
+      },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['type'],
+      properties: {
+        type: { const: 'melee' },
+        reach: { type: 'number', exclusiveMinimum: 0 },
+      },
+    },
+  ],
+} as const
+
 const weaponSchema = {
   $id: '/character-creation/schemas/weapon.schema.json',
   oneOf: [
@@ -77,12 +103,29 @@ const weaponSchema = {
         description: { type: 'string' },
         category: { enum: ['Melee', 'Ranged', 'Thrown', 'Unarmed'] },
         damage: { type: 'string' },
-        range: { type: 'string' },
+        range: weaponRangeSchema,
+        areaTemplate: { enum: ['cone', 'small', 'medium', 'large'] },
         ap: { type: 'number' },
         rof: { type: 'number' },
         weight: { type: 'number' },
         cost: { type: 'number' },
       },
+      allOf: [{
+        if: { properties: { category: { const: 'Thrown' } }, required: ['category'] },
+        then: {
+          properties: {
+            range: {
+              not: {
+                properties: {
+                  type: { const: 'bands' },
+                  extreme: { const: true },
+                },
+                required: ['type', 'extreme'],
+              },
+            },
+          },
+        },
+      }],
     },
     {
       type: 'object',
@@ -96,12 +139,29 @@ const weaponSchema = {
         description: { type: 'string' },
         category: { enum: ['Melee', 'Ranged', 'Thrown', 'Unarmed'] },
         damage: { type: 'string' },
-        range: { type: 'string' },
+        range: weaponRangeSchema,
+        areaTemplate: { enum: ['cone', 'small', 'medium', 'large'] },
         ap: { type: 'number' },
         rof: { type: 'number' },
         weight: { type: 'number' },
         cost: { type: 'number' },
       },
+      allOf: [{
+        if: { properties: { category: { const: 'Thrown' } }, required: ['category'] },
+        then: {
+          properties: {
+            range: {
+              not: {
+                properties: {
+                  type: { const: 'bands' },
+                  extreme: { const: true },
+                },
+                required: ['type', 'extreme'],
+              },
+            },
+          },
+        },
+      }],
     },
   ],
 } as const

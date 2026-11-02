@@ -2,12 +2,17 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Weapon, ColumnSide } from '@/types/character'
+import type { Weapon as HandbookWeapon, WeaponAreaTemplate } from '@/types/handbook'
+import { formatWeaponRange } from '@/handbooks/utils/weaponRange'
 import { Trash2, Plus } from 'lucide-react'
 
 interface Props {
   weapons: Weapon[]
+  availableWeapons: readonly HandbookWeapon[]
   onAdd: () => void
+  onAddFromHandbook: (weaponId: string) => void
   onUpdate: (id: string, patch: Partial<Weapon>) => void
   onRemove: (id: string) => void
   column: ColumnSide
@@ -16,10 +21,22 @@ interface Props {
 
 type FormTKey = Parameters<ReturnType<typeof useTranslation<'form'>>['t']>[0]
 
-type WeaponCol = { key: keyof Weapon; labelKey: FormTKey; placeholderKey: FormTKey }
+type WeaponField = 'name' | 'range' | 'damage' | 'ap' | 'rof' | 'magazine'
+type WeaponCol = { key: WeaponField; labelKey: FormTKey; placeholderKey: FormTKey }
 
-export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove, column, onColumnChange }: Props) {
+export function WeaponsForm({ weapons, availableWeapons, onAdd, onAddFromHandbook, onUpdate, onRemove, column, onColumnChange }: Props) {
   const { t } = useTranslation('form')
+  const areaTemplateLabels: Record<WeaponAreaTemplate, string> = {
+    cone: t('weapons.areaTemplates.cone'),
+    small: t('weapons.areaTemplates.small'),
+    medium: t('weapons.areaTemplates.medium'),
+    large: t('weapons.areaTemplates.large'),
+  }
+  const rangeLabels = {
+    melee: t('weapons.meleeRange'),
+    reach: t('weapons.reach'),
+    extreme: t('weapons.extremeRange'),
+  }
 
   const COLUMNS: WeaponCol[] = [
     { key: 'name',     labelKey: 'weapons.columnName',     placeholderKey: 'weapons.weaponNamePlaceholder' },
@@ -32,13 +49,27 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove, column, onColu
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.weapons')}</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center rounded-md border overflow-hidden">
             <Button size="sm" variant={column === 'left' ? 'default' : 'ghost'} className="rounded-none h-7 px-2 text-xs" onClick={() => onColumnChange('left')}>←</Button>
             <Button size="sm" variant={column === 'right' ? 'default' : 'ghost'} className="rounded-none h-7 px-2 text-xs" onClick={() => onColumnChange('right')}>→</Button>
           </div>
+          {availableWeapons.length > 0 && (
+            <Select onValueChange={onAddFromHandbook}>
+              <SelectTrigger className="h-8 w-56 text-xs">
+                <SelectValue placeholder={t('weapons.selectFromHandbook')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {availableWeapons.map(weapon => (
+                    <SelectItem key={weapon.id} value={weapon.id}>{weapon.name}</SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          )}
           <Button size="sm" variant="outline" onClick={onAdd}>
             <Plus data-icon="inline-start" /> {t('weapons.addWeapon')}
           </Button>
@@ -62,7 +93,7 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove, column, onColu
             <div className="grid grid-cols-2 gap-2">
               <div className="flex flex-col gap-1">
                 <Label className="text-xs">{t('weapons.columnRange')}</Label>
-                <Input value={w.range} onChange={e => onUpdate(w.id, { range: e.target.value })} placeholder={t('weapons.rangePlaceholder')} />
+                <Input value={formatWeaponRange(w.range, rangeLabels) ?? ''} onChange={e => onUpdate(w.id, { range: e.target.value })} placeholder={t('weapons.rangePlaceholder')} />
               </div>
               <div className="flex flex-col gap-1">
                 <Label className="text-xs">{t('weapons.columnDamage')}</Label>
@@ -84,6 +115,11 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove, column, onColu
                 <Input value={w.magazine} onChange={e => onUpdate(w.id, { magazine: e.target.value })} placeholder={t('weapons.magPlaceholder')} />
               </div>
             </div>
+            {w.areaTemplate && (
+              <p className="text-xs text-muted-foreground">
+                {t('weapons.areaTemplate', { template: areaTemplateLabels[w.areaTemplate] })}
+              </p>
+            )}
             {/* Delete */}
             <div className="flex justify-end">
               <Button size="sm" variant="ghost" onClick={() => onRemove(w.id)} className="text-destructive hover:text-destructive">
@@ -107,18 +143,25 @@ export function WeaponsForm({ weapons, onAdd, onUpdate, onRemove, column, onColu
         </div>
 
         {weapons.map(w => (
-          <div key={w.id} className="grid grid-cols-[2fr_1.2fr_1.2fr_0.6fr_0.6fr_0.7fr_36px] gap-1.5 items-center">
-            {COLUMNS.map(c => (
-              <Input
-                key={c.key}
-                value={w[c.key]}
-                onChange={e => onUpdate(w.id, { [c.key]: e.target.value })}
-                placeholder={t(c.placeholderKey as never)}
-              />
-            ))}
-            <Button size="icon" variant="ghost" onClick={() => onRemove(w.id)} className="text-destructive hover:text-destructive" aria-label={t('weapons.removeWeapon')}>
-              <Trash2 />
-            </Button>
+          <div key={w.id} className="flex flex-col gap-1">
+            <div className="grid grid-cols-[2fr_1.2fr_1.2fr_0.6fr_0.6fr_0.7fr_36px] gap-1.5 items-center">
+              {COLUMNS.map(c => (
+                <Input
+                  key={c.key}
+                  value={c.key === 'range' ? formatWeaponRange(w.range, rangeLabels) ?? '' : w[c.key]}
+                  onChange={e => onUpdate(w.id, { [c.key]: e.target.value })}
+                  placeholder={t(c.placeholderKey as never)}
+                />
+              ))}
+              <Button size="icon" variant="ghost" onClick={() => onRemove(w.id)} className="text-destructive hover:text-destructive" aria-label={t('weapons.removeWeapon')}>
+                <Trash2 />
+              </Button>
+            </div>
+            {w.areaTemplate && (
+              <p className="pl-1 text-xs text-muted-foreground">
+                {t('weapons.areaTemplate', { template: areaTemplateLabels[w.areaTemplate] })}
+              </p>
+            )}
           </div>
         ))}
 

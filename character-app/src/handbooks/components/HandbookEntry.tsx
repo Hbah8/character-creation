@@ -12,7 +12,11 @@ import {
 } from '@/components/ui/sheet'
 import { HandbookEntryDetail } from '@/handbooks/components/HandbookEntryDetail'
 import { getEdgeRequirementRank } from '@/handbooks/utils/edgeRequirements'
+import { localizeStandardWeapon } from '@/handbooks/utils/localizeStandardWeapon'
+import { formatWeaponRange } from '@/handbooks/utils/weaponRange'
+import { WEAPON_CATEGORY_LABEL_KEYS } from '@/handbooks/utils/handbookTranslationKeys'
 import type { AnyHandbookEntry } from '@/handbooks/types'
+import { isWeaponCategory } from '@/types/handbook'
 import {
   isEdge,
   isGear,
@@ -67,12 +71,26 @@ function EntryTags({ entry }: Props) {
   }
 
   if (isWeapon(entry)) {
+    const range = formatWeaponRange(entry.range, {
+      melee: t('fields.rangeTypes.melee'),
+      reach: t('fields.reach'),
+      extreme: t('fields.extremeRange'),
+    })
     return (
       <div className="flex flex-wrap gap-1">
-        <Badge variant="outline">{t(`enums.weaponCategory.${entry.category}`)}</Badge>
+        <Badge variant="outline">
+          {isWeaponCategory(entry.category)
+            ? t(WEAPON_CATEGORY_LABEL_KEYS[entry.category])
+            : t('fields.unknownWeaponCategory')}
+        </Badge>
         <Badge variant="secondary">{t('fields.damage')}: {entry.damage}</Badge>
-        {entry.range && (
-          <Badge variant="secondary">{t('fields.range')}: {entry.range}</Badge>
+        {range && (
+          <Badge variant="secondary">{t('fields.range')}: {range}</Badge>
+        )}
+        {entry.areaTemplate && (
+          <Badge variant="secondary">
+            {t('fields.areaTemplate')}: {t(`fields.areaTemplates.${entry.areaTemplate}`)}
+          </Badge>
         )}
       </div>
     )
@@ -125,6 +143,9 @@ export function HandbookEntry({ entry, skillReferences, source, activeWorldName,
   const { t } = useTranslation('handbooks')
   const isWorld = source === 'world'
   const badgeLabel = isWorld && activeWorldName ? activeWorldName : t('badge.swade')
+  const displayEntry = isWeapon(entry)
+    ? localizeStandardWeapon(entry, source, key => t(key))
+    : entry
 
   return (
     <Sheet>
@@ -137,7 +158,7 @@ export function HandbookEntry({ entry, skillReferences, source, activeWorldName,
         >
           <CardHeader className="pb-0">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <span className="truncate">{entry.name}</span>
+              <span className="truncate">{displayEntry.name}</span>
               <Badge variant="secondary" className="shrink-0 text-xs">
                 {badgeLabel}
               </Badge>
@@ -146,7 +167,7 @@ export function HandbookEntry({ entry, skillReferences, source, activeWorldName,
           <CardContent>
             <EntryTags entry={entry} />
             <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
-              {entry.description}
+              {displayEntry.description}
             </p>
           </CardContent>
         </Card>
@@ -154,30 +175,30 @@ export function HandbookEntry({ entry, skillReferences, source, activeWorldName,
       <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md">
         <SheetHeader className="p-6 pb-4 border-b">
           <div className="flex items-center gap-2 pr-8">
-            <SheetTitle className="text-base">{entry.name}</SheetTitle>
+            <SheetTitle className="text-base">{displayEntry.name}</SheetTitle>
             <Badge variant="secondary" className="shrink-0 text-xs">
               {badgeLabel}
             </Badge>
           </div>
           <SheetDescription className="text-sm leading-relaxed">
-            {entry.description}
+            {displayEntry.description}
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto p-6">
           <HandbookEntryDetail entry={entry} skillReferences={skillReferences} />
         </div>
         {activeWorldName && (
-          <div className="p-4 border-t flex gap-2">
+          <div className="p-4 border-t flex flex-col gap-2">
             {!isWorld ? (
-              <Button size="sm" variant="outline" onClick={onOverride}>
+              <Button size="sm" variant="outline" className="h-auto min-h-7 w-full justify-start whitespace-normal py-1 text-left" onClick={onOverride}>
                 {t('actions.override')}
               </Button>
             ) : (
               <>
-                <Button size="sm" variant="outline" onClick={onEditOverride}>
+                <Button size="sm" variant="outline" className="h-auto min-h-7 w-full justify-start whitespace-normal py-1 text-left" onClick={onEditOverride}>
                   {t('actions.editOverride')}
                 </Button>
-                <Button size="sm" variant="destructive" onClick={onDeleteOverride}>
+                <Button size="sm" variant="destructive" className="h-auto min-h-7 w-full justify-start whitespace-normal py-1 text-left" onClick={onDeleteOverride}>
                   {t('actions.deleteOverride')}
                 </Button>
               </>
