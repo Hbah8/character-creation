@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, Globe2, LayoutDashboard, Map, Music2, ShieldIcon, Swords, Users } from 'lucide-react'
+import { Globe2 } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -19,17 +19,7 @@ import { WorldPicker } from '@/components/layout/WorldPicker'
 import { changeLocale } from '@/i18n'
 import type { Locale } from '@/i18n/types'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
-
-const NAV_ITEMS = [
-  { labelKey: 'overview', href: '/', icon: LayoutDashboard, requiresWorld: false },
-  { labelKey: 'characters', href: '/creator', icon: Users, requiresWorld: false },
-  { labelKey: 'worlds', href: '/worlds', icon: Globe2, requiresWorld: false },
-  { labelKey: 'combat', href: '/combat', icon: Swords, requiresWorld: false },
-  { labelKey: 'handbooks', href: '/handbooks', icon: BookOpen, requiresWorld: false },
-  { labelKey: 'raceBuilder', href: '/races', icon: ShieldIcon, requiresWorld: true },
-  { labelKey: 'audio', href: '/audio', icon: Music2, requiresWorld: true },
-  { labelKey: 'maps', href: '/maps', icon: Map, requiresWorld: true },
-] as const
+import { NAV_ITEMS } from '@/components/layout/navigationItems'
 
 export function AppSidebar() {
   const { pathname } = useLocation()
