@@ -3,12 +3,6 @@ description: Focused read-only analyst for SWADE equipment planning context.
 model: GPT-5.6 Terra (copilot)
 tools: [read, search, agent]
 name: SwadeEquipmentAnalyst
-handoffs:
-  - label: Return Domain Analysis
-    agent: Planner
-    prompt: Return DOMAIN_ANALYSIS to Planner
-    send: true
-    model: GPT-5.6 Terra (copilot)
 ---
 
 ## State Contract (MANDATORY)
