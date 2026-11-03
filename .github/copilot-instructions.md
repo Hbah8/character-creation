@@ -115,30 +115,15 @@ Do not run multiple commands in parallel. Do not spam similar commands.
 
 Read `docs/deployment.md` before working on infrastructure.
 
-### Connection
-
-- Connect as `deploy` using the local SSH alias `contabo-apps`.
-- Use the existing SSH agent. SSH configuration and credentials are
-  managed outside the repository.
-- Run SSH commands with `-o BatchMode=yes`.
-- If authentication fails, report the error instead of changing SSH settings.
-- Use `sudo` for administrative tasks. If a password is required,
-  ask the owner to complete that step interactively.
-
-Verify access:
-
-```shell
-ssh -o BatchMode=yes contabo-apps "whoami"
-```
-
-### Rules
-
-- The server hosts multiple applications. Consider the impact on other services.
-- Authorization to change code does not imply authorization to deploy it.
-- Do not modify SSH, firewall, or network settings unless explicitly requested.
-- Never read, print, copy, upload, or commit private keys, passwords,
-  passphrases, or tokens.
-- Update `docs/deployment.md` after making infrastructure changes.
+- Connect as `deploy` through `contabo-apps` with `-o BatchMode=yes`.
+- Docker is available to `deploy` without `sudo`; treat this access as
+  administrative and use it only for the documented application operations.
+- Use the existing GitHub-hosted Production workflow; do not build images,
+  run development services, or install a GitHub runner on the VPS.
+- Do not modify SSH, firewall, or other applications without explicit
+  authorization. Never expose or store credentials.
+- Keep operational detail in `docs/deployment.md` and update it after verified
+  infrastructure changes.
 
 ## Skills
 

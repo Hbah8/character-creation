@@ -111,6 +111,15 @@ Before running a new command, wait for the previous command's output. If command
 
 Do not run multiple commands in parallel. Do not spam similar commands.
 
+## Production deployment
+
+Read `docs/deployment.md` before infrastructure work. Connect as `deploy`
+through `contabo-apps` with `-o BatchMode=yes`; Docker is available without
+`sudo` and therefore grants administrative VPS access. Use the documented
+GitHub-hosted Production workflow, do not build images or run development
+services on the VPS, and do not change SSH, firewall, or other applications
+without explicit authorization.
+
 ## Skills
 
 The following agent skills are available under `.github/skills/`. Load the relevant SKILL.md before starting a task that falls in that domain.
