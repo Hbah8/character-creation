@@ -44,9 +44,12 @@ export function decodeCharacterFromHash(rawHash: string): DecodeResult {
 }
 
 export function buildShareUrl(hash: string): string {
+  const basePath = import.meta.env.BASE_URL.endsWith('/')
+    ? import.meta.env.BASE_URL
+    : `${import.meta.env.BASE_URL}/`
   return (
     window.location.origin +
-    '/character-creation/creator' +
+    `${basePath}creator` +
     '#' +
     hash
   )

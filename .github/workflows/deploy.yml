@@ -34,6 +34,12 @@ jobs:
         working-directory: character-app
         run: npm run check
 
+      - name: Build for GitHub Pages
+        working-directory: character-app
+        env:
+          VITE_BASE_PATH: /character-creation/
+        run: npm run build
+
       - name: Configure GitHub Pages SPA fallback
         run: cp character-app/dist/index.html character-app/dist/404.html
 

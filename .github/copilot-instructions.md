@@ -111,6 +111,35 @@ Before running a new command, wait for the previous command's output. If command
 
 Do not run multiple commands in parallel. Do not spam similar commands.
 
+## Deployment and VPS access
+
+Read `docs/deployment.md` before working on infrastructure.
+
+### Connection
+
+- Connect as `deploy` using the local SSH alias `contabo-apps`.
+- Use the existing SSH agent. SSH configuration and credentials are
+  managed outside the repository.
+- Run SSH commands with `-o BatchMode=yes`.
+- If authentication fails, report the error instead of changing SSH settings.
+- Use `sudo` for administrative tasks. If a password is required,
+  ask the owner to complete that step interactively.
+
+Verify access:
+
+```shell
+ssh -o BatchMode=yes contabo-apps "whoami"
+```
+
+### Rules
+
+- The server hosts multiple applications. Consider the impact on other services.
+- Authorization to change code does not imply authorization to deploy it.
+- Do not modify SSH, firewall, or network settings unless explicitly requested.
+- Never read, print, copy, upload, or commit private keys, passwords,
+  passphrases, or tokens.
+- Update `docs/deployment.md` after making infrastructure changes.
+
 ## Skills
 
 The following agent skills are available under `.github/skills/`. Load the relevant SKILL.md before starting a task that falls in that domain.
