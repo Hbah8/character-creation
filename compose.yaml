@@ -6,6 +6,11 @@ services:
     restart: unless-stopped
     ports:
       - "80:8080"
+      - "443:8443"
+    volumes:
+      - ./acme-webroot:/var/www/certbot:ro
+      - ./letsencrypt:/etc/letsencrypt:ro
+      - ./nginx-https:/etc/nginx/https-enabled:ro
     read_only: true
     tmpfs:
       - /var/cache/nginx
@@ -23,3 +28,15 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  certbot:
+    image: certbot/certbot:v5.4.0
+    profiles: ["certbot"]
+    volumes:
+      - ./acme-webroot:/var/www/certbot
+      - ./letsencrypt:/etc/letsencrypt
+      - ./letsencrypt-staging:/etc/letsencrypt-staging
+      - ./letsencrypt-work:/var/lib/letsencrypt
+      - ./letsencrypt-staging-work:/var/lib/letsencrypt-staging
+      - ./letsencrypt-log:/var/log/letsencrypt
+      - ./letsencrypt-staging-log:/var/log/letsencrypt-staging

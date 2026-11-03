@@ -24,3 +24,15 @@ swade-rules/
 characters/
 
 .codex/
+
+# Persistent VPS ACME data and operation state
+/acme-webroot/
+/letsencrypt/
+/letsencrypt-staging/
+/letsencrypt-work/
+/letsencrypt-staging-work/
+/letsencrypt-log/
+/letsencrypt-staging-log/
+/nginx-https/
+/.operation.lock
+/.deploy-staging/

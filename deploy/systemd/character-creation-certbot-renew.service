@@ -1,0 +1,12 @@
+[Unit]
+Description=Check and renew the character-creation IP certificate
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+WorkingDirectory=/opt/apps/character-creation
+ExecStart=/opt/apps/character-creation/renew-certificates.sh
+TimeoutStartSec=45min

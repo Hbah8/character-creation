@@ -1,6 +1,7 @@
 # Production deployment
 
-Last verified: 2026-11-04.
+Last verified: 2026-11-04 (current HTTP-only VPS state, before the HTTPS
+configuration changes below).
 
 ## Verified current state
 
@@ -46,12 +47,40 @@ on host port 80. There is no separate reverse proxy, backend, database,
 object storage, or GitHub Actions runner on the VPS.
 
 The Compose project creates the local bridge network
-`character-creation_default`. It currently contains only `web`. There are no
-named volumes or bind mounts. Browser data is not mounted into the container.
+`character-creation_default`. It currently contains only `web`. The deployed
+HTTP-only Compose version has no named volumes or bind mounts. Browser data
+is never mounted into the container.
 
 The service uses `restart: unless-stopped`, a Docker healthcheck, a read-only
 container filesystem with temporary Nginx paths, `no-new-privileges`, and the
 Docker `local` logging driver with three 10 MB log files.
+
+The HTTPS configuration adds persistent host directories under
+`/opt/apps/character-creation`:
+
+| Host path | Use |
+|---|---|
+| `acme-webroot/` | HTTP-01 challenge files; shared with Nginx read-only |
+| `letsencrypt/` | Production Certbot account, renewal config, live/archive certificate symlinks, and private keys |
+| `letsencrypt-staging/` | Isolated staging account and test certificate state; never mounted into Nginx |
+| `letsencrypt-work/`, `letsencrypt-log/` | Production Certbot work data and logs |
+| `letsencrypt-staging-work/`, `letsencrypt-staging-log/` | Staging work data and logs |
+| `nginx-https/` | Optional HTTPS server config; remains empty until production certificate issuance succeeds |
+
+These are bind mounts outside the image and Git. Nginx mounts the production
+certificate tree read-only, including `archive/` so `live/` symlinks resolve.
+The Certbot container has no Docker socket. It is invoked on demand by host
+scripts and runs only while Compose is explicitly asked to run `certbot`.
+Nginx includes HTTPS configuration only when a file exists in
+`nginx-https/`, so the initial HTTP-only startup does not reference missing
+certificate files.
+
+The HTTP server serves `/.well-known/acme-challenge/` from the webroot with
+404 for absent challenge files; the path is excluded from SPA fallback. Both
+HTTP and HTTPS serve the app, `/healthz`, and SPA routes. Port 443 is published
+as container port 8443. HTTP-to-HTTPS redirection is intentionally not enabled
+yet, pending confirmation that browser data has been exported or is not
+needed.
 
 ### Data and updates
 
@@ -64,13 +93,16 @@ The application is a static client-side SPA:
 
 Consequently, a container recreation or image update preserves no
 server-side user data because none exists. Browser data remains on the
-specific browser and origin. It is not shared between GitHub Pages and
-`http://13.140.206.57`.
+specific browser and origin. It is not shared between GitHub Pages,
+`http://13.140.206.57`, and `https://13.140.206.57`; HTTP and HTTPS are
+different browser origins, including for `localStorage` and IndexedDB.
 
-Before moving users from GitHub Pages, export characters and worlds in the UI
-and import them at the VPS URL. Maps require re-import, and local audio file
-bindings require re-selection. This limitation remains until a backend and
-server-side storage are explicitly introduced.
+Before moving browser data from HTTP to HTTPS, export characters and worlds
+from `http://13.140.206.57` and import them at `https://13.140.206.57`. Keep
+HTTP serving the app until the owner confirms export is complete or that
+transfer is not needed. Maps require re-import, and local audio file bindings
+require re-selection. HTTPS setup and certificate renewal do not remove or
+redirect the old HTTP origin.
 
 ## CI/CD
 
@@ -93,10 +125,13 @@ For push and manual runs the sequence is:
 2. `publish`: the GitHub-hosted runner builds the root
    [Dockerfile](../Dockerfile) and pushes
    `ghcr.io/hbah8/character-creation:<full-git-sha>`.
-3. `deploy`: the runner verifies the VPS host key, uploads
-   [compose.yaml](../compose.yaml) and [deploy.sh](../deploy/deploy.sh),
-   authenticates the VPS Docker client to GHCR, pulls the immutable image,
-   starts Compose, and waits for the `web` healthcheck.
+3. `deploy`: the runner verifies the VPS host key, stages Compose and
+   deployment/ACME files, authenticates the VPS Docker client to GHCR, and
+   calls the staged deployment helper. That helper takes the shared
+   `/opt/apps/character-creation/.operation.lock`, installs the staged files,
+   pulls the immutable image, starts Compose, and waits for the `web`
+   healthcheck. Certificate renewal uses the same lock, so it cannot overlap
+   container replacement or Nginx reload.
 
 The `deploy` job has the `production-deploy` concurrency group with
 `cancel-in-progress: false`; multiple production deploys queue instead of
@@ -160,6 +195,143 @@ recovery mechanism.
 All commands below are read-only unless explicitly described as restart,
 rollback, or deployment.
 
+### HTTPS setup and data migration gate
+
+The production workflow first deploys HTTP challenge support and port 443;
+until a certificate is installed Nginx loads only the HTTP server. The
+challenge location is reachable at
+`http://13.140.206.57/.well-known/acme-challenge/<token>`.
+
+The staged
+[issue-certificates.sh](../deploy/issue-certificates.sh) command first obtains
+a staging IP certificate using the pinned `certbot/certbot:v5.4.0` image,
+profile `shortlived`, and webroot validation, following the [Let's Encrypt
+IP-certificate Certbot instructions](https://letsencrypt.org/2026/03/11/shorter-certs-certbot/).
+It then forces a **dry-run** renewal against the staging environment, using
+staging-only config/work/log directories. Only if both staging operations
+succeed does it request the production certificate.
+The production certificate is installed under
+`letsencrypt/live/13.140.206.57/`; only then is the HTTPS Nginx config added
+and tested before a graceful reload. The staging certificate is never mounted
+into Nginx. The ACME account is registered without a notification email, so
+the systemd timer and its logs are the renewal monitoring mechanism.
+
+After a successful deployment, run on the VPS:
+
+```shell
+cd /opt/apps/character-creation
+./issue-certificates.sh
+```
+
+Verify from a workstation before migrating data:
+
+```shell
+curl --fail --show-error https://13.140.206.57/healthz
+curl --fail --show-error https://13.140.206.57/creator/example
+curl --fail --show-error http://13.140.206.57/healthz
+```
+
+The HTTPS curl must use normal certificate validation (do not use `-k`).
+After exporting/importing browser data or confirming it is not needed, the
+owner must explicitly approve enabling the HTTP-to-HTTPS redirect. Until
+then, HTTP continues to serve the application so data can still be exported.
+
+### Install the automatic renewal timer
+
+The renewal script runs Certbot's normal `renew` logic; it does not force
+production issuance. The systemd timer checks at 00:00 and 12:00 server-local time, with a
+randomized delay up to 15 minutes, plus five minutes after boot. Certbot
+decides whether renewal is due. Certbot's own random pre-renewal sleep is
+disabled because the timer provides jitter; the service allows up to 45
+minutes. A nonblocking `flock` prevents overlapping renewals and shares the
+deployment lock.
+
+Run these exact commands on the VPS after the certificate setup and external
+HTTPS check succeed (administrative installation requires `sudo`):
+
+```shell
+cd /opt/apps/character-creation
+sudo install -m 0644 character-creation-certbot-renew.service /etc/systemd/system/
+sudo install -m 0644 character-creation-certbot-renew.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now character-creation-certbot-renew.timer
+systemctl list-timers character-creation-certbot-renew.timer
+```
+
+The exact next scheduled activation is shown by the final command. Confirm
+that the timer is enabled after reboot with:
+
+```shell
+systemctl is-enabled character-creation-certbot-renew.timer
+systemctl status character-creation-certbot-renew.timer --no-pager
+```
+
+To run a renewal check immediately, without forcing a production renewal:
+
+```shell
+sudo systemctl start character-creation-certbot-renew.service
+sudo journalctl -u character-creation-certbot-renew.service --since today --no-pager
+```
+
+After initial setup, test the production renewal configuration through the
+ACME staging service and exercise the same deploy-hook, Nginx config test, and
+graceful-reload path without changing production certificate files:
+
+```shell
+cd /opt/apps/character-creation
+./renew-certificates.sh --test-renewal
+curl --fail --show-error https://13.140.206.57/healthz
+```
+
+The test uses `--dry-run --force-renewal --run-deploy-hooks`; it does not
+replace the production certificate. The final external HTTPS request checks
+the certificate currently served by Nginx, not only the certificate file on
+disk.
+
+Certbot writes production and staging logs under their respective persistent
+`*-log/` paths. The systemd journal records the renewal decision, Nginx
+configuration test, and reload. Check certificate dates and SAN:
+
+```shell
+openssl x509 -in /opt/apps/character-creation/letsencrypt/live/13.140.206.57/fullchain.pem \
+  -noout -subject -ext subjectAltName -dates
+```
+
+When a production certificate is renewed, Certbot creates
+`letsencrypt-work/reload-required`. The host renewal script then runs
+`nginx -t` inside the web container and gracefully signals that Nginx process
+with `nginx -s reload`; the marker is removed only after both operations
+succeed. This avoids Docker-socket access from Certbot. If validation or
+reload fails, the already-running Nginx keeps its loaded certificate, the
+marker is retained for retry, and the systemd service exits unsuccessfully.
+Diagnose with:
+
+```shell
+sudo journalctl -u character-creation-certbot-renew.service -n 200 --no-pager
+cd /opt/apps/character-creation
+docker compose --project-name character-creation logs --tail=200 web
+docker compose --project-name character-creation exec -T web nginx -t
+```
+
+After correcting the cause, rerun the systemd service. Do not copy a staging
+certificate into the production tree.
+
+If the HTTPS-only Nginx config prevents the web container from starting,
+temporarily return to the HTTP-only config without touching either
+certificate tree:
+
+```shell
+cd /opt/apps/character-creation
+mv nginx-https/https.conf nginx-https/https.conf.disabled
+docker compose --project-name character-creation up -d web
+docker compose --project-name character-creation exec -T web nginx -t
+docker compose --project-name character-creation exec -T web nginx -s reload
+```
+
+Keep the `.disabled` file until the TLS config problem is corrected. Restore
+it to `nginx-https/https.conf` and run the same config-test/reload commands to
+re-enable HTTPS.
+
 ### Inspect status and deployed version
 
 Run on the **VPS**:
@@ -175,9 +347,10 @@ docker inspect --format '{{.Config.Image}} {{if .State.Health}}{{.State.Health.S
 Run on a **local workstation**:
 
 ```shell
-curl --fail --show-error --location http://13.140.206.57/healthz
-curl --fail --show-error --location http://13.140.206.57/
-curl --fail --show-error --location http://13.140.206.57/creator/example
+curl --fail --show-error https://13.140.206.57/healthz
+curl --fail --show-error https://13.140.206.57/
+curl --fail --show-error https://13.140.206.57/creator/example
+curl --fail --show-error http://13.140.206.57/healthz
 ```
 
 ### View logs
@@ -244,8 +417,12 @@ This command does not remove volumes; none exist today.
 
 ## Security and operational limitations
 
-- HTTP is public on port 80. HTTPS, a domain name, TLS certificates, and
-  redirects to HTTPS are not configured.
+- HTTP remains public and continues to serve the app until the owner confirms
+  the browser-data migration gate. Redirect behavior is therefore not yet
+  verified or enabled.
+- Timer installation and successful staging/production certificate issuance
+  must be recorded here after they are actually performed. A committed timer
+  file alone does not mean systemd is active.
 - The firewall's historical configuration lists inbound 22, 80, and 443, but
   its current rules were not rechecked during the 2026-11-04 verification.
 - No backup configuration has been verified. There is no server-side
@@ -262,6 +439,30 @@ This command does not remove volumes; none exist today.
   ([`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)) remains
   enabled and builds under `/character-creation/`. Its public availability was
   not rechecked on 2026-11-04.
+
+## HTTPS rollout verification status
+
+The live VPS was inspected over SSH on 2026-11-04 before these changes:
+`deploy` access succeeded, the running `web` container was healthy, Nginx
+loaded the expected HTTP-only config, and only this app was listening on
+host port 80 (nothing was listening on 443). No VPS files, certificates,
+systemd units, or firewall settings have yet been changed by this patch.
+From this workstation, HTTP `/healthz` and `/creator/example` both returned
+200 on 2026-11-04; HTTP remains available for exporting browser data.
+
+Locally verified: application `npm run check` (lint, 77 test files / 442
+tests, TypeScript, and production build), shell syntax for all four deploy
+scripts, YAML syntax for Compose and the Production workflow, and
+`git diff --check`. This workstation has no Docker CLI, so Compose
+interpolation and Nginx config were not tested locally.
+
+Still requires deployment through the Production GitHub Actions workflow:
+public HTTP challenge retrieval, staging issuance and dry-run renewal,
+production issuance, Nginx config test/reload, browser-trusted HTTPS for the
+IP SAN, health and nested SPA routes over HTTPS, and external confirmation
+that Nginx serves the issued certificate. The systemd timer also remains
+inactive until its documented `sudo` installation commands are run. HTTP
+redirect is intentionally pending browser-data migration confirmation.
 
 ## Instructions for future agents
 

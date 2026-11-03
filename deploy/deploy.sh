@@ -7,6 +7,21 @@ compose_project=character-creation
 environment_file="$app_dir/.env"
 next_environment_file="$app_dir/.env.next"
 
+if [ "${LOCK_HELD:-0}" != 1 ]; then
+  exec 9>"$app_dir/.operation.lock"
+  flock -x 9
+fi
+
+mkdir -p \
+  "$app_dir/acme-webroot/.well-known/acme-challenge" \
+  "$app_dir/letsencrypt" \
+  "$app_dir/letsencrypt-staging" \
+  "$app_dir/letsencrypt-work" \
+  "$app_dir/letsencrypt-staging-work" \
+  "$app_dir/letsencrypt-log" \
+  "$app_dir/letsencrypt-staging-log" \
+  "$app_dir/nginx-https"
+
 cd "$app_dir"
 
 previous_image=''

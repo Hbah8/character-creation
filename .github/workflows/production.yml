@@ -66,7 +66,7 @@ jobs:
       cancel-in-progress: false
     environment:
       name: production
-      url: http://${{ vars.VPS_HOST }}
+      url: https://${{ vars.VPS_HOST }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure SSH
@@ -79,14 +79,26 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
-      - name: Upload Compose deployment files
+      - name: Stage deployment files
         run: |
-          scp -o BatchMode=yes compose.yaml deploy/deploy.sh \
-            "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:${APP_DIRECTORY}/"
+          ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            "mkdir -p '${APP_DIRECTORY}/.deploy-staging'"
+          scp -o BatchMode=yes \
+            compose.yaml \
+            deploy/deploy.sh \
+            deploy/apply-staged-deploy.sh \
+            deploy/nginx-https.conf \
+            deploy/issue-certificates.sh \
+            deploy/renew-certificates.sh \
+            deploy/systemd/character-creation-certbot-renew.service \
+            deploy/systemd/character-creation-certbot-renew.timer \
+            "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:${APP_DIRECTORY}/.deploy-staging/"
       - name: Deploy immutable image
         env:
           IMAGE: ${{ needs.publish.outputs.image }}
           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
         run: |
           printf '%s' "$GHCR_PULL_TOKEN" | ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
-            "docker login ghcr.io --username '${{ github.repository_owner }}' --password-stdin && chmod 750 '${APP_DIRECTORY}/deploy.sh' && APP_DIR='${APP_DIRECTORY}' IMAGE='${IMAGE}' '${APP_DIRECTORY}/deploy.sh'"
+            "docker login ghcr.io --username '${{ github.repository_owner }}' --password-stdin"
+          ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            "IMAGE='${IMAGE}' APP_DIR='${APP_DIRECTORY}' sh '${APP_DIRECTORY}/.deploy-staging/apply-staged-deploy.sh'"

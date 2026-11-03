@@ -1,0 +1,13 @@
+[Unit]
+Description=Run character-creation certificate renewal checks twice daily
+
+[Timer]
+OnCalendar=*-*-* 00,12:00:00
+OnBootSec=5min
+OnUnitActiveSec=12h
+RandomizedDelaySec=15min
+Persistent=true
+Unit=character-creation-certbot-renew.service
+
+[Install]
+WantedBy=timers.target
