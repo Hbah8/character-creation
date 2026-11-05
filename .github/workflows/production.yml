@@ -139,6 +139,7 @@ jobs:
             compose.yaml \
             deploy/deploy.sh \
             deploy/apply-staged-deploy.sh \
+            deploy/nginx.conf \
             deploy/nginx-https.conf \
             deploy/issue-certificates.sh \
             deploy/renew-certificates.sh \

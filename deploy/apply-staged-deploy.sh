@@ -35,6 +35,8 @@ mv "$app_dir/.runtime.env.next" "$app_dir/.runtime.env"
 
 install -m 0644 "$staging_dir/compose.yaml" "$app_dir/.compose.yaml.next"
 mv "$app_dir/.compose.yaml.next" "$app_dir/compose.yaml"
+install -m 0644 "$staging_dir/nginx.conf" "$app_dir/.nginx.conf.next"
+mv "$app_dir/.nginx.conf.next" "$app_dir/nginx.conf"
 install -m 0750 "$staging_dir/deploy.sh" "$app_dir/.deploy.sh.next"
 mv "$app_dir/.deploy.sh.next" "$app_dir/deploy.sh"
 install -m 0644 "$staging_dir/nginx-https.conf" "$app_dir/.nginx-https.conf.next"

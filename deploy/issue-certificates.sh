@@ -44,8 +44,9 @@ docker compose --project-name "$compose_project" run --rm certbot certonly \
   --register-unsafely-without-email \
   --non-interactive
 
-test -s "$app_dir/letsencrypt/live/$ip_address/fullchain.pem"
-test -s "$app_dir/letsencrypt/live/$ip_address/privkey.pem"
+docker compose --project-name "$compose_project" run --rm --entrypoint /bin/sh certbot -c \
+  "test -s /etc/letsencrypt/live/$ip_address/fullchain.pem && \
+   test -s /etc/letsencrypt/live/$ip_address/privkey.pem"
 
 install -m 0644 "$app_dir/nginx-https.conf" "$app_dir/nginx-https/https.conf.new"
 mv "$app_dir/nginx-https/https.conf.new" "$app_dir/nginx-https/https.conf"
