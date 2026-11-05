@@ -125,6 +125,23 @@ Read `docs/deployment.md` before working on infrastructure.
 - Keep operational detail in `docs/deployment.md` and update it after verified
   infrastructure changes.
 
+### Deployment transition guarantees
+
+- Treat deployment as a transition between working service compositions; retain
+  the previous Compose configuration and image manifest until external
+  verification succeeds.
+- Validate workflow YAML, Compose, scripts, and image availability before
+  changing running services. Pull all required images first; use bounded
+  retries for transient registry failures.
+- Use health-gated dependencies for startup order, but do not make serving the
+  SPA depend on API availability. A rollback must restore the prior service
+  composition without `down` or volume deletion.
+- Keep database migrations backward-compatible with the previous backend.
+  Application rollback never rolls back the database schema.
+- Serialize production changes with both workflow concurrency and the VPS
+  operation lock. Mark a release successful only after an external HTTPS/API
+  check confirms the intended path.
+
 ## Skills
 
 The following agent skills are available under `.github/skills/`. Load the relevant SKILL.md before starting a task that falls in that domain.
