@@ -4,6 +4,7 @@ set -eu
 app_dir=${APP_DIR:-/opt/apps/character-creation}
 staging_dir="$app_dir/.deploy-staging"
 database_password_file="$staging_dir/database-password"
+previous_compose_file="$app_dir/.compose.yaml.previous"
 
 exec 9>"$app_dir/.operation.lock"
 flock -x 9
@@ -16,6 +17,12 @@ trap cleanup_database_password EXIT
 if [ ! -s "$database_password_file" ] || [ "$(wc -l < "$database_password_file")" -ne 0 ]; then
   printf 'A non-empty, single-line database password is required.\n' >&2
   exit 1
+fi
+
+if [ -f "$app_dir/compose.yaml" ]; then
+  install -m 0644 "$app_dir/compose.yaml" "$previous_compose_file"
+else
+  rm -f "$previous_compose_file"
 fi
 
 database_password=$(cat "$database_password_file")
@@ -45,5 +52,9 @@ install -m 0644 "$staging_dir/character-creation-certbot-renew.timer" \
 mv "$app_dir/.character-creation-certbot-renew.timer.next" \
   "$app_dir/character-creation-certbot-renew.timer"
 
-APP_DIR="$app_dir" IMAGE=${IMAGE:?IMAGE is required} BACKEND_IMAGE=${BACKEND_IMAGE:?BACKEND_IMAGE is required} LOCK_HELD=1 \
-  "$app_dir/deploy.sh"
+if APP_DIR="$app_dir" IMAGE=${IMAGE:?IMAGE is required} BACKEND_IMAGE=${BACKEND_IMAGE:?BACKEND_IMAGE is required} LOCK_HELD=1 \
+  "$app_dir/deploy.sh"; then
+  rm -f "$previous_compose_file"
+else
+  exit 1
+fi

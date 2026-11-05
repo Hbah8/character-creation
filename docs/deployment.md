@@ -224,7 +224,10 @@ failed Compose project.
 
 This automatic rollback path is implemented but has **not** been
 failure-tested in production. Treat it as best effort, not a guaranteed
-recovery mechanism.
+recovery mechanism. During the first backend rollout, when the preceding
+release has no `BACKEND_IMAGE`, a failed deployment restores the saved
+frontend-only Compose file and its previous web image instead of running
+`docker compose down`.
 
 ## Runbook
 

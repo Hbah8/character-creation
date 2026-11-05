@@ -7,6 +7,7 @@ backend_image=${BACKEND_IMAGE:?BACKEND_IMAGE is required}
 compose_project=character-creation
 environment_file="$app_dir/.env"
 next_environment_file="$app_dir/.env.next"
+previous_compose_file="$app_dir/.compose.yaml.previous"
 
 if [ "${LOCK_HELD:-0}" != 1 ]; then
   exec 9>"$app_dir/.operation.lock"
@@ -41,6 +42,14 @@ rollback() {
     printf 'IMAGE=%s\nBACKEND_IMAGE=%s\n' \
       "$previous_image" "$previous_backend_image" > "$next_environment_file"
     mv "$next_environment_file" "$environment_file"
+    docker compose --project-name "$compose_project" pull
+    docker compose --project-name "$compose_project" up -d --remove-orphans
+  elif [ -n "$previous_image" ] && [ -f "$previous_compose_file" ]; then
+    printf 'Deployment failed; restoring the frontend-only deployment.\n' >&2
+    printf 'IMAGE=%s\n' "$previous_image" > "$next_environment_file"
+    mv "$next_environment_file" "$environment_file"
+    install -m 0644 "$previous_compose_file" "$app_dir/.compose.yaml.rollback"
+    mv "$app_dir/.compose.yaml.rollback" "$app_dir/compose.yaml"
     docker compose --project-name "$compose_project" pull
     docker compose --project-name "$compose_project" up -d --remove-orphans
   else
