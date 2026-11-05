@@ -48,10 +48,36 @@ jobs:
           cache-dependency-path: backend/pom.xml
       - run: mvn --batch-mode --no-transfer-progress test
 
+  configuration-checks:
+    name: Configuration checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: Validate YAML syntax
+        run: |
+          find . \
+            -path './.git' -prune -o \
+            -path './node_modules' -prune -o \
+            -path './character-app/node_modules' -prune -o \
+            -type f \( -name '*.yml' -o -name '*.yaml' \) -print0 |
+            xargs -0 ruby -r yaml -e 'ARGV.each { |path| YAML.load_file(path); puts "Validated #{path}" }'
+      - name: Validate production Compose
+        run: |
+          runtime_env=$(mktemp)
+          trap 'rm -f "$runtime_env" .runtime.env' EXIT
+          printf 'POSTGRES_PASSWORD=validation-only\nDATABASE_PASSWORD=validation-only\n' > "$runtime_env"
+          cp "$runtime_env" .runtime.env
+          IMAGE=example.invalid/character-creation:validation \
+          BACKEND_IMAGE=example.invalid/character-creation-backend:validation \
+            docker compose config --quiet
+
   publish:
     name: Build and publish image
     if: github.event_name != 'pull_request'
-    needs: [checks, backend-checks]
+    needs: [checks, backend-checks, configuration-checks]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -122,14 +148,14 @@ jobs:
       - name: Deploy immutable image
         env:
           IMAGE: ${{ needs.publish.outputs.image }}
-            BACKEND_IMAGE: ${{ needs.publish.outputs.backend_image }}
-            GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
-            DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
+          BACKEND_IMAGE: ${{ needs.publish.outputs.backend_image }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
         run: |
-            test -n "$DATABASE_PASSWORD"
-            printf '%s' "$GHCR_PULL_TOKEN" | ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
-              "docker login ghcr.io --username '${{ github.repository_owner }}' --password-stdin"
-            printf '%s' "$DATABASE_PASSWORD" | ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
-              "umask 077; cat > '${APP_DIRECTORY}/.deploy-staging/database-password'"
-            ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
-              "IMAGE='${IMAGE}' BACKEND_IMAGE='${BACKEND_IMAGE}' APP_DIR='${APP_DIRECTORY}' sh '${APP_DIRECTORY}/.deploy-staging/apply-staged-deploy.sh'; status=\$?; rm -f '${APP_DIRECTORY}/.deploy-staging/database-password'; exit \$status"
+          test -n "$DATABASE_PASSWORD"
+          printf '%s' "$GHCR_PULL_TOKEN" | ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            "docker login ghcr.io --username '${{ github.repository_owner }}' --password-stdin"
+          printf '%s' "$DATABASE_PASSWORD" | ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            "umask 077; cat > '${APP_DIRECTORY}/.deploy-staging/database-password'"
+          ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            "IMAGE='${IMAGE}' BACKEND_IMAGE='${BACKEND_IMAGE}' APP_DIR='${APP_DIRECTORY}' sh '${APP_DIRECTORY}/.deploy-staging/apply-staged-deploy.sh'; status=\$?; rm -f '${APP_DIRECTORY}/.deploy-staging/database-password'; exit \$status"

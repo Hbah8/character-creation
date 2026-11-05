@@ -153,11 +153,13 @@ For push and manual runs the sequence is:
    `npm run check` run in `character-app`.
 2. `backend-checks`: the GitHub-hosted runner runs `mvn test` under Java 21,
    including the PostgreSQL Testcontainers integration test.
-3. `publish`: the GitHub-hosted runner builds the root
+3. `configuration-checks`: the runner validates every repository YAML file and
+   validates production Compose using a temporary non-secret runtime file.
+4. `publish`: the GitHub-hosted runner builds the root
    [Dockerfile](../Dockerfile) and [backend Dockerfile](../backend/Dockerfile),
    then pushes `ghcr.io/hbah8/character-creation:<full-git-sha>` and
    `ghcr.io/hbah8/character-creation-backend:<full-git-sha>`.
-4. `deploy`: the runner verifies the VPS host key, stages Compose and
+5. `deploy`: the runner verifies the VPS host key, stages Compose and
    deployment/ACME files, authenticates the VPS Docker client to GHCR, and
    transfers the database password through SSH standard input before calling
    the staged deployment helper. That helper takes the shared
