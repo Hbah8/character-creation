@@ -36,7 +36,9 @@ The public root, `/healthz`, and a direct request to
 | Deploy script on VPS | `/opt/apps/character-creation/deploy.sh` |
 | Runtime image selector | `/opt/apps/character-creation/.env` (`IMAGE=...`) |
 
-The VPS runs one application container:
+The VPS currently runs one application container. The backend/PostgreSQL
+configuration below is prepared in Git but is not deployed or verified on the
+VPS until a successful Production workflow completes.
 
 | Compose service | Purpose |
 |---|---|
@@ -54,6 +56,27 @@ is never mounted into the container.
 The service uses `restart: unless-stopped`, a Docker healthcheck, a read-only
 container filesystem with temporary Nginx paths, `no-new-privileges`, and the
 Docker `local` logging driver with three 10 MB log files.
+
+### Prepared backend and database services
+
+The prepared production Compose configuration adds these internal services:
+
+| Compose service | Purpose | Published ports |
+|---|---|---|
+| `backend` | Spring Boot API; runs Flyway before reporting readiness | None |
+| `postgres` | PostgreSQL 17 for backend data | None |
+
+`web` proxies `/api/` to `backend:8080` over the Compose network. It remains
+the only service that publishes ports 80 and 443. `web` starts after the
+backend becomes healthy; the backend waits for PostgreSQL health. PostgreSQL
+data lives in the named volume `character-creation_postgres-data`; normal
+`up`, image replacement, rollback, and `down` without `-v` preserve it.
+
+The deployment workflow writes the database password only to
+`/opt/apps/character-creation/.runtime.env` with mode 0600. That file supplies
+the containers' PostgreSQL and backend password variables, is ignored by Git,
+and must not be copied into images, logs, or diagnostics. `.env` continues to
+contain only immutable web and backend image references.
 
 The HTTPS configuration adds persistent host directories under
 `/opt/apps/character-creation`:
@@ -104,6 +127,12 @@ transfer is not needed. Maps require re-import, and local audio file bindings
 require re-selection. HTTPS setup and certificate renewal do not remove or
 redirect the old HTTP origin.
 
+After the prepared backend configuration is deployed, Flyway owns the
+versioned database schema. An application image rollback restores both
+application images but does **not** roll back the database schema. Correct a
+failed migration with a forward migration, or restore a backup taken before
+the migration after explicitly stopping the affected services.
+
 ## CI/CD
 
 The authoritative pipeline is
@@ -114,7 +143,7 @@ It runs only on GitHub-hosted runners.
 
 | Trigger | Result |
 |---|---|
-| Pull request targeting `main` | `npm ci`, then `npm run check`; no image publication or VPS access |
+| Pull request targeting `main` | Frontend `npm run check` and backend `mvn test`; no image publication or VPS access |
 | Push to `main` | Checks, image build, GHCR publication, VPS deployment, healthcheck |
 | Manual `workflow_dispatch` | Same as push for the selected revision |
 
@@ -122,16 +151,20 @@ For push and manual runs the sequence is:
 
 1. `checks`: `actions/setup-node` installs Node 22; `npm ci` and
    `npm run check` run in `character-app`.
-2. `publish`: the GitHub-hosted runner builds the root
-   [Dockerfile](../Dockerfile) and pushes
-   `ghcr.io/hbah8/character-creation:<full-git-sha>`.
-3. `deploy`: the runner verifies the VPS host key, stages Compose and
+2. `backend-checks`: the GitHub-hosted runner runs `mvn test` under Java 21,
+   including the PostgreSQL Testcontainers integration test.
+3. `publish`: the GitHub-hosted runner builds the root
+   [Dockerfile](../Dockerfile) and [backend Dockerfile](../backend/Dockerfile),
+   then pushes `ghcr.io/hbah8/character-creation:<full-git-sha>` and
+   `ghcr.io/hbah8/character-creation-backend:<full-git-sha>`.
+4. `deploy`: the runner verifies the VPS host key, stages Compose and
    deployment/ACME files, authenticates the VPS Docker client to GHCR, and
-   calls the staged deployment helper. That helper takes the shared
+   transfers the database password through SSH standard input before calling
+   the staged deployment helper. That helper takes the shared
    `/opt/apps/character-creation/.operation.lock`, installs the staged files,
-   pulls the immutable image, starts Compose, and waits for the `web`
-   healthcheck. Certificate renewal uses the same lock, so it cannot overlap
-   container replacement or Nginx reload.
+   pulls immutable web/backend images, starts Compose, and waits for backend
+   and `web` healthchecks. Certificate renewal uses the same lock, so it
+   cannot overlap container replacement or Nginx reload.
 
 The `deploy` job has the `production-deploy` concurrency group with
 `cancel-in-progress: false`; multiple production deploys queue instead of
@@ -162,11 +195,12 @@ Repository secrets are configured in GitHub Actions settings:
 | `VPS_DEPLOY_SSH_KEY` | Private half of the dedicated GitHub Actions deploy key. |
 | `VPS_SSH_KNOWN_HOSTS` | Verified SSH host-key entry for the VPS. |
 | `GHCR_PULL_TOKEN` | Classic GitHub PAT with `read:packages`, passed only to `docker login --password-stdin` on the VPS. |
+| `PRODUCTION_DATABASE_PASSWORD` | Non-empty single-line password for the PostgreSQL backend account; transferred only through SSH standard input to the VPS runtime secret file. |
 
 The publish job uses the GitHub Actions `GITHUB_TOKEN` as
 `${{ github.actor }}` with `packages: write` permission. The VPS pulls using
 the GitHub repository owner as its GHCR username and `GHCR_PULL_TOKEN`; that
-token requires read access to the package. Secret values, SSH key contents,
+token requires read access to both GHCR packages. Secret values, SSH key contents,
 and registry credentials must never be added to Git, image layers, frontend
 assets, logs, or this document.
 
@@ -389,6 +423,45 @@ docker compose --project-name character-creation ps
 Then run the three local `curl` commands from **Inspect status and deployed
 version**.
 
+### Manual PostgreSQL backup and restore
+
+Automatic offsite backup is not configured. After the backend rollout is
+verified, take a manual backup before every schema-affecting release and at a
+regular operator-chosen interval. Run on the **VPS**:
+
+```shell
+cd /opt/apps/character-creation
+mkdir -p backups
+docker compose --project-name character-creation exec -T postgres \
+  pg_dump -U character_creation -d character_creation --format=custom \
+  > "backups/character-creation-$(date -u +%Y%m%dT%H%M%SZ).dump"
+```
+
+Verify a new dump before relying on it:
+
+```shell
+docker run --rm -i postgres:17-alpine pg_restore --list \
+  < backups/character-creation-<timestamp>.dump >/dev/null
+```
+
+To restore a chosen dump, first stop writes by stopping `web` and `backend`.
+This overwrites database contents; retain the current dump until the restored
+application has been verified.
+
+```shell
+cd /opt/apps/character-creation
+docker compose --project-name character-creation stop web backend
+docker compose --project-name character-creation exec -T postgres \
+  pg_restore -U character_creation -d character_creation \
+  --clean --if-exists --no-owner < backups/character-creation-<timestamp>.dump
+docker compose --project-name character-creation up -d backend web
+docker compose --project-name character-creation ps
+```
+
+The named PostgreSQL volume is not a backup. Test restore periodically on an
+isolated PostgreSQL instance; do not restore into production merely to test a
+dump.
+
 ### Roll back to a known SHA
 
 Use the SHA from a previously successful Production run. Run on the **VPS**:
@@ -397,12 +470,15 @@ Use the SHA from a previously successful Production run. Run on the **VPS**:
 cd /opt/apps/character-creation
 APP_DIR=/opt/apps/character-creation \
 IMAGE=ghcr.io/hbah8/character-creation:<previous-full-git-sha> \
+BACKEND_IMAGE=ghcr.io/hbah8/character-creation-backend:<previous-full-git-sha> \
 ./deploy.sh
 ```
 
 The script pulls that exact image and uses the same healthcheck. Afterwards,
 check `.env`, `docker compose ps`, container logs, and the three public URLs.
-This command does not remove volumes; none exist today.
+This command does not remove volumes. It does not roll back Flyway migrations;
+use a forward migration or the backup/restore procedure when schema recovery
+is required.
 
 ### Diagnose common failures
 
@@ -410,7 +486,7 @@ This command does not remove volumes; none exist today.
 |---|---|---|
 | SSH authentication or host-key failure | GitHub Actions deploy log; local workstation | Confirm `VPS_USER`, `VPS_DEPLOY_SSH_KEY`, and `VPS_SSH_KNOWN_HOSTS`; locally run `ssh -o BatchMode=yes contabo-apps "whoami"`. Do not bypass host-key checking. |
 | GHCR pull failure | GitHub Actions deploy log; VPS | Confirm `GHCR_PULL_TOKEN` has package-read access and has not expired; confirm `.env` contains the intended image reference and `docker compose config` resolves it. The failure occurs before `web` starts, so container logs may not exist. Do not print or paste the token. |
-| Container never reaches `healthy` | VPS | Run `docker compose --project-name character-creation ps` and logs; check `http://127.0.0.1:8080/healthz` from inside the container only if needed. |
+| Backend or web never reaches `healthy` | VPS | Run `docker compose --project-name character-creation ps` and logs for `postgres`, `backend`, and `web`; check backend Flyway output before retrying. |
 | Port 80 already in use | VPS | Run `ss -ltnp 'sport = :80'` before a manual start. Do not stop or reconfigure another application without explicit authorization. |
 | Public route fails after refresh | Local workstation | Test `/creator/example`; inspect the active Nginx image and its logs. The configured fallback is `try_files $uri $uri/ /index.html`. |
 | `npm ci` fails on a runner | Local workstation / GitHub | Regenerate `character-app/package-lock.json` with the npm version used by CI. The current lockfile was verified with npm 10.9.9 because the runner uses npm 10.x. |
@@ -425,9 +501,9 @@ This command does not remove volumes; none exist today.
   file alone does not mean systemd is active.
 - The firewall's historical configuration lists inbound 22, 80, and 443, but
   its current rules were not rechecked during the 2026-11-04 verification.
-- No backup configuration has been verified. There is no server-side
-  application data to back up today; future volumes or databases require a
-  backup and restore plan before use.
+- The backend/PostgreSQL Compose configuration, runtime secret transfer,
+  backup procedure, and restore procedure are prepared but unverified on the
+  VPS until the first successful backend deployment and restore rehearsal.
 - `deploy` can use Docker without `sudo`. Docker group membership effectively
   grants administrative control of the VPS; keep the account and CI deploy key
   tightly restricted.
@@ -463,6 +539,17 @@ IP SAN, health and nested SPA routes over HTTPS, and external confirmation
 that Nginx serves the issued certificate. The systemd timer also remains
 inactive until its documented `sudo` installation commands are run. HTTP
 redirect is intentionally pending browser-data migration confirmation.
+
+On 2026-11-04 at approximately 21:05 UTC, the staging issuance was attempted
+from the VPS and stopped before production issuance because the TLS handshake
+to `acme-staging-v02.api.letsencrypt.org` reset/timed out. The same staging
+endpoint was unavailable from the workstation and the external fetcher, while
+production ACME was reachable from the VPS. The [Let's Encrypt status
+page](https://letsencrypt.status.io/) reported scheduled maintenance with
+staging ACME offline through 2026-11-04 21:00 UTC. No production certificate,
+HTTPS Nginx config, or redirect was installed. Retry
+`./issue-certificates.sh` after the maintenance window and retain the required
+staging-first sequence.
 
 ## Instructions for future agents
 

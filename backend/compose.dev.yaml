@@ -1,0 +1,21 @@
+name: character-creation-backend-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: character_creation
+      POSTGRES_USER: character_creation
+      POSTGRES_PASSWORD: character_creation
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U character_creation -d character_creation"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

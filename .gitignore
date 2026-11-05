@@ -3,9 +3,12 @@ node_modules/
 
 # Build outputs
 character-app/dist/
+backend/target/
 
 # Editor
 .vscode/
+!backend/.vscode/
+!backend/.vscode/launch.json
 .idea/
 
 # OS
@@ -15,6 +18,7 @@ Thumbs.db
 # Env
 .env
 .env.local
+/.runtime.env
 
 user-stories/
 example/

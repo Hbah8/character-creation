@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Debug Backend (dev)",
+      "request": "launch",
+      "mainClass": "ru.hbah8.charactercreation.backend.application.CharacterCreationApplication",
+      "projectName": "character-creation-backend",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

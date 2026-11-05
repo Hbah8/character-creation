@@ -4,6 +4,9 @@ services:
   web:
     image: ${IMAGE:?Set IMAGE to a GHCR image reference}
     restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
     ports:
       - "80:8080"
       - "443:8443"
@@ -29,6 +32,58 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  backend:
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to a GHCR image reference}
+    restart: unless-stopped
+    env_file:
+      - .runtime.env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DOCKER_COMPOSE_ENABLED: "false"
+      DATABASE_URL: jdbc:postgresql://postgres:5432/character_creation
+      DATABASE_USERNAME: character_creation
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    env_file:
+      - .runtime.env
+    environment:
+      POSTGRES_DB: character_creation
+      POSTGRES_USER: character_creation
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U character_creation -d character_creation"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 6
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   certbot:
     image: certbot/certbot:v5.4.0
     profiles: ["certbot"]
@@ -40,3 +95,6 @@ services:
       - ./letsencrypt-staging-work:/var/lib/letsencrypt-staging
       - ./letsencrypt-log:/var/log/letsencrypt
       - ./letsencrypt-staging-log:/var/log/letsencrypt-staging
+
+volumes:
+  postgres-data:
