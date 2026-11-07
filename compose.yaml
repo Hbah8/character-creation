@@ -38,6 +38,8 @@ services:
     restart: unless-stopped
     env_file:
       - .runtime.env
+      - path: .accounts.runtime.env
+        required: false
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DOCKER_COMPOSE_ENABLED: "false"

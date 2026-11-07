@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Starts the SWADE Campaign Manager backend.
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "ru.hbah8.charactercreation.backend")
 public class CharacterCreationApplication {
 
     /**

@@ -6,6 +6,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RouteErrorBoundary } from '@/routing/RouteErrorBoundary'
 import { entityEditorKey } from '@/routing/routeKeys'
+import { SessionBoundary } from '@/accounts/SessionBoundary'
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(module => ({ default: module.DashboardPage })))
 const CharacterCreatorPage = lazy(() => import('@/pages/CharacterCreatorPage').then(module => ({ default: module.CharacterCreatorPage })))
@@ -17,6 +18,7 @@ const RaceBuilderPage = lazy(() => import('@/racebuilder/pages/RaceBuilderPage')
 const RaceLibraryPage = lazy(() => import('@/racebuilder/pages/RaceLibraryPage').then(module => ({ default: module.RaceLibraryPage })))
 const AudioSoundboardPage = lazy(() => import('@/audio/pages/AudioSoundboardPage').then(module => ({ default: module.AudioSoundboardPage })))
 const MapsPage = lazy(() => import('@/maps/pages/MapsPage').then(module => ({ default: module.MapsPage })))
+const AccountPage = lazy(() => import('@/accounts/AccountPage').then(module => ({ default: module.AccountPage })))
 
 function CharacterCreatorRoute() {
   const { id } = useParams<{ id?: string }>()
@@ -51,6 +53,7 @@ function AppRoutes() {
             <Route path="races/:raceId" element={<RaceBuilderRoute />} />
             <Route path="audio" element={<AudioSoundboardPage />} />
             <Route path="maps" element={<MapsPage />} />
+            <Route path="account" element={<AccountPage />} />
           </Route>
           <Route path="creator" element={<CharacterCreatorRoute />} />
           <Route path="creator/:id" element={<CharacterCreatorRoute />} />
@@ -67,7 +70,9 @@ function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <TooltipProvider>
-        <AppRoutes />
+        <SessionBoundary>
+          <AppRoutes />
+        </SessionBoundary>
       </TooltipProvider>
     </BrowserRouter>
   )

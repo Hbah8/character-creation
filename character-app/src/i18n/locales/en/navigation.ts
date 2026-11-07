@@ -13,6 +13,7 @@ const navigation = {
   powers: 'Powers',
   audio: 'Audio',
   maps: 'Maps',
+  account: 'Account',
   loadingPage: 'Loading page…',
   notFound: {
     title: 'Page not found',

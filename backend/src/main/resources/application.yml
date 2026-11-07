@@ -9,8 +9,30 @@ spring:
     password: ${DATABASE_PASSWORD:character_creation}
   flyway:
     enabled: true
+  session:
+    timeout: 30d
+    jdbc:
+      initialize-schema: never
+      table-name: app.spring_session
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:no-reply@localhost}
+    properties:
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
+      mail.debug: false
+
+app:
+  identity:
+    public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:5173}
+    verification-ttl: ${EMAIL_VERIFICATION_TTL:24h}
 
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:

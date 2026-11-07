@@ -11,6 +11,8 @@ import enRaceBuilder from '../locales/en/raceBuilder'
 import enHandbooks from '../locales/en/handbooks'
 import enAudio from '../locales/en/audio'
 import enMaps from '../locales/en/maps'
+import enAccount from '@/i18n/locales/en/account'
+import ruAccount from '@/i18n/locales/ru/account'
 
 import ruCommon from '../locales/ru/common'
 import ruHeader from '../locales/ru/header'
@@ -55,6 +57,7 @@ const namespaces: Array<[string, AnyObject, AnyObject]> = [
   ['handbooks', enHandbooks as AnyObject, ruHandbooks as AnyObject],
   ['audio', enAudio as AnyObject, ruAudio as AnyObject],
   ['maps', enMaps as AnyObject, ruMaps as AnyObject],
+  ['account', enAccount, ruAccount],
 ]
 
 describe('locale completeness', () => {

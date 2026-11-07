@@ -122,8 +122,41 @@ Read `docs/deployment.md` before working on infrastructure.
   run development services, or install a GitHub runner on the VPS.
 - Do not modify SSH, firewall, or other applications without explicit
   authorization. Never expose or store credentials.
-- Keep operational detail in `docs/deployment.md` and update it after verified
-  infrastructure changes.
+- Keep operational detail in `docs/deployment.md`; obtain the user's explicit
+  approval before updating it, even after verified infrastructure changes.
+
+### Deployment quality gates
+
+- Production changes must be reproducible through the repository's Production
+  workflow. Do not substitute manual VPS configuration changes for a release;
+  obtain explicit approval before a manual intervention.
+- When a release is requested, commit and push the intended changes, identify
+  the Production run for that exact commit SHA, and wait for its terminal
+  result. A successful local check, push, image build, or manual fix is not a
+  successful deployment.
+- Require every required workflow job, including the VPS deployment, to
+  succeed. If a job fails, is cancelled, or cannot be observed to completion,
+  report the failure or unconfirmed status; do not claim completion.
+- After workflow success, verify the running application images match the
+  intended SHA, container health is good, and the changed behavior works from
+  outside the VPS. For HTTPS changes, check trusted TLS, canonical redirects
+  with path/query preservation, application/API routing, HTTP ACME access,
+  and renewal/reload behavior.
+- If verification requires another configuration fix, make it in the
+  repository and repeat the deployment gates. Do not repair production
+  manually and present the workflow as having delivered the working result.
+- Clearly distinguish manual observations, local test results, and behavior
+  verified after the exact CI/CD release. Report the commit and workflow URL
+  as release evidence.
+- Ask for the user's explicit approval before editing `docs/deployment.md`
+  or recording deployment results in other operational documentation.
+  A deployment request alone is not documentation approval. Even with
+  approval, record a result as deployment-verified only after the workflow
+  and post-deployment checks have passed; label manual checks separately.
+- Never modify or clear browser data as part of deployment or an origin
+  migration. Obtain confirmation that required data was exported or transfer
+  is unnecessary before enforcing a redirect that removes old-origin UI
+  access.
 
 ### Deployment transition guarantees
 

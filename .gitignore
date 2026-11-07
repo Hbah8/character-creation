@@ -3,6 +3,8 @@ node_modules/
 
 # Build outputs
 character-app/dist/
+character-app/test-results/
+character-app/playwright-report/
 backend/target/
 
 # Editor
@@ -19,6 +21,7 @@ Thumbs.db
 .env
 .env.local
 /.runtime.env
+/.accounts.runtime.env
 
 user-stories/
 example/
@@ -26,7 +29,8 @@ swade-rules/
 .github/instructions/
 .github/skills/
 characters/
-docs/
+/docs/*
+!/docs/backend-transition-progress.md
 
 .codex/
 

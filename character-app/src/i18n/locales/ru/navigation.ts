@@ -13,6 +13,7 @@ const navigation = {
   powers: 'Силы',
   audio: 'Аудио',
   maps: 'Карты',
+  account: 'Аккаунт',
   loadingPage: 'Загрузка страницы…',
   notFound: {
     title: 'Страница не найдена',
