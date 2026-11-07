@@ -10,6 +10,22 @@
 
 Workflow публикации копирует собранный `index.html` в `404.html`. Благодаря этому GitHub Pages отдаёт SPA для прямого открытия и обновления вложенных маршрутов, например `/character-creation/creator/123`; неизвестные маршруты внутри приложения обрабатываются его страницей 404.
 
+## Frontend dependency checks
+
+From `character-app`, use Node.js 22 and run `npm ci`, then `npm run check`.
+Production CI currently uses npm 10. When updating dependencies, commit both
+`package.json` and `package-lock.json` and validate with a clean install,
+not only the existing `node_modules`.
+
+If `npm ci` reports missing lockfile entries, repair the lockfile without
+upgrading declared dependencies, then repeat the checks:
+
+```shell
+npx --yes npm@10.9.9 install --package-lock-only --ignore-scripts --no-audit --no-fund
+npx --yes npm@10.9.9 ci
+npm run check
+```
+
 ## Backend development (WSL2)
 
 The local setup uses Docker Engine in `Ubuntu-24.04` WSL2, not Podman. Maven
