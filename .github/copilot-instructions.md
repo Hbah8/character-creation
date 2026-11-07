@@ -111,6 +111,27 @@ Before running a new command, wait for the previous command's output. If command
 
 Do not run multiple commands in parallel. Do not spam similar commands.
 
+## Frontend dependency and lockfile gate
+
+- After changing frontend dependencies or the lockfile, and before a requested
+  release, verify a real `npm ci` followed by `npm run check` in a clean Linux
+  environment using the Node.js/npm versions selected by the Production
+  workflow. Use an isolated local container or temporary workspace without
+  existing `node_modules`; never use the VPS for this validation.
+- A passing check against existing `node_modules`, a Windows-only installation,
+  or `npm ci --dry-run` does not satisfy this gate. Missing transitive or
+  optional peer dependencies can fail Linux CI before tests or builds start.
+- Keep `package.json` and `package-lock.json` synchronized and commit every
+  required lockfile change. Generate lockfile repairs with the CI-compatible
+  npm version; do not hand-edit dependency entries or upgrade unrelated
+  packages. See README's "Frontend dependency checks" for repair commands.
+- Do not replace CI's `npm ci` with `npm install`, omit optional dependencies,
+  use `--legacy-peer-deps`, or weaken quality checks to bypass a broken lockfile.
+  Repeat the clean Linux installation and full check after repairing it.
+- Report clean-install and quality-check evidence separately. If the clean
+  Linux check cannot be completed, explicitly mark it unverified; do not claim
+  release readiness from local tests alone.
+
 ## Deployment and VPS access
 
 Read `docs/deployment.md` before working on infrastructure.

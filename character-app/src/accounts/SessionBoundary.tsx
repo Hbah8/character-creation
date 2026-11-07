@@ -21,8 +21,10 @@ export function SessionBoundary({ children }: { children: ReactNode }) {
   const location = useLocation()
   const [check, setCheck] = useState<SessionCheck>({ key: '', loading: true, account: null, error: null })
   const [retry, setRetry] = useState(0)
+  const [passwordChanged, setPasswordChanged] = useState(false)
   const isLogin = location.pathname === '/login'
-  const confirmation = new URLSearchParams(location.hash.slice(1)).has('token')
+  const hashParams = new URLSearchParams(location.hash.slice(1))
+  const confirmation = hashParams.has('token') || hashParams.has('resetToken')
   const state: unknown = location.state
   const candidate = state && typeof state === 'object' && 'returnTo' in state ? state.returnTo : null
   const returnTo = typeof candidate === 'string' && candidate.startsWith('/')
@@ -64,9 +66,10 @@ export function SessionBoundary({ children }: { children: ReactNode }) {
       }
     }
 
-    const unsubscribe = onSessionEnded(() => {
+    const unsubscribe = onSessionEnded(reason => {
       ++sequence
       clearTimeout(timer)
+      setPasswordChanged(reason === 'passwordChanged')
       setCheck({ key, loading: false, account: null, error: null })
     })
     const focus = () => { void verify() }
@@ -105,7 +108,7 @@ export function SessionBoundary({ children }: { children: ReactNode }) {
   }
   if (!check.account) {
     return <Navigate to="/login" replace
-      state={{ returnTo: location.pathname + location.search + location.hash }} />
+      state={{ returnTo: location.pathname + location.search + location.hash, passwordChanged }} />
   }
   return <SessionAccountContext value={check.account}>{children}</SessionAccountContext>
 }

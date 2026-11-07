@@ -37,4 +37,19 @@ public class SmtpVerificationMailSender implements VerificationMailSender {
             LOG.error("Verification email delivery failed; check SMTP availability/configuration. User may retry resend.");
         }
     }
+
+    @Override
+    public void sendPasswordReset(String email, String resetUrl) {
+        var message = new SimpleMailMessage();
+        message.setFrom(properties.getUsername());
+        message.setTo(email);
+        message.setSubject("Reset your SWADE account password");
+        message.setText("Open this link to set a new password:\n" + resetUrl
+                + "\n\nThis link is single-use and expires. If you did not request it, ignore this email.");
+        try {
+            sender.send(message);
+        } catch (MailException exception) {
+            LOG.error("Password reset email delivery failed; check SMTP availability/configuration.");
+        }
+    }
 }

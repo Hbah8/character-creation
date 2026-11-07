@@ -93,6 +93,16 @@ public class IdentityController {
         }
     }
 
+    record ResetPasswordRequest(@NotBlank @Size(max = 128) String token,
+                                @NotBlank @Size(min = 12, max = 128) String password) {
+        @Override public String toString() { return "ResetPasswordRequest[redacted]"; }
+    }
+
+    record ChangePasswordRequest(@NotBlank @Size(max = 128) String currentPassword,
+                                 @NotBlank @Size(min = 12, max = 128) String password) {
+        @Override public String toString() { return "ChangePasswordRequest[redacted]"; }
+    }
+
     @GetMapping("/csrf")
     public Map<String, String> csrf(CsrfToken token) {
         return Map.of("token", token.getToken());
@@ -117,6 +127,31 @@ public class IdentityController {
     @PostMapping("/confirm")
     public ResponseEntity<Void> confirm(@Valid @RequestBody TokenRequest input) {
         accounts.confirm(input.token());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<Void> requestPasswordReset(@Valid @RequestBody EmailRequest input, HttpServletRequest request) {
+        checkLimit("mail", input.email(), request);
+        accounts.requestPasswordReset(input.email()).ifPresent(delivery ->
+                mail.sendPasswordReset(delivery.email(), delivery.url()));
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/password-reset/complete")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest input) {
+        accounts.resetPassword(input.token(), input.password());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password-change")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest input,
+                                               Authentication authentication, HttpServletRequest request) {
+        var id = UUID.fromString(authentication.getName());
+        checkLimit("login", repository.view(id).email(), request);
+        accounts.changePassword(id, input.currentPassword(), input.password());
+        request.getSession(false).invalidate();
+        SecurityContextHolder.clearContext();
         return ResponseEntity.noContent().build();
     }
 

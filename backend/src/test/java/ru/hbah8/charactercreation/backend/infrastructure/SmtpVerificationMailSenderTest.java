@@ -52,4 +52,19 @@ class SmtpVerificationMailSenderTest {
                 () -> assertFalse(output.getAll().contains("password-secret"))
         );
     }
+
+    @Test
+    void resetDeliveryFailuresAreReportedWithoutLoggingSecrets(CapturedOutput output) {
+        var sender = mock(JavaMailSender.class);
+        doThrow(new MailSendException("recipient@example.test token-secret password-secret"))
+                .when(sender).send(any(SimpleMailMessage.class));
+        new SmtpVerificationMailSender(sender, new MailProperties())
+                .sendPasswordReset("recipient@example.test", "https://example.test/login#resetToken=token-secret");
+        assertAll(
+                () -> assertTrue(output.getAll().contains("Password reset email delivery failed")),
+                () -> assertFalse(output.getAll().contains("recipient@example.test")),
+                () -> assertFalse(output.getAll().contains("token-secret")),
+                () -> assertFalse(output.getAll().contains("password-secret"))
+        );
+    }
 }

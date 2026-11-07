@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useNavigate } from 'react-router-dom'
+import { PasswordForm } from '@/accounts/PasswordForm'
 
 export function AccountPage() {
   const { t, i18n } = useTranslation('account')
@@ -79,6 +80,16 @@ export function AccountPage() {
             onClick={() => void perform(async () => setSessions(await accountApi.sessions()))}>{t('refresh')}</Button>
           <Button disabled={busy} onClick={() => void perform(() => accountApi.logout())}>{t('logout')}</Button>
         </CardFooter>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle>{t('changePassword')}</CardTitle></CardHeader>
+        <CardContent>
+          <PasswordForm change busy={busy} onSubmit={async (current, password) => {
+            await perform(async () => {
+              await accountApi.changePassword(current, password)
+            })
+          }} />
+        </CardContent>
       </Card>
     </main>
   )

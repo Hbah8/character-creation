@@ -71,6 +71,40 @@ public class AccountRepository {
         jdbc.sql("UPDATE app.accounts SET email_verified = true WHERE id = :id").param("id", account).update();
     }
 
+    Optional<Account> lockById(UUID id) {
+        return jdbc.sql("SELECT id, email, password_hash, email_verified FROM app.accounts WHERE id = :id FOR UPDATE")
+                .param("id", id).query((rs, row) -> new Account(rs.getObject("id", UUID.class),
+                        rs.getString("email"), rs.getString("password_hash"), rs.getBoolean("email_verified"))).optional();
+    }
+
+    void insertResetToken(UUID account, String hash, Instant expiry) {
+        jdbc.sql("""
+                INSERT INTO app.password_reset_tokens (token_hash, account_id, expires_at)
+                VALUES (:hash, :id, :expiry)
+                """).param("hash", hash).param("id", account)
+                .param("expiry", java.sql.Timestamp.from(expiry)).update();
+    }
+
+    Optional<UUID> resetTokenAccount(String hash) {
+        return jdbc.sql("SELECT account_id FROM app.password_reset_tokens WHERE token_hash = :hash")
+                .param("hash", hash).query(UUID.class).optional();
+    }
+
+    boolean consumeResetToken(String hash) {
+        return jdbc.sql("""
+                DELETE FROM app.password_reset_tokens
+                WHERE token_hash = :hash AND expires_at > clock_timestamp()
+                """).param("hash", hash).update() == 1;
+    }
+
+    void updatePasswordAndRevoke(UUID account, String passwordHash) {
+        jdbc.sql("UPDATE app.accounts SET password_hash = :password WHERE id = :id")
+                .param("password", passwordHash).param("id", account).update();
+        jdbc.sql("DELETE FROM app.password_reset_tokens WHERE account_id = :id").param("id", account).update();
+        jdbc.sql("DELETE FROM app.spring_session WHERE principal_name = :id")
+                .param("id", account.toString()).update();
+    }
+
     AccountView view(UUID id) {
         return jdbc.sql("SELECT id, email FROM app.accounts WHERE id = :id")
                 .param("id", id).query(AccountView.class).single();

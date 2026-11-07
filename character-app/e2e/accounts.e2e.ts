@@ -1,8 +1,62 @@
 import { expect, test } from '@playwright/test'
 import type { Page, APIRequestContext } from '@playwright/test'
+import { execFileSync } from 'node:child_process'
 
 const password = 'correct horse battery staple'
 const appUrl = `http://localhost:${process.env.ACCOUNTS_UI_PORT ?? '5173'}`
+
+async function mailpitJson(request: APIRequestContext, path: string): Promise<unknown> {
+  const url = `http://127.0.0.1:8025${path}`
+  if (process.env.ACCOUNTS_MAILPIT_WSL === '1') {
+    return JSON.parse(execFileSync('wsl', ['-d', 'Ubuntu-24.04', '--', 'curl', '--silent', '--fail', url], { encoding: 'utf8' })) as unknown
+  }
+  return (await request.get(url)).json() as Promise<unknown>
+}
+
+test('password reset form requests a link and does not consume it on opening', async ({ page }) => {
+  await page.route('**/api/auth/me', route => route.fulfill({ status: 401 }))
+  await page.route('**/api/auth/csrf', route => route.fulfill({ json: { token: 'csrf' } }))
+  let completions = 0
+  await page.route('**/api/auth/password-reset/request', route => route.fulfill({ status: 202 }))
+  await page.route('**/api/auth/password-reset/complete', route => {
+    completions++
+    return route.fulfill({ status: 204 })
+  })
+  await page.goto('/login')
+  await page.getByRole('button', { name: 'Forgot password?', exact: true }).click()
+  await page.getByLabel('Email', { exact: true }).fill('user@example.test')
+  await page.getByRole('button', { name: 'Send reset link', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('If this address is eligible')
+  await page.goto('/login#resetToken=example')
+  await expect(page.getByLabel('New password', { exact: true })).toBeVisible()
+  expect(completions).toBe(0)
+  await page.getByLabel('New password', { exact: true }).fill('a sufficiently long password')
+  await page.getByLabel('Confirm new password', { exact: true }).fill('a sufficiently long password')
+  await page.getByRole('button', { name: 'Save new password', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('Password updated')
+  expect(completions).toBe(1)
+})
+
+test('invalid reset links offer recovery and validation errors do not submit', async ({ page }) => {
+  await page.route('**/api/auth/me', route => route.fulfill({ status: 401 }))
+  await page.route('**/api/auth/csrf', route => route.fulfill({ json: { token: 'csrf' } }))
+  let submissions = 0
+  await page.route('**/api/auth/password-reset/complete', route => {
+    submissions++
+    return route.fulfill({ status: 400, json: { code: 'invalidToken' } })
+  })
+  await page.goto('/login#resetToken=invalid')
+  await page.getByLabel('New password', { exact: true }).fill('a sufficiently long password')
+  await page.getByLabel('Confirm new password').fill('a different long password')
+  await page.getByRole('button', { name: 'Save new password' }).click()
+  await expect(page.getByRole('alert')).toContainText('Passwords do not match')
+  expect(submissions).toBe(0)
+  await page.getByLabel('Confirm new password').fill('a sufficiently long password')
+  await page.getByRole('button', { name: 'Save new password' }).click()
+  await expect(page.getByRole('alert')).toContainText('invalid, expired or already used')
+  await page.getByRole('button', { name: 'Send reset link' }).click()
+  await expect(page.getByLabel('Email', { exact: true })).toBeVisible()
+})
 
 test('registration and resend reject incomplete domains inline without requests or advancing', async ({ page }) => {
   await page.route('**/api/auth/me', route => route.fulfill({ status: 401 }))
@@ -46,16 +100,98 @@ async function signIn(page: Page, email: string) {
 async function confirmationLink(request: APIRequestContext, email: string) {
   let link = ''
   await expect.poll(async () => {
-    const response = await request.get('http://localhost:8025/api/v1/messages')
-    const inbox = await response.json() as { messages: { ID: string; To: { Address: string }[] }[] }
+    const inbox = await mailpitJson(request, '/api/v1/messages') as { messages: { ID: string; To: { Address: string }[] }[] }
     const letter = inbox.messages.find(message => message.To.some(to => to.Address === email))
     if (!letter) return false
-    const body = await (await request.get(`http://localhost:8025/api/v1/message/${letter.ID}`)).json() as { Text: string }
+    const body = await mailpitJson(request, `/api/v1/message/${letter.ID}`) as { Text: string }
     link = body.Text.match(/http:\/\/localhost:\d+\/(?:login|account)#token=[A-Za-z0-9_-]+/)?.[0] ?? ''
     return Boolean(link)
   }).toBe(true)
   return link
 }
+
+test('Mailpit reset and password change revoke sessions across browsers', async ({ page, browser, request }) => {
+  const email = `password-${Date.now()}@example.test`
+  await page.goto('/login')
+  await page.getByRole('button', { name: 'Create an account', exact: true }).click()
+  await page.getByLabel('Email', { exact: true }).fill(email)
+  await page.getByLabel('Password', { exact: true }).fill(password)
+  await page.getByRole('button', { name: 'Register', exact: true }).click()
+  await page.goto(await confirmationLink(request, email))
+  await page.getByRole('button', { name: 'Back to sign in', exact: true }).click()
+  await signIn(page, email)
+  await expect(page).not.toHaveURL(/\/login/)
+  await page.goto('/account')
+  const second = await browser.newContext()
+  try {
+    await second.addInitScript(() => localStorage.setItem('swade-locale', 'en'))
+    const other = await second.newPage()
+    await other.goto('/login')
+    await signIn(other, email)
+    await expect(other).not.toHaveURL(/\/login/)
+    await page.getByLabel('Current password').fill('incorrect')
+    await page.getByLabel('New password', { exact: true }).fill('a new sufficiently long password')
+    await page.getByLabel('Confirm new password').fill('a new sufficiently long password')
+    await page.getByRole('button', { name: 'Change password', exact: true }).click()
+    await expect(page.getByRole('alert')).toContainText('current password is incorrect')
+    await other.reload()
+    await expect(other).not.toHaveURL(/\/login/)
+    await page.getByLabel('Current password').fill(password)
+    await page.getByRole('button', { name: 'Change password', exact: true }).click()
+    await expect(page).toHaveURL(/\/login/)
+    await expect(page.getByRole('status')).toContainText('Password updated')
+    await other.reload()
+    await expect(other).toHaveURL(/\/login/)
+    await signIn(page, email)
+    await expect(page.getByRole('alert')).toContainText('Invalid email or password')
+    for (const signedOut of [page, other]) {
+      await signedOut.getByLabel('Email', { exact: true }).fill(email)
+      await signedOut.getByLabel('Password', { exact: true }).fill('a new sufficiently long password')
+      await signedOut.getByRole('button', { name: 'Sign in', exact: true }).click()
+      await expect(signedOut).not.toHaveURL(/\/login/)
+    }
+    const resetContext = await browser.newContext()
+    await resetContext.addInitScript(() => localStorage.setItem('swade-locale', 'en'))
+    const resetPage = await resetContext.newPage()
+    await resetPage.goto('/login')
+    await resetPage.getByRole('button', { name: 'Forgot password?', exact: true }).click()
+    await resetPage.getByLabel('Email', { exact: true }).fill(email)
+    await resetPage.getByRole('button', { name: 'Send reset link', exact: true }).click()
+    await expect(resetPage.getByRole('status')).toContainText('If this address is eligible')
+    let link = ''
+    await expect.poll(async () => {
+      const inbox = await mailpitJson(request, '/api/v1/messages') as {
+        messages: { ID: string; To: { Address: string }[]; Subject: string }[]
+      }
+      const letter = inbox.messages.find(message => message.Subject.includes('Reset')
+        && message.To.some(to => to.Address === email))
+      if (!letter) return false
+      const body = await mailpitJson(request, `/api/v1/message/${letter.ID}`) as { Text: string }
+      link = body.Text.match(/http:\/\/localhost:\d+\/login#resetToken=[A-Za-z0-9_-]+/)?.[0] ?? ''
+      return Boolean(link)
+    }).toBe(true)
+    await resetPage.goto(link)
+    await resetPage.getByLabel('New password', { exact: true }).fill('a reset sufficiently long password')
+    await resetPage.getByLabel('Confirm new password').fill('a reset sufficiently long password')
+    await resetPage.getByRole('button', { name: 'Save new password' }).click()
+    await expect(resetPage.getByRole('status')).toContainText('Password updated')
+    for (const session of [page, other]) {
+      await session.reload()
+      await expect(session).toHaveURL(/\/login/)
+    }
+    await resetPage.getByRole('button', { name: 'Back to sign in', exact: true }).click()
+    await resetPage.getByLabel('Email', { exact: true }).fill(email)
+    await resetPage.getByLabel('Password', { exact: true }).fill('a new sufficiently long password')
+    await resetPage.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(resetPage.getByRole('alert')).toContainText('Invalid email or password')
+    await resetPage.getByLabel('Password', { exact: true }).fill('a reset sufficiently long password')
+    await resetPage.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(resetPage).not.toHaveURL(/\/login/)
+    await resetContext.close()
+  } finally {
+    await second.close()
+  }
+})
 
 test.beforeEach(async ({ context }) => {
   await context.addInitScript(() => localStorage.setItem('swade-locale', 'en'))

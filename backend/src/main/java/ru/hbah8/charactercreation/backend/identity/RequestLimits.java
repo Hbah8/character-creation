@@ -43,5 +43,6 @@ public class RequestLimits {
     public void cleanExpired() {
         jdbc.sql("DELETE FROM app.request_limits WHERE expires_at < CURRENT_TIMESTAMP").update();
         jdbc.sql("DELETE FROM app.email_tokens WHERE expires_at < CURRENT_TIMESTAMP - interval '7 days'").update();
+        jdbc.sql("DELETE FROM app.password_reset_tokens WHERE expires_at < CURRENT_TIMESTAMP - interval '7 days'").update();
     }
 }

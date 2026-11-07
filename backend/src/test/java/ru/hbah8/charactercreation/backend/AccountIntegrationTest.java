@@ -51,7 +51,10 @@ class AccountIntegrationTest {
         @Bean
         @Primary
         VerificationMailSender capturedMail() {
-            return letters::put;
+            return new VerificationMailSender() {
+                public void sendVerification(String email, String url) { letters.put(email, url); }
+                public void sendPasswordReset(String email, String url) { letters.put(email, url); }
+            };
         }
     }
 
@@ -295,6 +298,151 @@ class AccountIntegrationTest {
         assertEquals(400, browser.post("/register",
                 Map.of("email", "valid@example.com", "password", "a".repeat(129))).statusCode());
         assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM app.accounts", Integer.class));
+    }
+
+    @Test
+    void resetIsNeutralSingleUseAndRevokesAllSessions() throws Exception {
+        Browser first = verifiedBrowser("reset@example.com");
+        Browser second = new Browser();
+        assertEquals(200, second.post("/login", credentials("reset@example.com")).statusCode());
+        var known = first.post("/password-reset/request", Map.of("email", "reset@example.com"));
+        var unknown = first.post("/password-reset/request", Map.of("email", "unknown@example.com"));
+        assertEquals(202, known.statusCode());
+        assertEquals(known.statusCode(), unknown.statusCode());
+        assertEquals(known.body(), unknown.body());
+        String oldToken = letters.get("reset@example.com").split("#resetToken=")[1];
+        assertEquals(202, first.post("/password-reset/request", Map.of("email", "reset@example.com")).statusCode());
+        String resetToken = letters.get("reset@example.com").split("#resetToken=")[1];
+        var input = Map.of("token", resetToken, "password", "new correct horse battery staple");
+        assertEquals(204, new Browser().post("/password-reset/complete", input).statusCode());
+        assertEquals(400, new Browser().post("/password-reset/complete", input).statusCode());
+        assertEquals(400, new Browser().post("/password-reset/complete",
+                Map.of("token", oldToken, "password", "another sufficiently long password")).statusCode());
+        assertEquals(401, first.request("GET", "/me", null, false).statusCode());
+        assertEquals(401, second.request("GET", "/me", null, false).statusCode());
+        assertEquals(401, new Browser().post("/login", credentials("reset@example.com")).statusCode());
+        assertEquals(200, new Browser().post("/login",
+                Map.of("email", "reset@example.com", "password", "new correct horse battery staple")).statusCode());
+    }
+
+    @Test
+    void passwordChangeRejectsWrongPasswordWithoutRevokingSessions() throws Exception {
+        Browser first = verifiedBrowser("change@example.com");
+        Browser second = new Browser();
+        assertEquals(200, second.post("/login", credentials("change@example.com")).statusCode());
+        assertEquals(400, first.post("/password-change", Map.of(
+                "currentPassword", "wrong", "password", "new correct horse battery staple")).statusCode());
+        assertEquals(200, second.request("GET", "/me", null, false).statusCode());
+        assertEquals(204, first.post("/password-change", Map.of(
+                "currentPassword", "correct horse battery staple",
+                "password", "new correct horse battery staple")).statusCode());
+        assertEquals(401, first.request("GET", "/me", null, false).statusCode());
+        assertEquals(401, second.request("GET", "/me", null, false).statusCode());
+        assertEquals(200, new Browser().post("/login",
+                Map.of("email", "change@example.com", "password", "new correct horse battery staple")).statusCode());
+    }
+
+    @Test
+    void resetTokensExpireArePurposeBoundAndOnlyOneConcurrentRequestSucceeds() throws Exception {
+        Browser browser = new Browser();
+        browser.post("/register", credentials("race@example.com"));
+        String confirmation = token("race@example.com");
+        assertEquals(202, browser.post("/password-reset/request", Map.of("email", "race@example.com")).statusCode());
+        String first = letters.get("race@example.com").split("#resetToken=")[1];
+        assertNotEquals(first, jdbc.queryForObject("SELECT token_hash FROM app.password_reset_tokens", String.class));
+        assertEquals(400, browser.post("/confirm", Map.of("token", first)).statusCode());
+        assertEquals(400, browser.post("/password-reset/complete",
+                Map.of("token", confirmation, "password", "another sufficiently long password")).statusCode());
+        jdbc.update("UPDATE app.password_reset_tokens SET expires_at = now() - interval '1 second'");
+        assertEquals(400, browser.post("/password-reset/complete",
+                Map.of("token", first, "password", "another sufficiently long password")).statusCode());
+        assertEquals(202, browser.post("/password-reset/request", Map.of("email", "race@example.com")).statusCode());
+        String reset = letters.get("race@example.com").split("#resetToken=")[1];
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            var one = pool.submit(() -> new Browser().post("/password-reset/complete",
+                    Map.of("token", reset, "password", "another sufficiently long password")).statusCode());
+            var two = pool.submit(() -> new Browser().post("/password-reset/complete",
+                    Map.of("token", reset, "password", "another sufficiently long password")).statusCode());
+            assertEquals(604, one.get() + two.get());
+        }
+        var unverified = new Browser().post("/login",
+                Map.of("email", "race@example.com", "password", "another sufficiently long password"));
+        assertEquals(401, unverified.statusCode());
+        assertEquals("emailUnverified", json.readTree(unverified.body()).path("code").asText());
+        assertEquals(204, browser.post("/confirm", Map.of("token", confirmation)).statusCode());
+    }
+
+    @Test
+    void resetAndChangeRequireCsrfAndRateLimitRequests() throws Exception {
+        Browser browser = new Browser();
+        assertEquals(403, browser.request("POST", "/password-reset/request",
+                Map.of("email", "missing@example.com"), false).statusCode());
+        assertEquals(403, browser.request("POST", "/password-reset/complete",
+                Map.of("token", "anything", "password", "a sufficiently long password"), false).statusCode());
+        for (int attempt = 0; attempt < 3; attempt++) {
+            assertEquals(202, browser.post("/password-reset/request", Map.of("email", "missing@example.com")).statusCode());
+        }
+        assertEquals(429, browser.post("/password-reset/request", Map.of("email", "missing@example.com")).statusCode());
+        Browser loggedIn = verifiedBrowser("limit@example.com");
+        assertEquals(403, loggedIn.request("POST", "/password-change",
+                Map.of("currentPassword", "wrong", "password", "a sufficiently long password"), false).statusCode());
+        for (int attempt = 0; attempt < 9; attempt++) {
+            assertEquals(400, loggedIn.post("/password-change",
+                    Map.of("currentPassword", "wrong", "password", "a sufficiently long password")).statusCode());
+        }
+        assertEquals(429, loggedIn.post("/password-change",
+                Map.of("currentPassword", "wrong", "password", "a sufficiently long password")).statusCode());
+        assertEquals(200, loggedIn.request("GET", "/me", null, false).statusCode());
+    }
+
+    @Test
+    void changingPasswordInvalidatesOutstandingResetLinks() throws Exception {
+        Browser browser = verifiedBrowser("old-link@example.com");
+        assertEquals(202, browser.post("/password-reset/request", Map.of("email", "old-link@example.com")).statusCode());
+        String oldToken = letters.get("old-link@example.com").split("#resetToken=")[1];
+        assertEquals(204, browser.post("/password-change", Map.of(
+                "currentPassword", "correct horse battery staple",
+                "password", "new correct horse battery staple")).statusCode());
+        assertEquals(400, new Browser().post("/password-reset/complete",
+                Map.of("token", oldToken, "password", "another sufficiently long password")).statusCode());
+        assertEquals(200, new Browser().post("/login",
+                Map.of("email", "old-link@example.com", "password", "new correct horse battery staple")).statusCode());
+    }
+
+    @Test
+    void resetFromAuthenticatedBrowserRevokesItsOwnSession() throws Exception {
+        Browser browser = verifiedBrowser("own-reset@example.com");
+        assertEquals(202, browser.post("/password-reset/request", Map.of("email", "own-reset@example.com")).statusCode());
+        String reset = letters.get("own-reset@example.com").split("#resetToken=")[1];
+        assertEquals(204, browser.post("/password-reset/complete",
+                Map.of("token", reset, "password", "new correct horse battery staple")).statusCode());
+        assertEquals(401, browser.request("GET", "/me", null, false).statusCode());
+    }
+
+    @Test
+    void failureRevokingSessionsRollsBackPasswordAndResetTokens() throws Exception {
+        Browser browser = verifiedBrowser("rollback@example.com");
+        assertEquals(202, browser.post("/password-reset/request", Map.of("email", "rollback@example.com")).statusCode());
+        String oldHash = jdbc.queryForObject("SELECT password_hash FROM app.accounts", String.class);
+        jdbc.execute("""
+                CREATE TABLE app.session_deletion_guard (
+                    session_id char(36) REFERENCES app.spring_session(primary_id)
+                )
+                """);
+        try {
+            jdbc.update("""
+                    INSERT INTO app.session_deletion_guard
+                    SELECT primary_id FROM app.spring_session WHERE principal_name IS NOT NULL
+                    """);
+            assertEquals(500, browser.post("/password-change", Map.of(
+                    "currentPassword", "correct horse battery staple",
+                    "password", "new correct horse battery staple")).statusCode());
+            assertEquals(oldHash, jdbc.queryForObject("SELECT password_hash FROM app.accounts", String.class));
+            assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM app.password_reset_tokens", Integer.class));
+            assertEquals(200, browser.request("GET", "/me", null, false).statusCode());
+        } finally {
+            jdbc.execute("DROP TABLE app.session_deletion_guard");
+        }
     }
 
     static Browser verifiedBrowser(String email) throws Exception {

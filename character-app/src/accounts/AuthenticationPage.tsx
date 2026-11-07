@@ -5,6 +5,9 @@ import { accountApi, AccountApiError } from '@/accounts/accountApi'
 import type { Account, AccountErrorCode } from '@/accounts/accountApi'
 import { AccountCredentialsForm } from '@/accounts/AccountCredentialsForm'
 import { AccountResendForm } from '@/accounts/AccountResendForm'
+import { AccountEmailField } from '@/accounts/AccountEmailField'
+import { PasswordForm } from '@/accounts/PasswordForm'
+import { FieldGroup } from '@/components/ui/field'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,17 +22,21 @@ export function AuthenticationPage({ error: sessionError, onAuthenticated }: Pro
   const location = useLocation()
   const navigate = useNavigate()
   const [initialToken] = useState(() => new URLSearchParams(location.hash.slice(1)).get('token') ?? '')
+  const [resetToken] = useState(() => new URLSearchParams(location.hash.slice(1)).get('resetToken') ?? '')
   const [busy, setBusy] = useState(Boolean(initialToken))
   const [error, setError] = useState<AccountErrorCode | null>(null)
-  const [message, setMessage] = useState<'mailAccepted' | null>(null)
-  const [step, setStep] = useState<'login' | 'register' | 'checkEmail' | 'confirming' | 'confirmed' | 'confirmationFailed'>(
-    initialToken ? 'confirming' : 'login')
+  const [message, setMessage] = useState<'mailAccepted' | 'resetMailAccepted' | null>(null)
+  const [step, setStep] = useState<'login' | 'register' | 'checkEmail' | 'confirming' | 'confirmed' | 'confirmationFailed' | 'forgot' | 'reset' | 'resetDone'>(
+    initialToken ? 'confirming' : resetToken ? 'reset' : 'login')
   const [email, setEmail] = useState('')
   const confirmation = useRef<Promise<void> | null>(null)
   const displayedError = error ?? sessionError
+  const passwordChanged = location.state && typeof location.state === 'object'
+    && 'passwordChanged' in location.state && location.state.passwordChanged === true
   const title = step === 'login' ? 'loginTitle' : step === 'register' ? 'registerTitle'
     : step === 'checkEmail' ? 'checkEmail' : step === 'confirming' ? 'confirming'
-      : step === 'confirmed' ? 'confirmedTitle' : 'confirmationFailed'
+      : step === 'confirmed' ? 'confirmedTitle' : step === 'forgot' ? 'forgotPassword'
+        : step === 'reset' ? 'newPassword' : step === 'resetDone' ? 'passwordUpdated' : 'confirmationFailed'
 
   useEffect(() => {
     // Remove secrets from browser history; retain router state for deep-link return.
@@ -54,7 +61,7 @@ export function AuthenticationPage({ error: sessionError, onAuthenticated }: Pro
     return () => { active = false }
   }, [initialToken])
 
-  function changeStep(next: 'login' | 'register' | 'checkEmail') {
+  function changeStep(next: 'login' | 'register' | 'checkEmail' | 'forgot') {
     setError(null)
     setMessage(null)
     setStep(next)
@@ -89,8 +96,30 @@ export function AuthenticationPage({ error: sessionError, onAuthenticated }: Pro
             <AlertDescription>{t(`errors.${displayedError}`)}</AlertDescription>
           </Alert>}
           {message && <Alert role="status"><AlertDescription>{t(message)}</AlertDescription></Alert>}
+          {step === 'login' && passwordChanged && <Alert role="status"><AlertDescription>{t('passwordUpdated')}</AlertDescription></Alert>}
           {step === 'confirming' && <p role="status">{t('confirming')}</p>}
           {step === 'confirmed' && <Alert role="status"><AlertDescription>{t('confirmed')}</AlertDescription></Alert>}
+          {step === 'resetDone' && <Alert role="status"><AlertDescription>{t('passwordUpdated')}</AlertDescription></Alert>}
+          {step === 'forgot' && <form onSubmit={event => {
+            event.preventDefault()
+            void perform(async () => {
+              await accountApi.requestPasswordReset(email)
+              setMessage('resetMailAccepted')
+            })
+          }}>
+            <FieldGroup>
+              <AccountEmailField id="forgot-email" value={email} onChange={setEmail} disabled={busy} />
+              <Button type="submit" disabled={busy}>{t('sendResetLink')}</Button>
+            </FieldGroup>
+          </form>}
+          {step === 'reset' && <PasswordForm change={false} busy={busy} onSubmit={async (_, password) => {
+            await perform(async () => {
+              await accountApi.resetPassword(resetToken, password)
+              setStep('resetDone')
+            })
+          }} />}
+          {step === 'reset' && error === 'invalidToken' &&
+            <Button variant="link" onClick={() => changeStep('forgot')}>{t('sendResetLink')}</Button>}
           {(step === 'login' || step === 'register') &&
             <AccountCredentialsForm key={step} mode={step} busy={busy} onSubmit={(address, password) => {
               setEmail(address)
@@ -110,6 +139,8 @@ export function AuthenticationPage({ error: sessionError, onAuthenticated }: Pro
             }} />}
           {step === 'login' && error === 'emailUnverified' &&
             <Button variant="link" disabled={busy} onClick={() => changeStep('checkEmail')}>{t('resend')}</Button>}
+          {step === 'login' && <Button variant="link" disabled={busy}
+            onClick={() => changeStep('forgot')}>{t('forgotPassword')}</Button>}
           {(step === 'checkEmail' || step === 'confirmationFailed') &&
             <AccountResendForm initialEmail={email} busy={busy} onResend={address => {
               setEmail(address)

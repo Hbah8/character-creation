@@ -4,6 +4,32 @@ import { accountApi, AccountApiError, onSessionEnded } from '@/accounts/accountA
 afterEach(() => vi.unstubAllGlobals())
 
 describe('same-origin account API', () => {
+  it('submits password reset and change with CSRF and ends the session only after success', async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json({ token: 'csrf' }))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(Response.json({ token: 'csrf' }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(Response.json({ token: 'csrf' }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetch)
+    const ended = vi.fn()
+    const unsubscribe = onSessionEnded(ended)
+    try {
+      await accountApi.requestPasswordReset('user@example.test')
+      await accountApi.resetPassword('secret', 'a sufficiently long password')
+      expect(ended).toHaveBeenCalledTimes(1)
+      await accountApi.changePassword('old password', 'a sufficiently long password')
+      expect(ended).toHaveBeenCalledTimes(2)
+      expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+        '/api/auth/csrf', '/api/auth/password-reset/request',
+        '/api/auth/csrf', '/api/auth/password-reset/complete',
+        '/api/auth/csrf', '/api/auth/password-change',
+      ])
+    } finally {
+      unsubscribe()
+    }
+  })
   it('distinguishes unverified credentials from unavailable non-JSON server responses', async () => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(Response.json({ token: 'csrf' }))

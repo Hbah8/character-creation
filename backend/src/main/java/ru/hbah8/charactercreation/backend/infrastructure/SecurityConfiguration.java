@@ -87,9 +87,11 @@ public class SecurityConfiguration {
                                  CsrfTokenRepository tokens) throws Exception {
         return http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/me", "/api/auth/sessions", "/api/auth/sessions/**").authenticated()
+                        .requestMatchers("/api/auth/me", "/api/auth/sessions", "/api/auth/sessions/**",
+                                "/api/auth/password-change").authenticated()
                         .requestMatchers("/api/auth/csrf", "/api/auth/register", "/api/auth/resend",
                                 "/api/auth/confirm", "/api/auth/login", "/api/auth/logout",
+                                "/api/auth/password-reset/request", "/api/auth/password-reset/complete",
                                 "/actuator/health", "/actuator/health/**", "/error").permitAll()
                         .anyRequest().denyAll())
                 .csrf(csrf -> csrf.csrfTokenRepository(tokens))

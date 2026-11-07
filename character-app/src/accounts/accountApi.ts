@@ -14,7 +14,7 @@ export interface AccountSession {
 
 const errorCodes = [
   'invalidCredentials', 'emailUnverified', 'invalidToken', 'invalidInput', 'rateLimited',
-  'unauthenticated', 'forbidden', 'sessionNotFound', 'unavailable', 'invalidResponse',
+  'unauthenticated', 'forbidden', 'sessionNotFound', 'unavailable', 'invalidResponse', 'incorrectPassword',
 ] as const
 export type AccountErrorCode = typeof errorCodes[number]
 
@@ -24,15 +24,16 @@ export class AccountApiError extends Error {
   }
 }
 
-const sessionEndedListeners = new Set<() => void>()
+type SessionEndReason = 'passwordChanged' | undefined
+const sessionEndedListeners = new Set<(reason: SessionEndReason) => void>()
 
-export function onSessionEnded(listener: () => void): () => void {
+export function onSessionEnded(listener: (reason: SessionEndReason) => void): () => void {
   sessionEndedListeners.add(listener)
   return () => { sessionEndedListeners.delete(listener) }
 }
 
-function notifySessionEnded() {
-  sessionEndedListeners.forEach(listener => listener())
+function notifySessionEnded(reason?: SessionEndReason) {
+  sessionEndedListeners.forEach(listener => listener(reason))
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -113,6 +114,17 @@ export const accountApi = {
   },
   async confirm(token: string): Promise<void> {
     await request('/confirm', 'POST', { token })
+  },
+  async requestPasswordReset(email: string): Promise<void> {
+    await request('/password-reset/request', 'POST', { email })
+  },
+  async resetPassword(token: string, password: string): Promise<void> {
+    await request('/password-reset/complete', 'POST', { token, password })
+    notifySessionEnded()
+  },
+  async changePassword(currentPassword: string, password: string): Promise<void> {
+    await request('/password-change', 'POST', { currentPassword, password })
+    notifySessionEnded('passwordChanged')
   },
   async login(email: string, password: string): Promise<Account> {
     return readAccount(await readJson(await request('/login', 'POST', { email, password })))

@@ -65,4 +65,36 @@ public class AccountService {
         }
         accounts.verify(account);
     }
+
+    @Transactional
+    public Optional<Delivery> requestPasswordReset(String email) {
+        return accounts.lockByEmail(normalize(email)).map(account -> {
+            String token = IdentitySecrets.newToken();
+            accounts.insertResetToken(account.id(), IdentitySecrets.hash(token), Instant.now().plusSeconds(3600));
+            String base = properties.publicBaseUrl().toString().replaceAll("/+$", "");
+            return new Delivery(account.email(), base + "/login#resetToken=" + token);
+        });
+    }
+
+    @Transactional
+    public void resetPassword(String token, String password) {
+        String hash = IdentitySecrets.hash(token);
+        var account = accounts.resetTokenAccount(hash)
+                .orElseThrow(() -> new IdentityException(400, "invalidToken"));
+        accounts.lock(account);
+        if (!accounts.consumeResetToken(hash)) {
+            throw new IdentityException(400, "invalidToken");
+        }
+        accounts.updatePasswordAndRevoke(account, passwords.encode(password));
+    }
+
+    @Transactional
+    public void changePassword(java.util.UUID id, String currentPassword, String password) {
+        var account = accounts.lockById(id)
+                .orElseThrow(() -> new IdentityException(401, "unauthenticated"));
+        if (!passwords.matches(currentPassword, account.passwordHash())) {
+            throw new IdentityException(400, "incorrectPassword");
+        }
+        accounts.updatePasswordAndRevoke(id, passwords.encode(password));
+    }
 }

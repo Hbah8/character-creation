@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "312-frameworks-spring-data-jdbc": {
+      "source": "jabrena/plinth",
+      "sourceType": "github",
+      "skillPath": "skills/312-frameworks-spring-data-jdbc/SKILL.md",
+      "computedHash": "e37a0254d6985b4acbf9c219a81d0f6aadaf7b549e68970d9dbc9424e45450aa"
+    },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",
