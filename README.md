@@ -17,6 +17,11 @@ Production CI currently uses npm 10. When updating dependencies, commit both
 `package.json` and `package-lock.json` and validate with a clean install,
 not only the existing `node_modules`.
 
+The frontend Docker build also copies the shared Character JSON fixture from
+`backend/src/test/resources/fixtures/character-rich.json` into its build stage:
+frontend compatibility tests import it, and TypeScript checks those tests.
+The fixture is not copied into the final Nginx image.
+
 If `npm ci` reports missing lockfile entries, repair the lockfile without
 upgrading declared dependencies, then repeat the checks:
 

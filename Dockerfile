@@ -6,6 +6,7 @@ COPY character-app/package.json character-app/package-lock.json ./
 RUN npm ci
 
 COPY character-app/ ./
+COPY backend/src/test/resources/fixtures/character-rich.json /app/backend/src/test/resources/fixtures/character-rich.json
 RUN npm run build
 
 FROM nginx:1.28-alpine AS production
