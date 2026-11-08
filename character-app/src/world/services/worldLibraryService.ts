@@ -4,6 +4,7 @@ import { validateWorldImport } from '@/world/services/validateWorldImport'
 export interface WorldLibraryEntry {
   id: string
   savedAt: string
+  version?: number
   world: World
 }
 

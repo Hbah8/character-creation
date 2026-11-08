@@ -6,6 +6,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import ru.hbah8.charactercreation.backend.worlds.WorldException;
 
 import java.util.Map;
 
@@ -15,6 +16,12 @@ public class CharacterErrors {
     /** Converts expected character failures to their public API shape. */
     @ExceptionHandler(CharacterException.class)
     public ResponseEntity<Map<String, String>> character(CharacterException exception) {
+        return ResponseEntity.status(exception.status()).body(Map.of("code", exception.code()));
+    }
+
+    /** Converts invalid world links into stable character API failures. */
+    @ExceptionHandler(WorldException.class)
+    public ResponseEntity<Map<String, String>> world(WorldException exception) {
         return ResponseEntity.status(exception.status()).body(Map.of("code", exception.code()));
     }
 

@@ -8,9 +8,10 @@ import type { World } from '@/world/types'
 
 export function RaceBuilderPage() {
   const { t } = useTranslation('raceBuilder')
+  const { t: tLibrary } = useTranslation('library')
   const navigate = useNavigate()
   const { raceId } = useParams<{ raceId?: string }>()
-  const { entries, activeWorldId, saveById } = useWorldLibrary()
+  const { entries, activeWorldId, saveById, loading } = useWorldLibrary()
 
   const activeEntry = activeWorldId
     ? entries.find(entry => entry.id === activeWorldId) ?? null
@@ -19,6 +20,10 @@ export function RaceBuilderPage() {
   const raceForEdit = raceId
     ? activeWorld?.races.find(race => race.id === raceId) ?? null
     : null
+
+  if (loading) {
+    return <main className="p-6" role="status">{tLibrary('loadingWorlds')}</main>
+  }
 
   if (!activeWorldId || !activeWorld) {
     return <Navigate to="/" replace />

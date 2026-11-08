@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /** Validates the stable character JSON contract without rewriting user data. */
 @Component
@@ -47,9 +48,19 @@ public class CharacterValidator {
             throw invalidCharacter();
         }
         JsonNode worldId = character.get("worldId");
-        if (worldId != null && !worldId.isNull()
-                && (!worldId.isTextual() || !worldId.textValue().isBlank())) {
-            throw new CharacterException(400, "unsupportedData");
+        if (worldId != null && !worldId.isNull() && !worldId.asText().isBlank()) {
+            if (!worldId.isTextual()) {
+                throw invalidCharacter();
+            }
+            try {
+                UUID.fromString(worldId.textValue());
+            } catch (IllegalArgumentException exception) {
+                throw invalidCharacter();
+            }
+        }
+        JsonNode raceId = character.get("raceId");
+        if (raceId != null && !raceId.isNull() && !raceId.isTextual()) {
+            throw invalidCharacter();
         }
         if (!character.path("portraitUrl").textValue().isBlank()) {
             throw new CharacterException(400, "unsupportedData");

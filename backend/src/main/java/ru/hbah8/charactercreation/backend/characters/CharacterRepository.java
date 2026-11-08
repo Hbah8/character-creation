@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import ru.hbah8.charactercreation.backend.worlds.WorldCharacterReferences;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,9 +14,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Parameterized PostgreSQL access for account-owned standalone characters. */
+/** Parameterized PostgreSQL access for account-owned characters. */
 @Repository
-public class CharacterRepository {
+public class CharacterRepository implements WorldCharacterReferences {
     private final JdbcClient jdbc;
     private final ObjectMapper json;
     private final RowMapper<SavedCharacter> rowMapper;
@@ -51,10 +52,11 @@ public class CharacterRepository {
 
     SavedCharacter insert(UUID ownerId, UUID id, JsonNode character) {
         return jdbc.sql("""
-                INSERT INTO app.characters (id, owner_account_id, character_data)
-                VALUES (:id, :owner, CAST(:character AS jsonb))
+                INSERT INTO app.characters (id, owner_account_id, world_id, character_data)
+                VALUES (:id, :owner, :world, CAST(:character AS jsonb))
                 RETURNING id, version, created_at, updated_at, character_data
-                """).param("id", id).param("owner", ownerId).param("character", character.toString())
+                """).param("id", id).param("owner", ownerId).param("world", worldId(character))
+                .param("character", character.toString())
                 .query(rowMapper).single();
     }
 
@@ -62,12 +64,33 @@ public class CharacterRepository {
         return jdbc.sql("""
                 UPDATE app.characters
                 SET character_data = CAST(:character AS jsonb),
+                    world_id = :world,
                     version = version + 1,
                     updated_at = clock_timestamp()
                 WHERE owner_account_id = :owner AND id = :id AND version = :version
                 RETURNING id, version, created_at, updated_at, character_data
-                """).param("character", character.toString()).param("owner", ownerId)
+                """).param("character", character.toString()).param("world", worldId(character)).param("owner", ownerId)
                 .param("id", id).param("version", expectedVersion).query(rowMapper).optional();
+    }
+
+    @Override
+    public List<JsonNode> findByWorld(UUID ownerId, UUID worldId) {
+        return jdbc.sql("""
+                SELECT character_data
+                FROM app.characters
+                WHERE owner_account_id = :owner AND world_id = :world
+                """).param("owner", ownerId).param("world", worldId)
+                .query((result, row) -> readCharacter(result.getString("character_data"))).list();
+    }
+
+    @Override
+    public boolean hasCharacters(UUID ownerId, UUID worldId) {
+        return jdbc.sql("""
+                SELECT EXISTS (
+                    SELECT 1 FROM app.characters
+                    WHERE owner_account_id = :owner AND world_id = :world
+                )
+                """).param("owner", ownerId).param("world", worldId).query(Boolean.class).single();
     }
 
     boolean delete(UUID ownerId, UUID id, long expectedVersion) {
@@ -88,4 +111,18 @@ public class CharacterRepository {
         }
     }
 
+    private JsonNode readCharacter(String value) {
+        try {
+            return json.readTree(value);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Stored character JSON is invalid", exception);
+        }
+    }
+
+    private static UUID worldId(JsonNode character) {
+        JsonNode value = character.get("worldId");
+        return value != null && value.isTextual() && !value.asText().isBlank()
+                ? UUID.fromString(value.asText())
+                : null;
+    }
 }

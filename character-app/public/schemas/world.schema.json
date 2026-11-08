@@ -58,7 +58,19 @@
           "type": "integer",
           "minimum": 1,
           "description": "Number of attribute points available during character creation. Default: 5."
+        },
+        "racePointsBudget": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "World-specific racial ability points budget. Default: 2."
         }
+      }
+    },
+    "races": {
+      "type": "array",
+      "description": "World-owned race templates and their stable racial ability references.",
+      "items": {
+        "$ref": "#/$defs/race"
       }
     },
     "worldHandbook": {
@@ -67,6 +79,9 @@
       "items": {
         "$ref": "/character-creation/schemas/handbook-entry.schema.json"
       }
+    },
+    "audio": {
+      "$ref": "#/$defs/audio"
     }
   },
   "$defs": {
@@ -108,6 +123,176 @@
         },
         "y": {
           "type": "number"
+        }
+      }
+    },
+    "race": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "abilities"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "size": {
+          "type": "number"
+        },
+        "abilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/racialAbilityReference"
+          }
+        }
+      }
+    },
+    "racialAbilityReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repeatCount": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "parameters": {
+          "type": "object"
+        }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "assets",
+        "tracks",
+        "scenes",
+        "presets"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/audioAsset"
+          }
+        },
+        "tracks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/audioTrack"
+          }
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/audioScene"
+          }
+        },
+        "presets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/audioPreset"
+          }
+        }
+      }
+    },
+    "audioAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "filename",
+        "mediaType",
+        "byteLength"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "filename": { "type": "string", "minLength": 1 },
+        "mediaType": { "type": "string", "minLength": 1 },
+        "byteLength": { "type": "number", "minimum": 0 },
+        "durationSeconds": { "type": "number", "minimum": 0 },
+        "checksum": { "type": "string" }
+      }
+    },
+    "audioTrack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "assetId",
+        "name",
+        "loop",
+        "defaultVolume"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "assetId": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "loop": { "type": "boolean" },
+        "defaultVolume": { "type": "number", "minimum": 0, "maximum": 1 },
+        "muted": { "type": "boolean" },
+        "presetId": { "type": "string" },
+        "transition": { "enum": ["instant", "fade-short", "fade-medium", "fade-long"] }
+      }
+    },
+    "audioPreset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "audioScene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "trackIds"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "trackIds": { "type": "array", "items": { "type": "string" } },
+        "trackSettings": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/audioSceneTrackSettings"
+          }
+        }
+      }
+    },
+    "audioSceneTrackSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["loop", "defaultVolume", "muted", "presetId", "transition"],
+      "properties": {
+        "loop": { "type": "boolean" },
+        "defaultVolume": { "type": "number", "minimum": 0, "maximum": 1 },
+        "muted": { "type": "boolean" },
+        "presetId": { "type": ["string", "null"] },
+        "transition": {
+          "type": ["string", "null"],
+          "enum": ["instant", "fade-short", "fade-medium", "fade-long", null]
         }
       }
     },

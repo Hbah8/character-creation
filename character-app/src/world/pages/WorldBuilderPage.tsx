@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useSessionAccount } from '@/accounts/useSessionAccount'
+import { WorldSyncNotice } from '@/world/components/WorldSyncNotice'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ImportErrorDialog } from '@/components/ImportErrorDialog'
 import { detectInitialLocale } from '@/i18n'
@@ -11,6 +13,7 @@ import { WorldControlPanel } from '@/world/components/WorldControlPanel'
 import { WorldExportDropdown } from '@/world/components/WorldExportDropdown'
 import { WorldGraph } from '@/world/components/WorldGraph'
 import { WorldInspector } from '@/world/components/WorldInspector'
+import { validateWorldImport } from '@/world/services/validateWorldImport'
 import { exportWorldToJson, importWorldFromJson } from '@/world/services/worldImportExportService'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import { useWorldStore } from '@/world/store/useWorldStore'
@@ -25,18 +28,26 @@ function formatTime(date: Date): string {
 
 export function WorldBuilderPage() {
   const { id } = useParams<{ id?: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
+  const account = useSessionAccount()
   const { t: tForm } = useTranslation('form')
   const { t: tHeader } = useTranslation('header')
   const { t: tLibrary } = useTranslation('library')
   const { t: tNav } = useTranslation('navigation')
   const library = useWorldLibrary()
-  const store = useWorldStore(getDefaultWorld(initialLocale))
+  const routeState = location.state as { accountId?: string; importedWorld?: unknown } | null
+  const importedWorld = !id && routeState?.accountId === account.id && routeState.importedWorld !== undefined
+    ? validateWorldImport(routeState.importedWorld)
+    : undefined
+  const store = useWorldStore(importedWorld ?? getDefaultWorld(initialLocale))
   const { world } = store
 
   const [cleanSnapshot, setCleanSnapshot] = useState(() => JSON.stringify(world))
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [loadingWorld, setLoadingWorld] = useState(Boolean(id))
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(
     () => world.entities[0]?.id ?? null,
   )
@@ -44,23 +55,28 @@ export function WorldBuilderPage() {
   const loadedIdRef = useRef<string | undefined>(undefined)
 
   useEffect(() => {
-    if (id && id !== loadedIdRef.current) {
-      try {
-        const loaded = library.loadById(id)
+    if (!id) {
+      library.markNew()
+      return
+    }
+    if (id === loadedIdRef.current) return
+    let active = true
+    setLoadingWorld(true)
+    void library.loadById(id).then(loaded => {
+      if (!active) return
         store.replaceWorld(loaded)
-        // Keep the saved/dirty baseline in sync with the newly loaded route entity.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCleanSnapshot(JSON.stringify(loaded))
         setSavedAt(null)
         setSelectedEntityId(loaded.entities[0]?.id ?? null)
         setSelectedRelationshipId(null)
         loadedIdRef.current = id
-      } catch {
-        navigate('/worlds', { replace: true })
-      }
-    }
+        setLoadingWorld(false)
+    }).catch(() => {
+      if (active) setLoadingWorld(false)
+    })
+    return () => { active = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
+  }, [id, library.loadById, store.replaceWorld])
 
   const selectedEntity = useMemo(
     () => world.entities.find(entity => entity.id === selectedEntityId) ?? null,
@@ -77,12 +93,19 @@ export function WorldBuilderPage() {
     [world, cleanSnapshot],
   )
 
-  function handleSave() {
-    const savedId = library.save(world)
-    setCleanSnapshot(JSON.stringify(world))
-    setSavedAt(new Date())
-    if (!id) {
-      navigate(`/worlds/${savedId}`, { replace: true })
+  async function handleSave() {
+    setSaving(true)
+    try {
+      const savedId = await library.save(world)
+      setCleanSnapshot(JSON.stringify(world))
+      setSavedAt(new Date())
+      if (!id) {
+        navigate(`/worlds/${savedId}`, { replace: true })
+      }
+    } catch {
+      // The library retains the failed draft and exposes its error for retry.
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -139,7 +162,10 @@ export function WorldBuilderPage() {
       setSelectedEntityId(imported.entities[0]?.id ?? null)
       setSelectedRelationshipId(null)
       library.markNew()
-      navigate('/worlds/new', { replace: true })
+      navigate('/worlds/new', {
+        replace: true,
+        state: { accountId: account.id, importedWorld: imported },
+      })
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'validation.world.invalidJson')
     }
@@ -183,6 +209,19 @@ export function WorldBuilderPage() {
     />
   )
 
+  if (library.loading || id && loadingWorld) {
+    return (
+      <main className="flex flex-col gap-4 p-6" role="status">
+        <p>{tLibrary('loadingWorlds')}</p>
+        <WorldSyncNotice onReloadWorld={loaded => {
+          store.replaceWorld(loaded)
+          setCleanSnapshot(JSON.stringify(loaded))
+          setLoadingWorld(false)
+        }} />
+      </main>
+    )
+  }
+
   return (
     <div className="h-[100svh] w-full flex flex-col bg-background text-foreground overflow-hidden">
       <header className="h-12 shrink-0 border-b px-4 flex items-center justify-between gap-4">
@@ -216,7 +255,7 @@ export function WorldBuilderPage() {
               {tHeader('savedAt', { time: formatTime(savedAt) })}
             </span>
           )}
-          <Button size="sm" onClick={handleSave}>
+          <Button size="sm" onClick={() => void handleSave()} disabled={saving}>
             <Save className="size-4 mr-1.5" />
             {tLibrary('save')}
           </Button>
@@ -226,6 +265,13 @@ export function WorldBuilderPage() {
           />
         </div>
       </header>
+
+      <WorldSyncNotice onReloadWorld={loaded => {
+        store.replaceWorld(loaded)
+        setCleanSnapshot(JSON.stringify(loaded))
+        setSelectedEntityId(loaded.entities[0]?.id ?? null)
+        setSelectedRelationshipId(null)
+      }} />
 
       <div className="hidden lg:grid flex-1 min-h-0 grid-cols-[320px_minmax(0,1fr)_360px]">
         {controlPanel}

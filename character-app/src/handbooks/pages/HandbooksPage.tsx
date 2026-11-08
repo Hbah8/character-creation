@@ -53,7 +53,8 @@ interface FormState {
 
 export function HandbooksPage() {
   const { t } = useTranslation('handbooks')
-  const { entries: worldEntries, activeWorldId, saveById } = useWorldLibrary()
+  const { t: tLibrary } = useTranslation('library')
+  const { entries: worldEntries, activeWorldId, saveById, loading } = useWorldLibrary()
   const [filters, setFilters] = useState(createEmptyHandbookFilters)
   const [formState, setFormState] = useState<FormState | null>(null)
 
@@ -66,6 +67,10 @@ export function HandbooksPage() {
     hindrances: resolveHandbookEntries('hindrance', worldHandbook, [...SWADE_HINDRANCES]).map(entry => ({ id: entry.id, name: entry.name })),
     races: activeWorld?.races.map(race => ({ id: race.id, name: race.name })) ?? [],
     skills: resolveHandbookEntries('skill', worldHandbook, [...SWADE_SKILLS]).map(entry => ({ id: entry.id, name: entry.name })),
+  }
+
+  if (loading) {
+    return <main className="p-6" role="status">{tLibrary('loadingWorlds')}</main>
   }
 
   function handleTabChange() {

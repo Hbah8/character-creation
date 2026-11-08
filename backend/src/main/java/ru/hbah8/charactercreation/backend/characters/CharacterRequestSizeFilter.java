@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-/** Enforces a bounded character JSON request body, including chunked requests. */
+/** Enforces bounded JSON request bodies for characters and worlds, including chunked requests. */
 public class CharacterRequestSizeFilter extends OncePerRequestFilter {
     static final int MAX_REQUEST_BYTES = 2 * 1024 * 1024;
 
@@ -23,7 +23,9 @@ public class CharacterRequestSizeFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         String method = request.getMethod();
-        return !(path.equals("/api/characters") || path.startsWith("/api/characters/"))
+        boolean characterPath = path.equals("/api/characters") || path.startsWith("/api/characters/");
+        boolean worldPath = path.equals("/api/worlds") || path.startsWith("/api/worlds/");
+        return !(characterPath || worldPath)
                 || !(method.equals("POST") || method.equals("PUT"));
     }
 

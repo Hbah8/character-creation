@@ -1,69 +1,78 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useSyncExternalStore } from 'react'
 import type { World } from '@/world/types'
-import type { WorldLibraryEntry } from '@/world/services/worldLibraryService'
-import {
-  deleteWorldEntry,
-  loadWorldLibrary,
-  saveWorldEntry,
-} from '@/world/services/worldLibraryService'
-
-const ACTIVE_WORLD_KEY = 'active-world-id'
-const ACTIVE_WORLD_EVENT = 'active-world-changed'
+import { SessionAccountContext } from '@/accounts/useSessionAccount'
+import { worldLibraryStore } from '@/world/store/worldLibraryStore'
 
 export function useWorldLibrary() {
-  const [entries, setEntries] = useState<WorldLibraryEntry[]>(() => loadWorldLibrary())
-  const [currentId, setCurrentId] = useState<string | null>(null)
-  const [activeWorldId, setActiveWorldIdState] = useState<string | null>(
-    () => localStorage.getItem(ACTIVE_WORLD_KEY)
+  const account = useContext(SessionAccountContext)
+  const accountId = account?.id ?? ''
+  const snapshot = useSyncExternalStore(
+    worldLibraryStore.subscribe,
+    () => worldLibraryStore.getSnapshot(accountId),
+    () => worldLibraryStore.getSnapshot(accountId),
   )
 
   useEffect(() => {
-    const handler = () => setActiveWorldIdState(localStorage.getItem(ACTIVE_WORLD_KEY))
-    window.addEventListener(ACTIVE_WORLD_EVENT, handler)
-    return () => window.removeEventListener(ACTIVE_WORLD_EVENT, handler)
-  }, [])
+    if (!accountId) return
+    void worldLibraryStore.load(accountId)
+  }, [accountId])
 
-  const setActiveWorldId = useCallback((id: string | null) => {
-    if (id === null) {
-      localStorage.removeItem(ACTIVE_WORLD_KEY)
-    } else {
-      localStorage.setItem(ACTIVE_WORLD_KEY, id)
-    }
-    setActiveWorldIdState(id)
-    window.dispatchEvent(new CustomEvent(ACTIVE_WORLD_EVENT))
-  }, [])
+  const save = useCallback((world: World): Promise<string> => {
+    return worldLibraryStore.save(accountId, world)
+  }, [accountId])
 
-  const save = useCallback((world: World): string => {
-    const id = currentId ?? crypto.randomUUID()
-    saveWorldEntry(id, world)
-    setCurrentId(id)
-    setEntries(loadWorldLibrary())
-    return id
-  }, [currentId])
+  const loadById = useCallback((id: string): Promise<World> => {
+    return worldLibraryStore.loadById(accountId, id)
+  }, [accountId])
 
-  const loadById = useCallback((id: string): World => {
-    const entries = loadWorldLibrary()
-    const entry = entries.find(item => item.id === id)
-    if (!entry) throw new Error(`World entry not found: ${id}`)
-    setCurrentId(id)
-    setEntries(entries)
-    return entry.world
-  }, [])
+  const remove = useCallback((id: string): Promise<void> => {
+    return worldLibraryStore.remove(accountId, id)
+  }, [accountId])
 
-  const remove = useCallback((id: string): void => {
-    deleteWorldEntry(id)
-    setEntries(loadWorldLibrary())
-    setCurrentId(prev => (prev === id ? null : prev))
-  }, [])
+  const saveById = useCallback((id: string, world: World): Promise<void> => {
+    return worldLibraryStore.saveById(accountId, id, world)
+  }, [accountId])
 
-  const saveById = useCallback((id: string, world: World): void => {
-    saveWorldEntry(id, world)
-    setEntries(loadWorldLibrary())
-  }, [])
+  const reload = useCallback((): Promise<void> => {
+    return worldLibraryStore.load(accountId, true)
+  }, [accountId])
 
-  const markNew = useCallback(() => {
-    setCurrentId(null)
-  }, [])
+  const reloadWorld = useCallback((id: string): Promise<World> => {
+    return worldLibraryStore.reloadWorld(accountId, id)
+  }, [accountId])
 
-  return { entries, currentId, save, saveById, loadById, remove, markNew, activeWorldId, setActiveWorldId }
+  const retrySave = useCallback((id: string, overwrite = false): Promise<void> => {
+    return worldLibraryStore.retrySave(accountId, id, overwrite)
+  }, [accountId])
+
+  const retryDelete = useCallback((id: string): Promise<void> => {
+    return worldLibraryStore.retryDelete(accountId, id)
+  }, [accountId])
+
+  const retryCreate = useCallback((): Promise<void> => {
+    return worldLibraryStore.retryCreate(accountId)
+  }, [accountId])
+
+  const markNew = useCallback((): void => {
+    worldLibraryStore.setCurrentId(accountId, null)
+  }, [accountId])
+
+  const setActiveWorldId = useCallback((id: string | null): void => {
+    worldLibraryStore.setActiveWorldId(accountId, id)
+  }, [accountId])
+
+  return {
+    ...snapshot,
+    save,
+    saveById,
+    loadById,
+    remove,
+    markNew,
+    setActiveWorldId,
+    reload,
+    reloadWorld,
+    retrySave,
+    retryDelete,
+    retryCreate,
+  }
 }

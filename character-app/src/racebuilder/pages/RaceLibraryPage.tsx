@@ -18,8 +18,9 @@ import type { Race, World } from '@/world/types'
 
 export function RaceLibraryPage() {
   const { t } = useTranslation('raceBuilder')
+  const { t: tLibrary } = useTranslation('library')
   const navigate = useNavigate()
-  const { entries, activeWorldId, saveById } = useWorldLibrary()
+  const { entries, activeWorldId, saveById, loading } = useWorldLibrary()
   const [raceToDelete, setRaceToDelete] = useState<Race | null>(null)
 
   const activeEntry = activeWorldId
@@ -27,6 +28,10 @@ export function RaceLibraryPage() {
     : null
   const activeWorld = activeEntry?.world ?? null
   const races = activeWorld?.races ?? []
+
+  if (loading) {
+    return <main className="p-6" role="status">{tLibrary('loadingWorlds')}</main>
+  }
 
   if (!activeWorldId || !activeWorld) {
     return <Navigate to="/" replace />

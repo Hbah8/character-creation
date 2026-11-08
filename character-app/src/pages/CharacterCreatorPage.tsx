@@ -35,6 +35,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { WorldSyncNotice } from '@/world/components/WorldSyncNotice'
+import { attachActiveWorldToNewCharacter } from '@/services/characterWorldContext'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
@@ -103,7 +105,12 @@ export function CharacterCreatorPage() {
 
   const account = useSessionAccount()
   const library = useCharacterLibrary(account.id)
-  const { activeWorldId, entries: worldEntries } = useWorldLibrary()
+  const {
+    activeWorldId,
+    entries: worldEntries,
+    loading: worldsLoading,
+    reload: reloadWorlds,
+  } = useWorldLibrary()
   const initialCharacter = id
     ? getDefaultCharacter(initialLocale)
     : getDefaultCharacter(initialLocale)
@@ -129,6 +136,7 @@ export function CharacterCreatorPage() {
   const [welcomeOpen, setWelcomeOpen] = useState(() => !hasSeenWelcome())
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [saving, setSaving] = useState(false)
+  const [autoLinkToActiveWorld, setAutoLinkToActiveWorld] = useState(!id)
   const [saveError, setSaveError] = useState<SavedCharacterApiError | null>(null)
   const [loadingSavedCharacter, setLoadingSavedCharacter] = useState(Boolean(id))
   const [loadError, setLoadError] = useState<SavedCharacterApiError | null>(null)
@@ -141,6 +149,12 @@ export function CharacterCreatorPage() {
   const printSheetRef = useRef<HTMLDivElement>(null)
   const replaceCharacter = store.replaceCharacter
   const loadById = library.loadById
+
+  useEffect(() => {
+    if (id || !autoLinkToActiveWorld || worldsLoading || !activeWorldId || character.worldId) return
+    const linked = attachActiveWorldToNewCharacter(character, activeWorldId)
+    replaceCharacter(linked)
+  }, [activeWorldId, autoLinkToActiveWorld, character, id, replaceCharacter, worldsLoading])
 
   const templateId = templatePreferences.templateId
 
@@ -223,7 +237,11 @@ export function CharacterCreatorPage() {
   }
 
   function handleNewCharacter() {
-    const fresh = getDefaultCharacter(locale)
+    const fresh = attachActiveWorldToNewCharacter(
+      getDefaultCharacter(locale),
+      worldsLoading ? null : activeWorldId,
+    )
+    setAutoLinkToActiveWorld(true)
     store.replaceCharacter(fresh)
     setCleanSnapshot(JSON.stringify(fresh))
     setSavedAt(null)
@@ -236,6 +254,7 @@ export function CharacterCreatorPage() {
     try {
       const activeWorldHandbook = worldEntries.find(entry => entry.id === activeWorldId)?.world.worldHandbook ?? []
       const imported = await importFromJson(file, activeWorldHandbook)
+      setAutoLinkToActiveWorld(false)
       store.replaceCharacter(imported)
       setImportWarnings(imported.importWarnings ?? [])
       setCleanSnapshot(JSON.stringify(imported))
@@ -259,6 +278,7 @@ export function CharacterCreatorPage() {
 
   function handleShareConfirm() {
     if (!pendingShareChar) return
+    setAutoLinkToActiveWorld(false)
     store.replaceCharacter(pendingShareChar)
     setImportWarnings(pendingShareChar.importWarnings ?? [])
     setCleanSnapshot(JSON.stringify(pendingShareChar))
@@ -526,6 +546,28 @@ export function CharacterCreatorPage() {
             {tLibrary('backToDashboard')}
           </Button>
         </div>
+      </main>
+    )
+  }
+
+  const linkedWorld = character.worldId
+    ? worldEntries.find(entry => entry.id === character.worldId)
+    : undefined
+  if (worldsLoading || autoLinkToActiveWorld && activeWorldId && !character.worldId) {
+    return (
+      <main className="p-6" role="status">
+        {tLibrary('loadingWorlds')}
+      </main>
+    )
+  }
+  if (character.worldId && !linkedWorld) {
+    return (
+      <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
+        <Alert variant="destructive">
+          <AlertDescription>{tLibrary('errors.invalidReference')}</AlertDescription>
+        </Alert>
+        <WorldSyncNotice />
+        <Button onClick={() => void reloadWorlds()}>{tLibrary('retry')}</Button>
       </main>
     )
   }

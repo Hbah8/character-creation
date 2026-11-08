@@ -365,6 +365,313 @@ class AccountIntegrationTest {
     }
 
     @Test
+    void worldsAreAccountScopedVersionedAndPreserveGraphAndRules() throws Exception {
+        Browser owner = verifiedBrowser("world-owner@example.com");
+        Browser other = verifiedBrowser("world-other@example.com");
+        ObjectNode world = json.createObjectNode();
+        world.put("schemaVersion", 1);
+        world.put("name", "Ashen March");
+        world.put("summary", "A test campaign");
+        world.set("settingRules", json.createObjectNode()
+                .put("skillPointsBudget", 8)
+                .put("attributePointsBudget", 6)
+                .put("racePointsBudget", 3));
+        world.set("races", json.createArrayNode().add(json.createObjectNode()
+                .put("id", "race-id")
+                .put("name", "Marshborn")
+                .put("description", "People of the marsh.")
+                .put("size", 1)
+                .set("abilities", json.createArrayNode().add(json.createObjectNode()
+                        .put("id", "racial-custom")
+                        .put("repeatCount", 1)
+                        .set("parameters", json.createObjectNode())))));
+        world.set("worldHandbook", json.createArrayNode()
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "skill-custom")
+                        .put("handbookCategory", "skill")
+                        .put("name", "Marsh Lore")
+                        .put("description", "Knowledge of wetlands.")
+                        .put("linkedAttribute", "smarts")
+                        .put("isCore", false))
+                .add(json.createObjectNode()
+                        .put("mode", "override")
+                        .put("id", "fighting")
+                        .put("handbookCategory", "skill")
+                        .put("name", "Close Combat")
+                        .put("description", "World-specific fighting skill.")
+                        .put("linkedAttribute", "agility")
+                        .put("isCore", false))
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "edge-custom")
+                        .put("handbookCategory", "edge")
+                        .put("name", "Bog Walker")
+                        .put("description", "Moves through marshes.")
+                        .put("type", "Background"))
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "hindrance-custom")
+                        .put("handbookCategory", "hindrance")
+                        .put("name", "Oathbound")
+                        .put("description", "Must honor a sworn promise.")
+                        .put("type", "Major"))
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "racial-custom")
+                        .put("handbookCategory", "racialAbility")
+                        .put("name", "Quick Step")
+                        .put("description", "A swift gait.")
+                        .put("type", "positive")
+                        .put("points", 1)
+                        .set("modifiers", json.createArrayNode().add(json.createObjectNode()
+                                .put("type", "combat")
+                                .put("stat", "pace")
+                                .put("amount", 1))))
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "gear-custom")
+                        .put("handbookCategory", "gear")
+                        .put("name", "Marsh Kit")
+                        .put("description", "Tools for a wetland expedition.")
+                        .put("category", "Tools"))
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "weapon-custom")
+                        .put("handbookCategory", "weapon")
+                        .put("name", "Bog Spear")
+                        .put("description", "A long, balanced spear.")
+                        .put("category", "Melee")
+                        .put("damage", "Str+d6")
+                        .set("range", json.createObjectNode().put("type", "melee")))
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "power-custom")
+                        .put("handbookCategory", "power")
+                        .put("name", "Mist Veil")
+                        .put("description", "Conceals a small area.")
+                        .put("ppCost", "2")
+                        .put("range", "Smarts")
+                        .put("duration", "3 rounds")
+                        .set("arcaneBackground", json.createArrayNode().add("Magic")))
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "mount-custom")
+                        .put("handbookCategory", "mount")
+                        .put("name", "Marsh Runner")
+                        .put("description", "A sure-footed mount.")
+                        .put("category", "animal")
+                        .put("toughness", 5)));
+        ObjectNode entity = json.createObjectNode()
+                .put("id", "village-id")
+                .put("type", "location")
+                .put("title", "Greyhaven")
+                .put("summary", "A remote settlement")
+                .put("description", "A fogbound village.")
+                .set("tags", json.createArrayNode().add("frontier"));
+        entity.set("position", json.createObjectNode().put("x", 12).put("y", 24));
+        ObjectNode faction = json.createObjectNode()
+                .put("id", "faction-id")
+                .put("type", "faction")
+                .put("title", "The Reed Guard")
+                .put("summary", "Local defenders.")
+                .put("description", "Protects the settlement.")
+                .set("tags", json.createArrayNode());
+        faction.set("position", json.createObjectNode().put("x", 40).put("y", 80));
+        world.set("entities", json.createArrayNode().add(entity).add(faction));
+        world.set("relationships", json.createArrayNode().add(json.createObjectNode()
+                .put("id", "relationship-id")
+                .put("sourceId", "village-id")
+                .put("targetId", "faction-id")
+                .put("type", "custom")
+                .put("label", "protected by")
+                .put("description", "The guard watches the village.")));
+
+        var created = owner.worldRequest("POST", "", Map.of("world", world), null, true);
+        assertEquals(201, created.statusCode(), created.body());
+        JsonNode saved = json.readTree(created.body());
+        String worldId = saved.path("id").asText();
+        assertEquals("\"1\"", created.headers().firstValue("ETag").orElseThrow());
+        assertEquals(world, saved.path("world"));
+
+        var ownerList = owner.worldRequest("GET", "", null, null, false);
+        var otherList = other.worldRequest("GET", "", null, null, false);
+        assertEquals(1, json.readTree(ownerList.body()).size());
+        assertEquals(0, json.readTree(otherList.body()).size());
+        assertEquals(404, other.worldRequest("GET", "/" + worldId, null, null, false).statusCode());
+        assertEquals(404, other.worldRequest("PUT", "/" + worldId,
+                Map.of("world", world), "\"1\"", true).statusCode());
+        assertEquals(404, other.worldRequest("DELETE", "/" + worldId, null, "\"1\"", true).statusCode());
+        assertEquals(403, owner.worldRequest("POST", "", Map.of("world", world), null, false).statusCode());
+
+        ObjectNode linkedCharacter = (ObjectNode) characterFixture.deepCopy();
+        linkedCharacter.put("worldId", worldId);
+        linkedCharacter.put("raceId", "race-id");
+        linkedCharacter.set("skills", json.createArrayNode().add(json.createObjectNode()
+                .put("id", "skill-row")
+                .put("skillKey", "skill-custom")
+                .put("die", "d6")));
+        linkedCharacter.set("edges", json.createArrayNode().add(json.createObjectNode()
+                .put("id", "edge-row")
+                .put("edgeId", "edge-custom")));
+        linkedCharacter.set("hindrances", json.createArrayNode().add(json.createObjectNode()
+                .put("id", "hindrance-row")
+                .put("hindranceId", "hindrance-custom")
+                .put("name", "Oathbound")
+                .put("severity", "major")
+                .put("description", "Must honor a sworn promise.")));
+        var foreignWorldCharacter = (ObjectNode) linkedCharacter.deepCopy();
+        assertEquals("invalidReference", json.readTree(other.characterRequest("POST", "",
+                Map.of("character", foreignWorldCharacter), null, true).body()).path("code").asText());
+        var savedCharacter = owner.characterRequest("POST", "",
+                Map.of("character", linkedCharacter), null, true);
+        assertEquals(201, savedCharacter.statusCode(), savedCharacter.body());
+        String characterId = json.readTree(savedCharacter.body()).path("id").asText();
+
+        ObjectNode changed = world.deepCopy();
+        changed.put("name", "Grey March");
+        var updated = owner.worldRequest("PUT", "/" + worldId,
+                Map.of("world", changed), "\"1\"", true);
+        assertEquals(200, updated.statusCode(), updated.body());
+        assertEquals("\"2\"", updated.headers().firstValue("ETag").orElseThrow());
+        assertEquals(409, owner.worldRequest("PUT", "/" + worldId,
+                Map.of("world", world), "\"1\"", true).statusCode());
+
+        assertEquals(409, owner.worldRequest("DELETE", "/" + worldId, null, "\"2\"", true).statusCode());
+        ObjectNode missingSkill = changed.deepCopy();
+        var remainingEntries = (com.fasterxml.jackson.databind.node.ArrayNode) missingSkill.path("worldHandbook");
+        for (int index = remainingEntries.size() - 1; index >= 0; index--) {
+            if (remainingEntries.get(index).path("id").asText().equals("skill-custom")) {
+                remainingEntries.remove(index);
+            }
+        }
+        assertEquals(409, owner.worldRequest("PUT", "/" + worldId,
+                Map.of("world", missingSkill), "\"2\"", true).statusCode());
+        ObjectNode missingRace = changed.deepCopy();
+        missingRace.set("races", json.createArrayNode());
+        assertEquals(409, owner.worldRequest("PUT", "/" + worldId,
+                Map.of("world", missingRace), "\"2\"", true).statusCode());
+        assertEquals(200, owner.characterRequest("GET", "/" + characterId, null, null, false).statusCode());
+        assertEquals(404, other.characterRequest("GET", "/" + characterId, null, null, false).statusCode());
+        assertEquals(204, owner.characterRequest("DELETE", "/" + characterId, null, "\"1\"", true).statusCode());
+        assertEquals(204, owner.worldRequest("DELETE", "/" + worldId, null, "\"2\"", true).statusCode());
+    }
+
+    @Test
+    void worldsAndLinkedCharacterReferencesSurviveBackendRestart() throws Exception {
+        Browser owner = verifiedBrowser("restart-world@example.com");
+        ObjectNode world = json.createObjectNode()
+                .put("schemaVersion", 1)
+                .put("name", "Restart March")
+                .put("summary", "Persistent linked data.");
+        world.set("settingRules", json.createObjectNode()
+                .put("skillPointsBudget", 8)
+                .put("attributePointsBudget", 6)
+                .put("racePointsBudget", 3));
+        ObjectNode entity = json.createObjectNode()
+                .put("id", "location-id")
+                .put("type", "location")
+                .put("title", "Stillwater")
+                .put("summary", "A quiet town.")
+                .put("description", "A town beside the marsh.");
+        entity.set("tags", json.createArrayNode());
+        entity.set("position", json.createObjectNode().put("x", 10).put("y", 20));
+        world.set("entities", json.createArrayNode().add(entity));
+        world.set("relationships", json.createArrayNode());
+        world.set("worldHandbook", json.createArrayNode()
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "restart-skill")
+                        .put("handbookCategory", "skill")
+                        .put("name", "Marsh Lore")
+                        .put("description", "Knowledge of wetlands.")
+                        .put("linkedAttribute", "smarts")
+                        .put("isCore", false))
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "restart-edge")
+                        .put("handbookCategory", "edge")
+                        .put("name", "Bog Walker")
+                        .put("description", "Moves through marshes.")
+                        .put("type", "Background"))
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "restart-hindrance")
+                        .put("handbookCategory", "hindrance")
+                        .put("name", "Oathbound")
+                        .put("description", "Must honor a sworn promise.")
+                        .put("type", "Major"))
+                .add(json.createObjectNode()
+                        .put("mode", "custom")
+                        .put("id", "restart-ability")
+                        .put("handbookCategory", "racialAbility")
+                        .put("name", "Quick Step")
+                        .put("description", "A swift gait.")
+                        .put("type", "positive")
+                        .put("points", 1)
+                        .set("modifiers", json.createArrayNode().add(json.createObjectNode()
+                                .put("type", "combat")
+                                .put("stat", "pace")
+                                .put("amount", 1)))));
+        world.set("races", json.createArrayNode().add(json.createObjectNode()
+                .put("id", "restart-race")
+                .put("name", "Marchfolk")
+                .put("description", "People of the wetlands.")
+                .put("size", 0)
+                .set("abilities", json.createArrayNode().add(json.createObjectNode()
+                        .put("id", "restart-ability")
+                        .put("repeatCount", 1)
+                        .set("parameters", json.createObjectNode())))));
+
+        var worldResponse = owner.worldRequest("POST", "", Map.of("world", world), null, true);
+        assertEquals(201, worldResponse.statusCode(), worldResponse.body());
+        JsonNode createdWorld = json.readTree(worldResponse.body());
+        String worldId = createdWorld.path("id").asText();
+
+        ObjectNode character = (ObjectNode) characterFixture.deepCopy();
+        character.put("worldId", worldId);
+        character.put("raceId", "restart-race");
+        character.set("skills", json.createArrayNode().add(json.createObjectNode()
+                .put("id", "skill-row")
+                .put("skillKey", "restart-skill")
+                .put("die", "d6")));
+        character.set("edges", json.createArrayNode().add(json.createObjectNode()
+                .put("id", "edge-row")
+                .put("edgeId", "restart-edge")));
+        character.set("hindrances", json.createArrayNode().add(json.createObjectNode()
+                .put("id", "hindrance-row")
+                .put("hindranceId", "restart-hindrance")
+                .put("name", "Oathbound")
+                .put("severity", "major")
+                .put("description", "Must honor a sworn promise.")));
+        var characterResponse = owner.characterRequest("POST", "", Map.of("character", character), null, true);
+        assertEquals(201, characterResponse.statusCode(), characterResponse.body());
+        String characterId = json.readTree(characterResponse.body()).path("id").asText();
+
+        app.close();
+        start();
+
+        JsonNode persistedWorld = json.readTree(
+                owner.worldRequest("GET", "/" + worldId, null, null, false).body()).path("world");
+        JsonNode persistedCharacter = json.readTree(
+                owner.characterRequest("GET", "/" + characterId, null, null, false).body()).path("character");
+        assertAll(
+                () -> assertEquals("Restart March", persistedWorld.path("name").asText()),
+                () -> assertEquals("Stillwater", persistedWorld.path("entities").get(0).path("title").asText()),
+                () -> assertEquals("restart-ability", persistedWorld.path("races").get(0)
+                        .path("abilities").get(0).path("id").asText()),
+                () -> assertEquals("restart-skill", persistedCharacter.path("skills").get(0)
+                        .path("skillKey").asText()),
+                () -> assertEquals("restart-edge", persistedCharacter.path("edges").get(0)
+                        .path("edgeId").asText()),
+                () -> assertEquals("restart-hindrance", persistedCharacter.path("hindrances").get(0)
+                        .path("hindranceId").asText()),
+                () -> assertEquals(worldId, persistedCharacter.path("worldId").asText()),
+                () -> assertEquals("restart-race", persistedCharacter.path("raceId").asText())
+        );
+    }
+
+    @Test
     void savedCharacterEndpointsRequireSessionValidateStandaloneDataAndLimitRequestSize() throws Exception {
         Browser anonymous = new Browser();
         String id = java.util.UUID.randomUUID().toString();
@@ -383,7 +690,7 @@ class AccountIntegrationTest {
 
         ObjectNode worldCharacter = (ObjectNode) characterFixture.deepCopy();
         worldCharacter.put("worldId", java.util.UUID.randomUUID().toString());
-        assertEquals("unsupportedData", json.readTree(owner.characterRequest("POST", "",
+        assertEquals("invalidReference", json.readTree(owner.characterRequest("POST", "",
                 Map.of("character", worldCharacter), null, true).body()).path("code").asText());
         assertEquals("invalidCharacter", json.readTree(owner.characterRequest("POST", "",
                 Map.of("character", Map.of("callsign", "incomplete")), null, true).body()).path("code").asText());
@@ -576,6 +883,22 @@ class AccountIntegrationTest {
         HttpResponse<String> characterRequest(String method, String path, Object body, String ifMatch,
                                               boolean csrf) throws Exception {
             var request = HttpRequest.newBuilder(URI.create(base + "/api/characters" + path))
+                    .timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json");
+            if (ifMatch != null) {
+                request.header("If-Match", ifMatch);
+            }
+            if (csrf) {
+                request.header("X-CSRF-TOKEN", get("/csrf").path("token").asText());
+            }
+            String payload = body == null ? null
+                    : body instanceof String raw ? raw : json.writeValueAsString(body);
+            return http.send(request.method(method, payload == null ? HttpRequest.BodyPublishers.noBody()
+                    : HttpRequest.BodyPublishers.ofString(payload)).build(), HttpResponse.BodyHandlers.ofString());
+        }
+
+        HttpResponse<String> worldRequest(String method, String path, Object body, String ifMatch,
+                                          boolean csrf) throws Exception {
+            var request = HttpRequest.newBuilder(URI.create(base + "/api/worlds" + path))
                     .timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json");
             if (ifMatch != null) {
                 request.header("If-Match", ifMatch);

@@ -14,6 +14,8 @@ export type SavedCharacterErrorCode =
   | 'notFound'
   | 'unsupportedData'
   | 'invalidCharacter'
+  | 'invalidReference'
+  | 'referencedResource'
   | 'requestTooLarge'
   | 'preconditionRequired'
   | 'invalidVersion'
@@ -23,7 +25,8 @@ export type SavedCharacterErrorCode =
   | 'invalidResponse'
 
 const errorCodes: SavedCharacterErrorCode[] = [
-  'conflict', 'notFound', 'unsupportedData', 'invalidCharacter', 'requestTooLarge',
+  'conflict', 'notFound', 'unsupportedData', 'invalidCharacter', 'invalidReference',
+  'referencedResource', 'requestTooLarge',
   'preconditionRequired', 'invalidVersion', 'unauthenticated', 'forbidden',
   'unavailable', 'invalidResponse',
 ]

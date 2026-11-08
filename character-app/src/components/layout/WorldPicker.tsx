@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Globe, Plus, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,7 +13,17 @@ import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 
 export function WorldPicker() {
   const navigate = useNavigate()
-  const { entries, activeWorldId, setActiveWorldId } = useWorldLibrary()
+  const { t } = useTranslation('library')
+  const { entries, activeWorldId, setActiveWorldId, loading } = useWorldLibrary()
+
+  if (loading) {
+    return (
+      <Button variant="outline" className="w-full justify-start text-xs h-8" disabled>
+        <Globe className="size-3.5 mr-1.5 shrink-0" />
+        {t('loadingWorlds')}
+      </Button>
+    )
+  }
 
   if (entries.length === 0) {
     return (

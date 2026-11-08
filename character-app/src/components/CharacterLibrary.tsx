@@ -25,6 +25,8 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Library, Link } from 'lucide-react'
 import { encodeCharacterToHash, buildShareUrl } from '@/services/shareService'
+import { filterCharactersByWorld } from '@/services/filterCharactersByWorld'
+import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 
 interface Props {
   library: ReturnType<typeof useCharacterLibrary>
@@ -43,7 +45,8 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [operationError, setOperationError] = useState<SavedCharacterApiError | null>(null)
-  const visibleEntries = library.entries
+  const { activeWorldId, loading: worldsLoading } = useWorldLibrary()
+  const visibleEntries = filterCharactersByWorld(library.entries, activeWorldId)
 
   function handleShare(id: string, character: Character) {
     const { hash } = encodeCharacterToHash(character)
@@ -121,7 +124,7 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
             <DialogTitle>{t('title')}</DialogTitle>
           </DialogHeader>
 
-          {library.loading ? (
+          {library.loading || worldsLoading ? (
             <p className="py-4 text-center text-sm text-muted-foreground" role="status">
               {t('loadingCharacters')}
             </p>

@@ -106,7 +106,7 @@ async function confirmationLink(request: APIRequestContext, email: string) {
     const body = await mailpitJson(request, `/api/v1/message/${letter.ID}`) as { Text: string }
     link = body.Text.match(/http:\/\/localhost:\d+\/(?:login|account)#token=[A-Za-z0-9_-]+/)?.[0] ?? ''
     return Boolean(link)
-  }).toBe(true)
+  }, { timeout: 15_000 }).toBe(true)
   return link
 }
 
@@ -343,6 +343,329 @@ test('saved standalone characters persist across browser contexts and stay priva
   } finally {
     await secondContext.close()
     await otherAccountContext.close()
+  }
+})
+
+test('world rules, handbook references, races and linked characters persist across browsers', async ({ page, browser, request }) => {
+  test.setTimeout(60_000)
+  const email = `world-owner-${Date.now()}@example.test`
+  const worldName = 'Cross-browser March'
+  const characterName = 'March scout'
+  await registerAndSignIn(page, request, email)
+
+  await page.goto('/worlds/new')
+  await page.locator('#world-name').fill(worldName)
+  await page.locator('#world-summary').fill('A world shared between browsers.')
+  await page.locator('#setting-skill-points').fill('8')
+  await page.locator('#setting-attribute-points').fill('6')
+  await page.locator('#setting-race-points').fill('3')
+  await page.getByRole('button', { name: 'Add entity', exact: true }).click()
+  await page.locator('#entity-title').fill('Old Quarter')
+  await page.locator('#entity-summary').fill('The oldest district.')
+  await page.getByRole('button', { name: 'Add entity', exact: true }).click()
+  await page.locator('#entity-title').fill('North Gate')
+  await page.locator('#entity-summary').fill('The northern entrance.')
+  const worldCreate = page.waitForResponse(response => response.request().method() === 'POST'
+    && response.url().endsWith('/api/worlds'))
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  const worldCreateResponse = await worldCreate
+  expect(worldCreateResponse.status(), await worldCreateResponse.text()).toBe(201)
+  const createdWorld = await worldCreateResponse.json() as {
+    id: string
+    version: number
+    world: {
+      entities: { id: string; type: string; title: string; summary: string; description: string; tags: string[]; position: { x: number; y: number } }[]
+      relationships: unknown[]
+    }
+  }
+  const district = createdWorld.world.entities.find(entity => entity.title === 'Old Quarter')
+  const gate = createdWorld.world.entities.find(entity => entity.title === 'North Gate')
+  expect(district).toBeDefined()
+  expect(gate).toBeDefined()
+
+  const currentWorld = await page.evaluate(async id => {
+    const response = await fetch(`/api/worlds/${id}`, { cache: 'no-store' })
+    return {
+      status: response.status,
+      etag: response.headers.get('ETag'),
+      record: await response.json() as {
+        version: number
+        world: {
+          schemaVersion: number
+          name: string
+          summary: string
+          settingRules: { skillPointsBudget: number; attributePointsBudget: number; racePointsBudget: number }
+          races: unknown[]
+          entities: { id: string; type: string; title: string; summary: string; description: string; tags: string[]; position: { x: number; y: number } }[]
+          relationships: unknown[]
+          worldHandbook: unknown[]
+          [key: string]: unknown
+        }
+      },
+    }
+  }, createdWorld.id)
+  expect(currentWorld.status).toBe(200)
+  expect(currentWorld.etag).toBe(`"${currentWorld.record.version}"`)
+  const worldWithReferences = {
+    ...currentWorld.record.world,
+    worldHandbook: [
+      { mode: 'custom', id: 'marsh-lore', handbookCategory: 'skill', name: 'Marsh Lore', description: 'Knowledge of wetlands.', linkedAttribute: 'smarts', isCore: false },
+      { mode: 'override', id: 'fighting', handbookCategory: 'skill', name: 'Close Combat', description: 'World-specific fighting skill.', linkedAttribute: 'agility', isCore: false },
+      { mode: 'custom', id: 'bog-walker', handbookCategory: 'edge', name: 'Bog Walker', description: 'Moves through marshes.', type: 'Background' },
+      { mode: 'custom', id: 'oathbound', handbookCategory: 'hindrance', name: 'Oathbound', description: 'Must honor a sworn promise.', type: 'Major' },
+      {
+        mode: 'custom',
+        id: 'quick-step',
+        handbookCategory: 'racialAbility',
+        name: 'Quick Step',
+        description: 'A swift gait.',
+        type: 'positive',
+        points: 1,
+        effects: [{ type: 'pace', amount: 1 }],
+      },
+    ],
+    races: [{
+      id: 'marchfolk',
+      name: 'Marchfolk',
+      description: 'People of the wetlands.',
+      size: 0,
+      abilities: [{ id: 'quick-step', repeatCount: 1, parameters: {} }],
+    }],
+    relationships: [{
+      id: 'district-gate',
+      sourceId: district!.id,
+      targetId: gate!.id,
+      type: 'located_in',
+      label: 'opens onto',
+      description: 'The old road runs through the gate.',
+    }],
+  }
+  const worldUpdate = await page.evaluate(async ({ id, version, world }) => {
+    const csrfResponse = await fetch('/api/auth/csrf', { cache: 'no-store' })
+    const csrf = await csrfResponse.json() as { token: string }
+    const response = await fetch(`/api/worlds/${id}`, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrf.token,
+        'If-Match': `"${version}"`,
+      },
+      body: JSON.stringify({ world }),
+    })
+    return { status: response.status, record: await response.json() as { version: number } }
+  }, { id: createdWorld.id, version: currentWorld.record.version, world: worldWithReferences })
+  expect(worldUpdate.status).toBe(200)
+
+  await page.reload()
+  await expect(page.locator('#world-name')).toHaveValue(worldName)
+  await page.getByRole('button', { name: 'World Data', exact: true }).click()
+  const [worldDownload] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('menuitem', { name: 'Export JSON', exact: true }).click(),
+  ])
+  const downloadStream = await worldDownload.createReadStream()
+  if (!downloadStream) throw new Error('Expected the world JSON export to produce a file.')
+  const downloadChunks: Buffer[] = []
+  for await (const chunk of downloadStream) downloadChunks.push(Buffer.from(chunk))
+  const exportedWorld = JSON.parse(Buffer.concat(downloadChunks).toString('utf8')) as {
+    name: string
+    settingRules: { skillPointsBudget: number }
+    entities: { title: string }[]
+    relationships: { label: string }[]
+    worldHandbook: { id: string; name: string; effects?: { type: string; amount: number }[] }[]
+    races: { id: string; abilities: { id: string }[] }[]
+  }
+  expect(exportedWorld).toMatchObject({
+    name: worldName,
+    settingRules: { skillPointsBudget: 8 },
+    relationships: [{ label: 'opens onto' }],
+    races: [{ id: 'marchfolk', abilities: [{ id: 'quick-step' }] }],
+  })
+  expect(exportedWorld.entities.map(entity => entity.title)).toContain('Old Quarter')
+  expect(exportedWorld.worldHandbook).toEqual(expect.arrayContaining([
+    expect.objectContaining({ id: 'fighting', name: 'Close Combat' }),
+    expect.objectContaining({ id: 'quick-step', effects: [{ type: 'pace', amount: 1 }] }),
+  ]))
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'world.json',
+    mimeType: 'application/json',
+    buffer: Buffer.concat(downloadChunks),
+  })
+  await expect(page).toHaveURL(/\/worlds\/new$/)
+  await expect(page.locator('#world-name')).toHaveValue(worldName)
+  await expect(page.locator('#setting-skill-points')).toHaveValue('8')
+
+  await page.evaluate(() => localStorage.setItem('swade-welcome-seen', 'true'))
+  await page.reload()
+  await page.goto('/')
+  const worldPicker = page.getByRole('button', { name: '—' })
+  await expect(worldPicker).toBeVisible()
+  await worldPicker.click()
+  await page.getByRole('menuitem', { name: worldName, exact: true }).click()
+  await expect(page.getByRole('button', { name: new RegExp(worldName) })).toBeVisible()
+  await page.getByRole('button', { name: 'New Character', exact: true }).first().click()
+  await page.getByLabel('Callsign', { exact: true }).fill(characterName)
+  await page.getByRole('combobox', { name: 'Race Race' }).first().click()
+  await page.getByRole('option', { name: 'Marchfolk', exact: true }).click()
+  await expect(page.getByText('Quick Step', { exact: true }).first()).toBeVisible()
+
+  await page.getByRole('button', { name: 'Skills', exact: true }).click()
+  const pointsBefore = await page.getByText(/^Points spent:/).first().innerText()
+  const pointsBeforeMatch = pointsBefore.match(/Points spent: (\d+) \/ (\d+)/)
+  expect(pointsBeforeMatch).not.toBeNull()
+  const pointsBeforeSpent = Number(pointsBeforeMatch?.[1])
+  await page.getByRole('combobox').filter({ hasText: 'Select a skill' }).first().click()
+  await page.getByRole('option', { name: 'Marsh Lore', exact: true }).click()
+  const pointsAfter = await page.getByText(/^Points spent:/).first().innerText()
+  const pointsAfterMatch = pointsAfter.match(/Points spent: (\d+) \/ (\d+)/)
+  expect(Number(pointsAfterMatch?.[1])).toBe(pointsBeforeSpent + 1)
+  expect(Number(pointsAfterMatch?.[2])).toBe(8)
+  const expectedSkillPointsSpent = pointsBeforeSpent + 1
+
+  await page.getByRole('button', { name: 'Edges', exact: true }).click()
+  await page.getByRole('button', { name: /Bog Walker/ }).click()
+  await page.getByRole('button', { name: 'Hindrances', exact: true }).click()
+  await page.getByRole('button', { name: /Oathbound/ }).click()
+
+  const characterCreate = page.waitForResponse(response => response.request().method() === 'POST'
+    && response.url().endsWith('/api/characters'))
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  const characterCreateResponse = await characterCreate
+  expect(characterCreateResponse.status()).toBe(201)
+  const savedCharacter = await characterCreateResponse.json() as {
+    id: string
+    character: {
+      callsign: string
+      worldId: string
+      raceId: string
+      skills: { skillKey: string }[]
+      edges: { edgeId: string }[]
+      hindrances: { hindranceId: string }[]
+    }
+  }
+  expect(savedCharacter.character).toMatchObject({
+    callsign: characterName,
+    worldId: createdWorld.id,
+    raceId: 'marchfolk',
+  })
+  expect(savedCharacter.character.skills.map(skill => skill.skillKey)).toContain('marsh-lore')
+  expect(savedCharacter.character.edges.map(edge => edge.edgeId)).toContain('bog-walker')
+  expect(savedCharacter.character.hindrances.map(hindrance => hindrance.hindranceId)).toContain('oathbound')
+  const paceStat = page.locator('.quick-stat').filter({ has: page.getByText('Pace', { exact: true }) })
+  await expect(paceStat.locator('.qs-value').first()).toHaveText('7')
+
+  const secondContext = await browser.newContext()
+  try {
+    await secondContext.addInitScript(() => localStorage.setItem('swade-welcome-seen', 'true'))
+    const secondPage = await secondContext.newPage()
+    await secondPage.goto('/login')
+    await signIn(secondPage, email)
+    await expect(secondPage).not.toHaveURL(/\/login/)
+    await secondPage.goto('/')
+    const secondWorldPicker = secondPage.getByRole('button', { name: '—' })
+    await expect(secondWorldPicker).toBeVisible()
+    await secondWorldPicker.click()
+    await secondPage.getByRole('menuitem', { name: worldName, exact: true }).click()
+    await secondPage.getByText(characterName, { exact: true }).last().click()
+    await expect(secondPage).toHaveURL(new RegExp(`/creator/${savedCharacter.id}$`))
+    await expect(secondPage.getByLabel('Callsign', { exact: true })).toHaveValue(characterName)
+
+    await secondPage.getByRole('button', { name: 'Skills', exact: true }).click()
+    await expect(secondPage.getByText('Marsh Lore', { exact: true }).first()).toBeVisible()
+    const secondPoints = await secondPage.getByText(/^Points spent:/).first().innerText()
+    const secondPointsMatch = secondPoints.match(/Points spent: (\d+) \/ (\d+)/)
+    expect(Number(secondPointsMatch?.[1])).toBe(expectedSkillPointsSpent)
+    expect(Number(secondPointsMatch?.[2])).toBe(8)
+    await secondPage.getByRole('button', { name: 'Edges', exact: true }).click()
+    await expect(secondPage.getByText('Bog Walker', { exact: true }).first()).toBeVisible()
+    await expect(secondPage.getByText('Moves through marshes.', { exact: true }).first()).toBeVisible()
+    await secondPage.getByRole('button', { name: 'Hindrances', exact: true }).click()
+    await expect(secondPage.getByText('Oathbound', { exact: true }).first()).toBeVisible()
+    await secondPage.getByRole('button', { name: 'Identity', exact: true }).click()
+    await expect(secondPage.getByText('Quick Step', { exact: true }).first()).toBeVisible()
+    const secondPaceStat = secondPage.locator('.quick-stat').filter({
+      has: secondPage.getByText('Pace', { exact: true }),
+    })
+    await expect(secondPaceStat.locator('.qs-value').first()).toHaveText('7')
+
+    const persistedWorld = await secondPage.evaluate(async id =>
+      (await fetch(`/api/worlds/${id}`, { cache: 'no-store' })).json() as Promise<{
+        world: { name: string; settingRules: { skillPointsBudget: number }; relationships: { label: string }[]; worldHandbook: { id: string; name: string }[]; races: { id: string; abilities: { id: string }[] }[] }
+      }>, createdWorld.id)
+    expect(persistedWorld.world).toMatchObject({
+      name: worldName,
+      settingRules: { skillPointsBudget: 8 },
+      relationships: [{ label: 'opens onto' }],
+    })
+    expect(persistedWorld.world.worldHandbook).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'fighting', name: 'Close Combat' }),
+      expect.objectContaining({ id: 'marsh-lore', name: 'Marsh Lore' }),
+    ]))
+    expect(persistedWorld.world.races[0]).toMatchObject({
+      id: 'marchfolk',
+      abilities: [{ id: 'quick-step' }],
+    })
+
+    const otherWorldName = 'Other March'
+    const otherCharacterName = 'Other March scout'
+    const standaloneName = 'Standalone March scout'
+    const seeded = await secondPage.evaluate(async ({ world, character, otherWorldName, otherCharacterName, standaloneName }) => {
+      const csrf = await (await fetch('/api/auth/csrf')).json() as { token: string }
+      const headers = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf.token }
+      const newWorld = await fetch('/api/worlds', {
+        method: 'POST', headers, body: JSON.stringify({ world: { ...world, name: otherWorldName } }),
+      })
+      const record = await newWorld.json() as { id: string }
+      const otherCharacter = await fetch('/api/characters', {
+        method: 'POST', headers,
+        body: JSON.stringify({ character: { ...character, callsign: otherCharacterName, worldId: record.id } }),
+      })
+      const standalone = await fetch('/api/characters', {
+        method: 'POST', headers,
+        body: JSON.stringify({ character: {
+          ...character, callsign: standaloneName, worldId: undefined, raceId: undefined,
+          skills: [{ id: 'fighting-row', skillKey: 'fighting', die: 'd4' }],
+          edges: [], hindrances: [],
+        } }),
+      })
+      return [newWorld.status, otherCharacter.status, standalone.status]
+    }, {
+      world: worldWithReferences, character: savedCharacter.character,
+      otherWorldName, otherCharacterName, standaloneName,
+    })
+    expect(seeded).toEqual([201, 201, 201])
+
+    await secondPage.goto('/')
+    const dashboard = secondPage.locator('main')
+    await expect(dashboard.getByText(standaloneName, { exact: true }).last()).toBeVisible()
+    await expect(dashboard.getByText(characterName, { exact: true })).toHaveCount(0)
+    await expect(dashboard.getByText(otherCharacterName, { exact: true })).toHaveCount(0)
+    for (const [world, visible, hidden] of [
+      [worldName, characterName, otherCharacterName],
+      [otherWorldName, otherCharacterName, characterName],
+    ]) {
+      await secondPage.getByRole('button', { name: world === worldName ? '—' : worldName, exact: true }).click()
+      await secondPage.getByRole('menuitem', { name: world, exact: true }).click()
+      await expect(dashboard.getByText(visible, { exact: true }).last()).toBeVisible()
+      await expect(dashboard.getByText(hidden, { exact: true })).toHaveCount(0)
+      await expect(dashboard.getByText(standaloneName, { exact: true })).toHaveCount(0)
+      await expect(dashboard.getByText('Characters', { exact: true }).first()
+        .locator('..').getByText('1', { exact: true })).toBeVisible()
+      await expect(dashboard.getByText('Last edited', { exact: true })
+        .locator('..').getByText(visible, { exact: true })).toBeVisible()
+    }
+    await secondPage.getByRole('button', { name: otherWorldName, exact: true }).click()
+    await secondPage.getByRole('menuitem', { name: 'Без мира', exact: true }).click()
+    await expect(dashboard.getByText(standaloneName, { exact: true }).last()).toBeVisible()
+    await expect(dashboard.getByText(characterName, { exact: true })).toHaveCount(0)
+    await expect(dashboard.getByText(otherCharacterName, { exact: true })).toHaveCount(0)
+    const allRecords = await secondPage.evaluate(async () =>
+      (await fetch('/api/characters')).json() as Promise<unknown[]>)
+    expect(allRecords).toHaveLength(3)
+  } finally {
+    await secondContext.close()
   }
 })
 
