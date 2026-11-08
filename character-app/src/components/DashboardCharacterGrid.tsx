@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, FolderOpen, MoreHorizontal, Shield, Swords } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,39 +22,32 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { LibraryEntry } from '@/services/libraryService'
+import {
+  SavedCharacterApiError,
+} from '@/services/savedCharacterApi'
+import type { SavedCharacterRecord } from '@/services/savedCharacterApi'
 
 interface Props {
-  entries: LibraryEntry[]
-  onDelete: (id: string) => void
-}
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-  } catch {
-    return iso
-  }
+  entries: SavedCharacterRecord[]
+  onDelete: (id: string, version: number) => Promise<void>
 }
 
 export function DashboardCharacterGrid({ entries, onDelete }: Props) {
   const navigate = useNavigate()
-  const [pendingDelete, setPendingDelete] = useState<LibraryEntry | null>(null)
+  const { t } = useTranslation('library')
+  const { i18n } = useTranslation()
+  const [pendingDelete, setPendingDelete] = useState<SavedCharacterRecord | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<SavedCharacterApiError | null>(null)
 
   if (entries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 px-4 text-center">
-        <p className="text-base font-medium text-foreground mb-1">Персонажей пока нет</p>
-        <p className="text-sm text-muted-foreground mb-5">
-          Создайте первого персонажа, чтобы начать кампанию.
-        </p>
+        <p className="text-base font-medium text-foreground mb-1">{t('noCharacters')}</p>
+        <p className="text-sm text-muted-foreground mb-5">{t('noCharactersDescription')}</p>
         <Button onClick={() => navigate('/creator')}>
           <Plus className="size-4 mr-1.5" />
-          Новый персонаж
+          {t('newCharacter')}
         </Button>
       </div>
     )
@@ -71,21 +66,12 @@ export function DashboardCharacterGrid({ entries, onDelete }: Props) {
               className="flex flex-col overflow-hidden cursor-pointer transition-colors hover:bg-accent/40"
               onClick={() => navigate(`/creator/${entry.id}`)}
             >
-              {/* Portrait */}
               <div className="h-32 bg-muted overflow-hidden shrink-0">
-                {char.portraitUrl ? (
-                  <img
-                    src={char.portraitUrl}
-                    alt={char.callsign || 'Портрет'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-4xl font-bold text-muted-foreground/40 select-none">
-                      {(char.callsign || '?')[0].toUpperCase()}
-                    </span>
-                  </div>
-                )}
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-4xl font-bold text-muted-foreground/40 select-none">
+                    {(char.callsign || '?')[0].toUpperCase()}
+                  </span>
+                </div>
               </div>
 
               {/* Info */}
@@ -113,7 +99,7 @@ export function DashboardCharacterGrid({ entries, onDelete }: Props) {
                     <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
                       <DropdownMenuItem onClick={() => navigate(`/creator/${entry.id}`)}>
                         <FolderOpen className="size-4 mr-2" />
-                        Открыть
+                        {t('open')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -121,7 +107,7 @@ export function DashboardCharacterGrid({ entries, onDelete }: Props) {
                         onClick={() => setPendingDelete(entry)}
                       >
                         <Trash2 className="size-4 mr-2" />
-                        Удалить
+                        {t('delete')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -147,7 +133,7 @@ export function DashboardCharacterGrid({ entries, onDelete }: Props) {
 
                 {/* Date */}
                 <p className="text-xs text-muted-foreground/60 mt-auto pt-1">
-                  {formatDate(entry.savedAt)}
+                  {new Date(entry.updatedAt).toLocaleDateString(i18n.resolvedLanguage)}
                 </p>
               </CardContent>
             </Card>
@@ -161,23 +147,40 @@ export function DashboardCharacterGrid({ entries, onDelete }: Props) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Удалить персонажа?</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              «{pendingDelete?.character.callsign || '—'}» будет удалён без возможности восстановления.
+              {t('deleteConfirmDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteError && (
+            <Alert variant="destructive">
+              <AlertDescription>{t(`errors.${deleteError.code}`)}</AlertDescription>
+            </Alert>
+          )}
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingDelete(null)}>
-              Отмена
+            <AlertDialogCancel disabled={deleting} onClick={() => setPendingDelete(null)}>
+              {t('cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (pendingDelete) onDelete(pendingDelete.id)
-                setPendingDelete(null)
+              disabled={deleting}
+              onClick={async () => {
+                if (!pendingDelete) return
+                setDeleting(true)
+                setDeleteError(null)
+                try {
+                  await onDelete(pendingDelete.id, pendingDelete.version)
+                  setPendingDelete(null)
+                } catch (error) {
+                  setDeleteError(error instanceof SavedCharacterApiError
+                    ? error
+                    : new SavedCharacterApiError('unavailable'))
+                } finally {
+                  setDeleting(false)
+                }
               }}
-              className="bg-destructive text-white hover:bg-destructive/90"
+              variant="destructive"
             >
-              Удалить
+              {deleting ? t('saving') : t('confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

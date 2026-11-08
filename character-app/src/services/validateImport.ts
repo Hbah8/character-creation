@@ -71,17 +71,18 @@ function normalizeSkill(raw: unknown, worldHandbook: readonly StoredHandbookEntr
     const identifier = isString(raw.skillKey) ? raw.skillKey : isString(raw.name) ? raw.name : raw.id
     throw new Error(`validation.import.unknownSkill:${identifier}`)
   }
-  return { id: raw.id, skillKey, die: raw.die as Skill['die'] }
+  const { name: _name, linkedAttribute: _linkedAttribute, isStarter: _isStarter, ...skillData } = raw
+  return { ...skillData, id: raw.id, skillKey, die: raw.die as Skill['die'] } as Skill
 }
 
 function normalizeEdge(raw: unknown, worldHandbook: readonly StoredHandbookEntry[]): Character['edges'][number] {
-  if (!isObject(raw) || !isString(raw.id) || !isString(raw.edgeId) || Object.keys(raw).some(key => key !== 'id' && key !== 'edgeId')) {
+  if (!isObject(raw) || !isString(raw.id) || !isString(raw.edgeId)) {
     throw new Error('validation.import.invalidEdge')
   }
   if (!resolveEdgeDefinitions(worldHandbook).some(edge => edge.id === raw.edgeId)) {
     throw new Error(`validation.import.unknownEdge:${raw.edgeId}`)
   }
-  return { id: raw.id, edgeId: raw.edgeId }
+  return { ...raw, id: raw.id, edgeId: raw.edgeId } as Character['edges'][number]
 }
 
 function dieValue(die: unknown): number {
@@ -97,36 +98,39 @@ function numberOrZero(value: unknown): number {
 function normalizeCharacterLayout(value: unknown): CharacterLayout | undefined {
   if (!isObject(value)) return undefined
 
-  const layout: Partial<CharacterLayout> = {}
-  const keys: (keyof CharacterLayout)[] = ['weapons', 'edges', 'hindrances', 'gear', 'specialRules', 'powers']
-  const sides: ColumnSide[] = ['left', 'right']
-  for (const key of keys) {
-    const side = value[key]
-    layout[key] = sides.includes(side as ColumnSide) ? side as ColumnSide : DEFAULT_LAYOUT[key]
+  const normalizeSide = (side: unknown, fallback: ColumnSide): ColumnSide =>
+    side === 'left' || side === 'right' ? side : fallback
+
+  return {
+    ...value,
+    weapons: normalizeSide(value.weapons, DEFAULT_LAYOUT.weapons),
+    edges: normalizeSide(value.edges, DEFAULT_LAYOUT.edges),
+    hindrances: normalizeSide(value.hindrances, DEFAULT_LAYOUT.hindrances),
+    gear: normalizeSide(value.gear, DEFAULT_LAYOUT.gear),
+    specialRules: normalizeSide(value.specialRules, DEFAULT_LAYOUT.specialRules),
+    powers: normalizeSide(value.powers, DEFAULT_LAYOUT.powers),
   }
-  return layout as CharacterLayout
+}
+
+function isCombatModifierSource(value: unknown): value is CombatModifierSource {
+  return COMBAT_MODIFIER_SOURCES.some(source => source === value)
 }
 
 function validateCombatModifiers(value: unknown): CombatModifier[] | undefined {
   if (!isArray(value)) return undefined
   return value.flatMap((item): CombatModifier[] => {
-    if (!isObject(item) || !isString(item.id) || !isString(item.name) || !COMBAT_MODIFIER_SOURCES.includes(item.source as CombatModifierSource)) {
+    if (!isObject(item) || !isString(item.id) || !isString(item.name) || !isCombatModifierSource(item.source)) {
       return []
     }
-    return [{
-      id: item.id,
-      source: item.source as CombatModifierSource,
-      name: item.name,
-      pace: numberOrZero(item.pace),
-      parry: numberOrZero(item.parry),
-      toughness: numberOrZero(item.toughness),
-      armor: numberOrZero(item.armor),
-      runningDieSteps: numberOrZero(item.runningDieSteps),
-      bennies: numberOrZero(item.bennies),
-      maxWounds: numberOrZero(item.maxWounds),
-      maxFatigue: numberOrZero(item.maxFatigue),
-      powerPoints: numberOrZero(item.powerPoints),
-    }]
+    const modifier: CombatModifier = { id: item.id, source: item.source, name: item.name }
+    const numericFields = [
+      'pace', 'parry', 'toughness', 'armor', 'runningDieSteps',
+      'bennies', 'maxWounds', 'maxFatigue', 'powerPoints',
+    ] as const
+    for (const field of numericFields) {
+      if (item[field] !== undefined) modifier[field] = numberOrZero(item[field])
+    }
+    return [{ ...item, ...modifier }]
   })
 }
 
@@ -261,12 +265,12 @@ export function validateCharacterImport(raw: unknown, worldHandbook: readonly St
   const layout = normalizeCharacterLayout(raw.layout) ?? { ...DEFAULT_LAYOUT }
   let templateLayouts: Character['templateLayouts']
   if (isObject(raw.templateLayouts)) {
-    const normalized: NonNullable<Character['templateLayouts']> = {}
+    const normalized: Record<string, unknown> = { ...raw.templateLayouts }
     for (const id of ['classic', 'compact'] as const) {
       const templateLayout = normalizeCharacterLayout(raw.templateLayouts[id])
       if (templateLayout) normalized[id] = templateLayout
     }
-    if (Object.keys(normalized).length > 0) templateLayouts = normalized
+    if (Object.keys(normalized).length > 0) templateLayouts = normalized as Character['templateLayouts']
   }
 
   const powers: CharacterPower[] = isArray(raw.powers)
@@ -276,22 +280,24 @@ export function validateCharacterImport(raw: unknown, worldHandbook: readonly St
           ? (p.modifiers as unknown[]).flatMap((m): PowerModifier[] => {
               if (!isObject(m)) return []
               return [{
+                ...m,
                 id: isString(m.id) ? m.id : crypto.randomUUID(),
                 name: isString(m.name) ? m.name : '',
                 ppCost: isString(m.ppCost) ? m.ppCost : '',
-              }]
+              } as PowerModifier]
             })
-          : []
-        return [{
-          id: isString(p.id) ? p.id : crypto.randomUUID(),
-          name: isString(p.name) ? p.name : '',
-          ppCost: isString(p.ppCost) ? p.ppCost : '',
-          range: isString(p.range) ? p.range : '',
-          duration: isString(p.duration) ? p.duration : '',
-          description: isString(p.description) ? p.description : '',
-          modifiers,
-        }]
-      })
+            : []
+          return [{
+            ...p,
+            id: isString(p.id) ? p.id : crypto.randomUUID(),
+            name: isString(p.name) ? p.name : '',
+            ppCost: isString(p.ppCost) ? p.ppCost : '',
+            range: isString(p.range) ? p.range : '',
+            duration: isString(p.duration) ? p.duration : '',
+            description: isString(p.description) ? p.description : '',
+            modifiers,
+          } as CharacterPower]
+        })
     : []
 
   const normalizedSkills = skills

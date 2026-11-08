@@ -9,7 +9,7 @@ const header = {
   welcomeTitle: 'Возможности приложения',
   welcomeClose: 'Понятно!',
   welcomeCharactersTitle: 'Управление персонажами',
-  welcomeCharactersDesc: 'Создание, сохранение, загрузка и удаление персонажей через библиотеку (localStorage)',
+  welcomeCharactersDesc: 'Создание, сохранение, загрузка и удаление персонажей в аккаунте на разных устройствах',
   welcomeEditingTitle: 'Редактирование персонажа',
   welcomeIdentity: 'Личность — позывной, имя, звание, архетип, портрет (JPEG/PNG/WebP, до 2 МБ)',
   welcomeAttributes: 'Характеристики — Ловкость, Смекалка, Характер, Сила, Выносливость',

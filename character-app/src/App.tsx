@@ -7,6 +7,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RouteErrorBoundary } from '@/routing/RouteErrorBoundary'
 import { entityEditorKey } from '@/routing/routeKeys'
 import { SessionBoundary } from '@/accounts/SessionBoundary'
+import { useSessionAccount } from '@/accounts/useSessionAccount'
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(module => ({ default: module.DashboardPage })))
 const CharacterCreatorPage = lazy(() => import('@/pages/CharacterCreatorPage').then(module => ({ default: module.CharacterCreatorPage })))
@@ -22,7 +23,8 @@ const AccountPage = lazy(() => import('@/accounts/AccountPage').then(module => (
 
 function CharacterCreatorRoute() {
   const { id } = useParams<{ id?: string }>()
-  return <CharacterCreatorPage key={entityEditorKey(id)} />
+  const account = useSessionAccount()
+  return <CharacterCreatorPage key={`${account.id}:${entityEditorKey(id)}`} />
 }
 
 function WorldBuilderRoute() {

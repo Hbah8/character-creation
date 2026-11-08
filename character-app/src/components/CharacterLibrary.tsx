@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { useCharacterLibrary } from '@/store/useCharacterLibrary'
 import type { Character } from '@/types/character'
-import { useWorldLibrary } from '@/world/store/useWorldLibrary'
+import { SavedCharacterApiError } from '@/services/savedCharacterApi'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Dialog,
   DialogContent,
@@ -28,27 +29,21 @@ import { encodeCharacterToHash, buildShareUrl } from '@/services/shareService'
 interface Props {
   library: ReturnType<typeof useCharacterLibrary>
   isDirty: boolean
-  onLoad: (char: Character) => void
+  onLoad: (char: Character, updatedAt: string, id: string) => void
   onNewCharacter: () => void
 }
-
-type FilterMode = 'current' | 'all' | 'noWorld'
 
 export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: Props) {
   const { t } = useTranslation('library')
   const { t: tShare } = useTranslation('share')
-  const { activeWorldId } = useWorldLibrary()
   const [open, setOpen] = useState(false)
-  const [filter, setFilter] = useState<FilterMode>(() => activeWorldId ? 'current' : 'all')
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [confirmNewOpen, setConfirmNewOpen] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
-
-  const visibleEntries = (() => {
-    if (filter === 'current') return library.entries.filter(e => e.character.worldId === activeWorldId)
-    if (filter === 'noWorld') return library.entries.filter(e => !e.character.worldId)
-    return library.entries
-  })()
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [operationError, setOperationError] = useState<SavedCharacterApiError | null>(null)
+  const visibleEntries = library.entries
 
   function handleShare(id: string, character: Character) {
     const { hash } = encodeCharacterToHash(character)
@@ -59,10 +54,20 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
     })
   }
 
-  function handleLoad(id: string) {
-    const char = library.loadById(id)
-    onLoad(char)
-    setOpen(false)
+  async function handleLoad(id: string) {
+    setLoadingId(id)
+    setOperationError(null)
+    try {
+      const record = await library.loadById(id)
+      onLoad(record.character, record.updatedAt, record.id)
+      setOpen(false)
+    } catch (error) {
+      setOperationError(error instanceof SavedCharacterApiError
+        ? error
+        : new SavedCharacterApiError('unavailable'))
+    } finally {
+      setLoadingId(null)
+    }
   }
 
   function handleNewCharacterClick() {
@@ -80,12 +85,27 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
     setOpen(false)
   }
 
-  function handleDeleteConfirm() {
-    if (deleteTargetId) {
-      library.remove(deleteTargetId)
+  async function handleDeleteConfirm() {
+    const target = library.entries.find(entry => entry.id === deleteTargetId)
+    if (!target) {
+      setOperationError(new SavedCharacterApiError('notFound'))
+      return
+    }
+    setDeleting(true)
+    setOperationError(null)
+    try {
+      await library.remove(target.id, target.version)
       setDeleteTargetId(null)
+    } catch (error) {
+      setOperationError(error instanceof SavedCharacterApiError
+        ? error
+        : new SavedCharacterApiError('unavailable'))
+    } finally {
+      setDeleting(false)
     }
   }
+
+  const visibleError = operationError ?? library.error
 
   return (
     <>
@@ -101,36 +121,18 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
             <DialogTitle>{t('title')}</DialogTitle>
           </DialogHeader>
 
-          {activeWorldId && (
-            <div className="flex gap-1">
-              <Button
-                size="sm"
-                variant={filter === 'current' ? 'secondary' : 'ghost'}
-                className="text-xs h-7"
-                onClick={() => setFilter('current')}
-              >
-                {t('filterCurrentWorld')}
+          {library.loading ? (
+            <p className="py-4 text-center text-sm text-muted-foreground" role="status">
+              {t('loadingCharacters')}
+            </p>
+          ) : visibleError ? (
+            <Alert variant="destructive">
+              <AlertDescription>{t(`errors.${visibleError.code}`)}</AlertDescription>
+              <Button size="sm" variant="outline" onClick={() => void library.reload()}>
+                {t('retry')}
               </Button>
-              <Button
-                size="sm"
-                variant={filter === 'all' ? 'secondary' : 'ghost'}
-                className="text-xs h-7"
-                onClick={() => setFilter('all')}
-              >
-                {t('filterAll')}
-              </Button>
-              <Button
-                size="sm"
-                variant={filter === 'noWorld' ? 'secondary' : 'ghost'}
-                className="text-xs h-7"
-                onClick={() => setFilter('noWorld')}
-              >
-                {t('filterNoWorld')}
-              </Button>
-            </div>
-          )}
-
-          {visibleEntries.length === 0 ? (
+            </Alert>
+          ) : visibleEntries.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
               {t('noCharacters')}
             </p>
@@ -150,16 +152,17 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
                       {entry.character.rank ? ` · ${entry.character.rank}` : ''}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {t('lastSaved')}: {new Date(entry.savedAt).toLocaleString()}
+                      {t('lastSaved')}: {new Date(entry.updatedAt).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button
                       size="sm"
                       variant="outline"
+                      disabled={loadingId !== null}
                       onClick={() => handleLoad(entry.id)}
                     >
-                      {t('load')}
+                      {loadingId === entry.id ? t('loadingCharacters') : t('load')}
                     </Button>
                     <Button
                       size="sm"
@@ -172,6 +175,7 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
                     <Button
                       size="sm"
                       variant="ghost"
+                      disabled={loadingId !== null || deleting}
                       onClick={() => setDeleteTargetId(entry.id)}
                     >
                       {t('delete')}
@@ -202,12 +206,17 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
             <AlertDialogTitle>{t('deleteConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>{t('deleteConfirmDescription')}</AlertDialogDescription>
           </AlertDialogHeader>
+          {visibleError && (
+            <Alert variant="destructive">
+              <AlertDescription>{t(`errors.${visibleError.code}`)}</AlertDescription>
+            </Alert>
+          )}
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteTargetId(null)}>
+            <AlertDialogCancel disabled={deleting} onClick={() => setDeleteTargetId(null)}>
               {t('cancel')}
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>
-              {t('confirm')}
+            <AlertDialogAction disabled={deleting} onClick={handleDeleteConfirm}>
+              {deleting ? t('saving') : t('confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

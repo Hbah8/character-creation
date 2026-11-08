@@ -1,0 +1,158 @@
+{
+  "sheetTitle": "Campaign record",
+  "callsign": "Scout",
+  "name": "Elena",
+  "rank": "Seasoned",
+  "role": "Ranger",
+  "fileNo": "A-17",
+  "portraitUrl": "",
+  "isWildCard": true,
+  "agility": "d8",
+  "strength": "d6",
+  "smarts": "d6",
+  "spirit": "d8",
+  "vigor": "d6",
+  "pace": "6",
+  "parry": "5",
+  "toughness": "5",
+  "armor": "0",
+  "combatModifiers": [
+    {
+      "id": "worn-armor",
+      "source": "equipment",
+      "name": "Worn armor",
+      "armor": 2,
+      "userDefined": {
+        "condition": "patched"
+      }
+    }
+  ],
+  "skills": [
+    {
+      "id": "fighting-row",
+      "skillKey": "fighting",
+      "die": "d8",
+      "userDefined": {
+        "trainingNote": "Taught by the border guard"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "alertness-row",
+      "edgeId": "bditelnost",
+      "userDefined": {
+        "source": "family"
+      }
+    }
+  ],
+  "hindrances": [
+    {
+      "id": "oath-row",
+      "name": "Oath",
+      "severity": "minor",
+      "description": "Never abandon a travelling companion.",
+      "userDefined": {
+        "recordedBy": "Elena"
+      }
+    }
+  ],
+  "weapons": [
+    {
+      "id": "rifle-row",
+      "name": "Hunting rifle",
+      "range": {
+        "type": "bands",
+        "short": 24,
+        "medium": 48,
+        "long": 96,
+        "extreme": true
+      },
+      "damage": "2d8",
+      "ap": "2",
+      "rof": "1",
+      "magazine": "5",
+      "category": "Ranged",
+      "weight": 8,
+      "cost": 500,
+      "userDefined": {
+        "ammunitionType": "silver"
+      }
+    }
+  ],
+  "gear": [
+    "Field journal",
+    "Compass"
+  ],
+  "specialRules": [
+    {
+      "id": "trailwise-row",
+      "name": "Trailwise",
+      "description": "Recognizes old mountain paths.",
+      "userDefined": {
+        "campaignTag": "north"
+      }
+    }
+  ],
+  "powers": [
+    {
+      "id": "warding-row",
+      "name": "Warding",
+      "ppCost": "2",
+      "range": "Touch",
+      "duration": "5 rounds",
+      "description": "A faint blue glyph appears.",
+      "modifiers": [
+        {
+          "id": "quiet-modifier",
+          "name": "Quiet",
+          "ppCost": "+1",
+          "userDefined": {
+            "trapping": "whispered rune"
+          }
+        }
+      ],
+      "userDefined": {
+        "sourceBook": "Field notes"
+      }
+    }
+  ],
+  "notes": "Keeps a second copy of every map.",
+  "size": 0,
+  "layout": {
+    "weapons": "left",
+    "edges": "right",
+    "hindrances": "right",
+    "gear": "right",
+    "specialRules": "right",
+    "powers": "right"
+  },
+  "templateLayouts": {
+    "classic": {
+      "weapons": "left",
+      "edges": "right",
+      "hindrances": "right",
+      "gear": "right",
+      "specialRules": "right",
+      "powers": "right"
+    },
+    "compact": {
+      "weapons": "right",
+      "edges": "left",
+      "hindrances": "right",
+      "gear": "left",
+      "specialRules": "right",
+      "powers": "left"
+    }
+  },
+  "userDefined": {
+    "campaignId": "winter-road",
+    "customValues": [
+      3,
+      "kept",
+      {
+        "enabled": true
+      }
+    ]
+  }
+}

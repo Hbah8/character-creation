@@ -197,6 +197,155 @@ test.beforeEach(async ({ context }) => {
   await context.addInitScript(() => localStorage.setItem('swade-locale', 'en'))
 })
 
+async function registerAndSignIn(page: Page, request: APIRequestContext, email: string) {
+  await page.goto('/login')
+  await page.getByRole('button', { name: 'Create an account', exact: true }).click()
+  await page.getByLabel('Email', { exact: true }).fill(email)
+  await page.getByLabel('Password', { exact: true }).fill(password)
+  await page.getByRole('button', { name: 'Register', exact: true }).click()
+  await page.goto(await confirmationLink(request, email))
+  await page.getByRole('button', { name: 'Back to sign in', exact: true }).click()
+  await signIn(page, email)
+  await expect(page).not.toHaveURL(/\/login/)
+}
+
+test('saved standalone characters persist across browser contexts and stay private', async ({ page, browser, request }) => {
+  test.setTimeout(45_000)
+  const ownerEmail = `character-owner-${Date.now()}@example.test`
+  const otherEmail = `character-other-${Date.now()}@example.test`
+  await page.goto('/login')
+  await page.evaluate(() => {
+    localStorage.setItem('swade-locale', 'en')
+    localStorage.setItem('swade-welcome-seen', 'true')
+  })
+  await page.evaluate(() => {
+    localStorage.setItem('swade-characters', '[{"id":"local-only"}]')
+    localStorage.setItem('swade-worlds', '[{"id":"local-world-only"}]')
+  })
+  await registerAndSignIn(page, request, ownerEmail)
+
+  await page.goto('/creator')
+  await page.getByLabel('Callsign', { exact: true }).fill('Cross-device scout')
+  const createResponse = page.waitForResponse(response => response.request().method() === 'POST'
+    && response.url().endsWith('/api/characters'))
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  expect((await createResponse).status()).toBe(201)
+  await expect(page.getByRole('status')).toContainText('Saved')
+  const characterId = new URL(page.url()).pathname.split('/').pop()!
+
+  const secondContext = await browser.newContext()
+  const otherAccountContext = await browser.newContext()
+  try {
+    const secondPage = await secondContext.newPage()
+    await secondPage.goto('/login')
+    await secondPage.evaluate(() => {
+      localStorage.setItem('swade-locale', 'en')
+      localStorage.setItem('swade-welcome-seen', 'true')
+    })
+    await secondPage.reload()
+    await signIn(secondPage, ownerEmail)
+    const savedCharacter = secondPage.getByText('Cross-device scout', { exact: true }).last()
+    await expect(savedCharacter).toBeVisible()
+    await savedCharacter.click()
+    await expect(secondPage).toHaveURL(new RegExp(`/creator/${characterId}$`))
+    await secondPage.getByLabel('Callsign', { exact: true }).fill('Updated from another browser')
+
+    await secondPage.route('**/api/characters/*', route =>
+      route.request().method() === 'PUT'
+        ? route.fulfill({ status: 503, json: { code: 'unavailable' } })
+        : route.continue())
+    await secondPage.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect(secondPage.getByRole('alert')).toContainText('save')
+    await expect(secondPage.getByLabel('Callsign', { exact: true }))
+      .toHaveValue('Updated from another browser')
+    await secondPage.unroute('**/api/characters/*')
+
+    const updateResponse = secondPage.waitForResponse(response => response.request().method() === 'PUT'
+      && response.url().endsWith(`/api/characters/${characterId}`))
+    await secondPage.getByRole('button', { name: 'Save', exact: true }).click()
+    expect((await updateResponse).status()).toBe(200)
+    await expect(secondPage.getByRole('status')).toContainText('Saved')
+
+    await page.getByLabel('Callsign', { exact: true }).fill('Draft after version conflict')
+    const conflictResponse = page.waitForResponse(response => response.request().method() === 'PUT'
+      && response.url().endsWith(`/api/characters/${characterId}`))
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    expect((await conflictResponse).status()).toBe(409)
+    await expect(page.getByRole('alert')).toContainText('changed in another browser')
+    await expect(page.getByLabel('Callsign', { exact: true }))
+      .toHaveValue('Draft after version conflict')
+
+    await page.reload()
+    await expect(page.getByLabel('Callsign', { exact: true }))
+      .toHaveValue('Updated from another browser')
+
+    const saved = await secondPage.evaluate(async id =>
+      (await fetch(`/api/characters/${id}`, { cache: 'no-store' })).json(), characterId)
+    const otherAccountPage = await otherAccountContext.newPage()
+    await otherAccountPage.goto('/login')
+    await otherAccountPage.evaluate(() => {
+      localStorage.setItem('swade-locale', 'en')
+      localStorage.setItem('swade-welcome-seen', 'true')
+    })
+    await otherAccountPage.reload()
+    await registerAndSignIn(otherAccountPage, request, otherEmail)
+    await expect(otherAccountPage.getByText('Updated from another browser', { exact: true })).toHaveCount(0)
+    const foreignStatuses = await otherAccountPage.evaluate(async ({ id, record }) => {
+      const csrfResponse = await fetch('/api/auth/csrf')
+      const csrf = await csrfResponse.json() as { token: string }
+      const currentAccount = await fetch('/api/auth/me')
+      const ownCharacters = await fetch('/api/characters')
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrf.token,
+        'If-Match': `"${record.version}"`,
+      }
+      const get = await fetch(`/api/characters/${id}`, { cache: 'no-store' })
+      const put = await fetch(`/api/characters/${id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ character: { ...record.character, callsign: 'Unauthorized edit' } }),
+      })
+      const remove = await fetch(`/api/characters/${id}`, { method: 'DELETE', headers })
+      return {
+        statuses: [get.status, put.status, remove.status],
+        codes: await Promise.all([get, put, remove].map(async response => {
+          try {
+            return (await response.json() as { code?: string }).code
+          } catch {
+            return undefined
+          }
+        })),
+        csrfStatus: csrfResponse.status,
+        accountStatus: currentAccount.status,
+        ownListStatus: ownCharacters.status,
+      }
+    }, { id: characterId, record: saved })
+    expect(foreignStatuses).toMatchObject({
+      statuses: [404, 404, 404],
+      codes: ['notFound', 'notFound', 'notFound'],
+      csrfStatus: 200,
+      accountStatus: 200,
+      ownListStatus: 200,
+    })
+
+    await secondPage.getByRole('button', { name: 'Library', exact: true }).click()
+    const libraryDialog = secondPage.getByRole('dialog', { name: 'Character Library' })
+    await libraryDialog.getByRole('button', { name: 'Delete', exact: true }).click()
+    const deleteResponse = secondPage.waitForResponse(response => response.request().method() === 'DELETE'
+      && response.url().endsWith(`/api/characters/${characterId}`))
+    await secondPage.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click()
+    expect((await deleteResponse).status()).toBe(204)
+    await expect(libraryDialog.getByText('No saved characters yet.')).toBeVisible()
+    expect(await page.evaluate(() => [
+      localStorage.getItem('swade-characters'), localStorage.getItem('swade-worlds'),
+    ])).toEqual(['[{"id":"local-only"}]', '[{"id":"local-world-only"}]'])
+  } finally {
+    await secondContext.close()
+    await otherAccountContext.close()
+  }
+})
+
 test('mandatory login, confirmation, deep-link return, refresh, session revoke and logout preserve local data', async ({ page, context, browser, request }) => {
   const email = `ui-${Date.now()}@example.test`
   await page.goto('/handbooks?view=edges#section')

@@ -2,6 +2,7 @@ package ru.hbah8.charactercreation.backend;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,7 @@ class AccountIntegrationTest {
     static ConfigurableApplicationContext app;
     static String base;
     static JdbcTemplate jdbc;
+    static JsonNode characterFixture;
 
     @TestConfiguration(proxyBeanMethods = false)
     static class MailCapture {
@@ -70,6 +72,11 @@ class AccountIntegrationTest {
                         "--spring.session.jdbc.initialize-schema=never");
         base = "http://localhost:" + app.getEnvironment().getProperty("local.server.port");
         jdbc = app.getBean(JdbcTemplate.class);
+        try (var fixture = AccountIntegrationTest.class.getResourceAsStream("/fixtures/character-rich.json")) {
+            characterFixture = json.readTree(fixture);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Could not read character test fixture", exception);
+        }
     }
 
     @AfterAll
@@ -301,6 +308,92 @@ class AccountIntegrationTest {
     }
 
     @Test
+    void savedCharactersArePrivateVersionedAndPreserveCompleteCharacterJson() throws Exception {
+        Browser owner = verifiedBrowser("character-owner@example.com");
+        Browser other = verifiedBrowser("character-other@example.com");
+        String ownerId = owner.get("/me").path("id").asText();
+        String otherId = other.get("/me").path("id").asText();
+
+        ObjectNode create = json.createObjectNode();
+        create.set("character", characterFixture.deepCopy());
+        create.put("ownerAccountId", otherId);
+        var created = owner.characterRequest("POST", "", create, null, true);
+
+        assertEquals(201, created.statusCode(), created.body());
+        JsonNode saved = json.readTree(created.body());
+        String characterId = saved.path("id").asText();
+        assertEquals("\"1\"", created.headers().firstValue("ETag").orElseThrow());
+        assertEquals(ownerId, jdbc.queryForObject(
+                "SELECT owner_account_id::text FROM app.characters WHERE id = ?::uuid", String.class, characterId));
+        assertEquals(characterFixture, saved.path("character"));
+
+        var ownerList = owner.characterRequest("GET", "", null, null, false);
+        var otherList = other.characterRequest("GET", "", null, null, false);
+        assertEquals(200, ownerList.statusCode());
+        assertEquals(1, json.readTree(ownerList.body()).size());
+        assertEquals(200, otherList.statusCode());
+        assertEquals(0, json.readTree(otherList.body()).size());
+
+        var foreignRead = other.characterRequest("GET", "/" + characterId, null, null, false);
+        var foreignUpdate = other.characterRequest("PUT", "/" + characterId,
+                Map.of("character", characterFixture), "\"1\"", true);
+        var foreignDelete = other.characterRequest("DELETE", "/" + characterId, null, "\"1\"", true);
+        assertEquals(404, foreignRead.statusCode());
+        assertEquals(404, foreignUpdate.statusCode());
+        assertEquals(404, foreignDelete.statusCode());
+
+        ObjectNode changedCharacter = (ObjectNode) characterFixture.deepCopy();
+        changedCharacter.put("callsign", "Scout updated");
+        var updateBody = json.createObjectNode().set("character", changedCharacter);
+        var updated = owner.characterRequest("PUT", "/" + characterId, updateBody, "\"1\"", true);
+        assertEquals(200, updated.statusCode(), updated.body());
+        assertEquals("\"2\"", updated.headers().firstValue("ETag").orElseThrow());
+        assertEquals(changedCharacter, json.readTree(updated.body()).path("character"));
+
+        ObjectNode staleDraft = (ObjectNode) characterFixture.deepCopy();
+        staleDraft.put("callsign", "Draft from stale browser");
+        var staleUpdate = owner.characterRequest("PUT", "/" + characterId,
+                Map.of("character", staleDraft), "\"1\"", true);
+        assertEquals(409, staleUpdate.statusCode());
+        assertEquals("conflict", json.readTree(staleUpdate.body()).path("code").asText());
+        assertEquals("Scout updated", owner.characterRequest("GET", "/" + characterId, null, null, false)
+                .body().contains("Scout updated") ? "Scout updated" : "missing updated character");
+
+        assertEquals(409, owner.characterRequest("DELETE", "/" + characterId, null, "\"1\"", true).statusCode());
+        assertEquals(204, owner.characterRequest("DELETE", "/" + characterId, null, "\"2\"", true).statusCode());
+        assertEquals(404, owner.characterRequest("GET", "/" + characterId, null, null, false).statusCode());
+    }
+
+    @Test
+    void savedCharacterEndpointsRequireSessionValidateStandaloneDataAndLimitRequestSize() throws Exception {
+        Browser anonymous = new Browser();
+        String id = java.util.UUID.randomUUID().toString();
+        assertEquals(401, anonymous.characterRequest("GET", "", null, null, false).statusCode());
+        assertEquals(401, anonymous.characterRequest("GET", "/" + id, null, null, false).statusCode());
+        assertEquals(401, anonymous.characterRequest("POST", "", Map.of("character", characterFixture), null, true).statusCode());
+        assertEquals(401, anonymous.characterRequest("PUT", "/" + id,
+                Map.of("character", characterFixture), "\"1\"", true).statusCode());
+        assertEquals(401, anonymous.characterRequest("DELETE", "/" + id, null, "\"1\"", true).statusCode());
+
+        Browser owner = verifiedBrowser("character-validation@example.com");
+        ObjectNode portrait = (ObjectNode) characterFixture.deepCopy();
+        portrait.put("portraitUrl", "data:image/png;base64,not-stored");
+        assertEquals("unsupportedData", json.readTree(owner.characterRequest("POST", "",
+                Map.of("character", portrait), null, true).body()).path("code").asText());
+
+        ObjectNode worldCharacter = (ObjectNode) characterFixture.deepCopy();
+        worldCharacter.put("worldId", java.util.UUID.randomUUID().toString());
+        assertEquals("unsupportedData", json.readTree(owner.characterRequest("POST", "",
+                Map.of("character", worldCharacter), null, true).body()).path("code").asText());
+        assertEquals("invalidCharacter", json.readTree(owner.characterRequest("POST", "",
+                Map.of("character", Map.of("callsign", "incomplete")), null, true).body()).path("code").asText());
+
+        String oversized = "{\"character\":" + characterFixture + ",\"padding\":\"" + "x".repeat(2_100_000) + "\"}";
+        assertEquals(413, owner.characterRequest("POST", "", oversized, null, true).statusCode());
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM app.characters", Integer.class));
+    }
+
+    @Test
     void resetIsNeutralSingleUseAndRevokesAllSessions() throws Exception {
         Browser first = verifiedBrowser("reset@example.com");
         Browser second = new Browser();
@@ -478,6 +571,22 @@ class AccountIntegrationTest {
 
         HttpResponse<String> delete(String path) throws Exception {
             return request("DELETE", path, null, true);
+        }
+
+        HttpResponse<String> characterRequest(String method, String path, Object body, String ifMatch,
+                                              boolean csrf) throws Exception {
+            var request = HttpRequest.newBuilder(URI.create(base + "/api/characters" + path))
+                    .timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json");
+            if (ifMatch != null) {
+                request.header("If-Match", ifMatch);
+            }
+            if (csrf) {
+                request.header("X-CSRF-TOKEN", get("/csrf").path("token").asText());
+            }
+            String payload = body == null ? null
+                    : body instanceof String raw ? raw : json.writeValueAsString(body);
+            return http.send(request.method(method, payload == null ? HttpRequest.BodyPublishers.noBody()
+                    : HttpRequest.BodyPublishers.ofString(payload)).build(), HttpResponse.BodyHandlers.ofString());
         }
 
         HttpResponse<String> request(String method, String path, Object body, boolean csrf) throws Exception {

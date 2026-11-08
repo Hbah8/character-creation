@@ -9,7 +9,7 @@ const header = {
   welcomeTitle: 'App Features',
   welcomeClose: 'Got it!',
   welcomeCharactersTitle: 'Character Management',
-  welcomeCharactersDesc: 'Create, save, load, and delete characters via the library (localStorage)',
+  welcomeCharactersDesc: 'Create, save, load, and delete characters in your account across browsers',
   welcomeEditingTitle: 'Character Editing',
   welcomeIdentity: 'Identity — callsign, name, rank, archetype, portrait (JPEG/PNG/WebP, up to 2 MB)',
   welcomeAttributes: 'Attributes — Agility, Smarts, Spirit, Strength, Vigor',

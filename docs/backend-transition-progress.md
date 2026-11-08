@@ -1,34 +1,41 @@
 # Backend transition progress
 
-Updated: 2026-11-05
+Updated: 2026-11-08
 
 This file tracks implementation against [backend-architecture.md](backend-architecture.md).
 The architecture document remains the plan and is not modified by this tracker.
 
 ## Current state
 
-**Backend infrastructure is deployed; account foundations are implemented and
-locally tested, but not pushed or deployed. Product data remains local.**
+**Backend infrastructure and account functions are deployed; the Owner has
+verified the account workflows in production. Stage 3 is accepted locally;
+its production verification remains Pending.**
 Production currently runs the frontend, Spring Boot backend, and PostgreSQL.
-The containers have previously been reported healthy. The new working-tree
-backend provides account and session endpoints; this is not evidence that
-production serves them. Character, world, media, and transfer endpoints remain
-unimplemented. No browser data has been migrated; existing frontend storage
+The Owner reports successful deployment and verification of registration,
+email confirmation, login/logout, session management, password reset/change
+and all-session revocation. The deployed commit and workflow run have not
+been independently verified here. Account-owned standalone character CRUD
+is implemented and accepted by Owner locally on 2026-11-08, without portraits.
+These changes have not been deployed. World, media, and transfer endpoints
+remain unimplemented. No browser data has been migrated; existing frontend storage
 is preserved, but the updated SPA requires a verified account session before
-showing any application routes. Local data is not yet account-scoped.
+showing any application routes. Legacy local data is not account-scoped and
+is not mixed with the server character library.
 
 ## Planned milestones
 
 Statuses: **Done** = verified complete; **Partial** = foundation exists but
 acceptance is incomplete; **Not started** = implementation has not begun.
+**Done (local)** = accepted by Owner locally; does not imply deployment or
+production verification.
 
 | Architecture stage | Status | Progress / remaining |
 |---|---|---|
-| 0. Prepare current data contracts | Partial | Current Character and World formats remain the intended contract. Representative import/export fixtures and round-trip verification for this transition are still needed. |
-| 1. Backend foundation | Partial | Existing infrastructure remains. Identity now has parameterized JDBC repositories/API routes; new Flyway V2 adds account/token/rate-limit and Spring Session JDBC tables without modifying V1. Local migration from V1 and clean Testcontainers migration passed. Production HTTPS API verification remains Pending. |
-| 2. Accounts | Partial | Locally verified: registration, single-use expiring email confirmation, resend, verified-only login, current user, logout, persistent JDBC sessions and owner-scoped list/revoke; Argon2id, token hashes, CSRF, session-ID rotation, production Secure/HttpOnly cookie settings, IP/email limits and neutral register/resend responses. Mandatory localized login screen, session-gated application routes, deep-link return and local proxy/Mailpit flow pass. Remaining: password reset/change and their all-session revocation, account-level authorization for future saved-data resources, real Gmail delivery verification, separate release and external HTTPS account/session/CSRF verification. |
-| 3. First saved-data flow | Not started | After accounts: save and load a standalone character without portrait across devices; prove another account cannot read or change it. |
-| 4. Worlds and handbooks | Not started | World settings/graph, races, system catalog resolution, custom entries and overrides, and world characters. |
+| 0. Prepare current data contracts | Partial | Representative Character fixtures and round-trip checks were added for Stage 3. World data and linked Character/World contract verification remain part of Stage 4. |
+| 1. Backend foundation | Partial | Identity uses parameterized JDBC repositories/API routes; Flyway V2 adds account/token/rate-limit and Spring Session JDBC tables, and V3 adds password reset tokens without modifying earlier migrations. Clean Testcontainers migrations passed. Production HTTPS API verification remains Pending. |
+| 2. Accounts | Partial | The Owner reports production verification of registration and email confirmation, login/logout, session list/revocation, password reset/change, delivery of the reset email and all-session revocation after password updates. Local tests additionally cover Argon2id, token hashes, CSRF, session-ID rotation, IP/email limits and neutral mail-request responses. Remaining: independently identify the deployed commit/workflow and verify production security/configuration details including CSRF and proxy/client-IP handling. Authorization for saved-data resources belongs to stage 3. |
+| 3. First saved-data flow | Done (local) | Owner accepted standalone character CRUD without portraits on 2026-11-08 in the agreed scope. Cross-browser persistence, ownership isolation and contract checks passed locally. No deployment; production verification Pending. |
+| 4. Worlds, handbooks and linked characters in the account | Not started | Next agreed milestone: one connected flow for worlds, settings/graph, custom handbook entries and overrides, races/abilities/modifiers, and linked characters. All required rules and reference data must be available across devices. |
 | 5. Media | Not started | Private file metadata/storage, maps, music, portraits, quotas/disk guard, authorization, and audio range requests. |
 | 6. Manual data transfer | Not started | Import current Character/World JSON and manually upload files; preserve local originals until the imported result is checked. No automatic browser-storage migration is planned. |
 
@@ -40,10 +47,74 @@ acceptance is incomplete; **Not started** = implementation has not begun.
 | GHCR frontend/backend images and production Compose | Done | Current composition includes `web`, `backend`, and `postgres`; DB and backend ports are not published to the host. |
 | Persistent database volume | Done | PostgreSQL uses a named Compose volume; normal image rollback does not remove it. |
 | Runtime DB password outside Git | Done | Workflow transfers the password to a mode-0600 VPS runtime env file. |
-| Flyway migration at startup and backend readiness | Done | Foundation migration creates schema `app`. New V2 account/session schema is locally tested only; deployment was not performed. SMTP connectivity is not part of application health; send failures have sanitized server diagnostics. |
+| Flyway migration at startup and backend readiness | Done | Foundation migration creates schema `app`; V2 and V3 account/session schemas have been tested locally. Production application of these versions has not been independently verified here. SMTP connectivity is not part of application health; send failures have sanitized server diagnostics. |
 | Recovery across frontend-only/backend rollout | Done | Rollback preserves the previous Compose composition and image references; Nginx resolves backend dynamically for `/api/`, so the SPA can start without it. |
 | Manual database backup/restore procedure | Documented, not rehearsed | Perform and verify a backup before relying on production data; rehearse restore against an isolated database. |
-| External HTTPS API verification | Pending | Account routes now exist locally. Verify them, session cookies, CSRF and proxy/client-IP handling through public HTTPS after a separate deployment of the exact commit. No external account verification performed here. |
+| External HTTPS API verification | Partial | The Owner reports verifying account and password workflows in production. Independently identify the deployed commit and verify session-cookie settings, CSRF and proxy/client-IP handling through public HTTPS; these specific checks have not been confirmed. |
+
+## Account workflows — Owner-reported production verification
+
+On 2026-11-07 the Owner reported that the account changes were deployed
+successfully and verified in production:
+
+- Registration and email confirmation; login and logout.
+- Viewing and revoking active sessions.
+- Forgotten-password reset and password change with the current password;
+  the reset email arrived and the password was updated.
+- Revocation of all sessions after a reset or password change.
+
+These are Owner-reported checks, not independent observations of the release.
+The exact commit and Production workflow run, provider-specific SMTP behavior,
+production CSRF, session-cookie settings and proxy/client-IP handling have not
+been independently verified here.
+
+## Stage 3 — Owner acceptance and local evidence
+
+On 2026-11-08 the Owner confirmed that standalone character CRUD works
+locally and accepted Stage 3 in the agreed scope, without portraits or world
+links. These changes have not been deployed; production verification is
+**Pending**.
+
+Previously completed local checks:
+- Backend `mvn test`: **26 passed**, no skipped tests, including PostgreSQL
+  Testcontainers migrations, validation, CRUD, version conflicts, session/CSRF
+  protection, account isolation and owner spoofing checks.
+- Frontend `npm run check`: lint, **457 tests**, TypeScript and production
+  build passed, including Character JSON compatibility fixtures.
+- Chromium `npm run test:accounts`: **12 passed** with the local API proxy,
+  Mailpit and isolated PostgreSQL. The saved-character flow covers two browser
+  contexts, failed-save draft preservation, version conflicts, direct foreign
+  GET/PUT/DELETE requests and deletion by the owner.
+- Saved database records and versions survived a backend restart; browser
+  local-data sentinels remained unchanged.
+
+This update records Owner acceptance and existing local evidence; no new
+implementation, push or deployment was performed for this documentation update.
+
+## Password reset and change — local evidence
+
+Locally verified on 2026-11-07 and confirmed by Owner. These are local results,
+not independent evidence of a production release:
+
+- Backend `mvn clean test`: **24 passed**, no skipped tests. PostgreSQL
+  Testcontainers tests cover neutral reset responses, token expiration,
+  purpose separation, concurrent and repeated consumption, invalidation of
+  outstanding links, unverified-account login, CSRF, rate limits, password
+  changes, all-session revocation and transaction rollback.
+- Frontend `npm run check`: lint, **452 tests**, TypeScript and production
+  build passed. Password flows use EN/RU strings.
+- Chromium `npm run test:accounts`: **11 passed** against Mailpit and an
+  isolated PostgreSQL database. The password flow covers the email link,
+  password changes, incorrect current password, old/new password login and
+  session revocation across browser contexts. A repeat on the shared local
+  database encountered its existing IP rate limit; the successful full run
+  used an isolated database without clearing shared counters.
+- YAML syntax: **13 files** validated; development and production Compose
+  configurations validated. No production SMTP credentials or real recipients
+  were used.
+- The Owner subsequently reported production reset-email delivery and account
+  workflow verification, as recorded above. The exact deployed commit and
+  security/configuration checks were not independently verified here.
 
 ## Account and session foundations — local evidence
 
@@ -94,10 +165,10 @@ production deployment results or a claim of Owner acceptance:
 - YAML syntax: **9 files** validated; production and dev Compose config
   validation passed. Production proxy replaces untrusted forwarded client-IP
   input; backend enables native forwarding only in the prod profile.
-- No production SMTP credentials used and no real recipients contacted.
-  Real Gmail delivery remains **Pending**.
-- No push or deployment performed. External HTTPS verification remains
-  **Pending**. Existing operational results above were not reverified here.
+- No production SMTP credentials were used and no real recipients contacted
+  in this local test run.
+- No push or deployment was performed as part of this local test run.
+  Subsequent Owner-reported production verification is recorded above.
 
 ## Deployment incidents recorded
 
@@ -117,13 +188,39 @@ production deployment results or a claim of Owner acceptance:
 
 ## Next milestone
 
-Accounts remains **Partial**. Complete the remaining account work and verify
-the account foundation after a separately authorized release before relying on
-production accounts. Password reset/change, saved characters/worlds, and browser
-data transfer were intentionally excluded from this milestone. Keep existing
-frontend storage until each corresponding server flow and verified transfer
-exist. The updated requirement mandates login now; it does not migrate or
-account-scope that local storage.
+**Stage 4 — Миры, справочники и связанные персонажи в аккаунте** is next,
+agreed by Owner on 2026-11-08. Implementation is **Not started**. The full
+scope and acceptance criteria are recorded in the
+[architecture plan](backend-architecture.md#ближайший-milestone-миры-справочники-и-связанные-персонажи-в-аккаунте).
+
+Goal: work with an account-owned world and its characters across devices,
+preserving rules, handbooks, relationships and computed results.
+
+Scope: world data, setting rules, graph entities/relationships, custom handbook
+entries and system overrides, races, racial abilities/modifiers, world-linked
+characters and reference resolution, account isolation, and existing
+JSON/editor behavior. These are one connected flow, not independent demos:
+a character is fully saved only when all required rules and reference data
+are available.
+
+Acceptance:
+1. Save a world with modified rules, custom handbook entries and a race.
+2. Save a character using those data with correct references.
+3. In another browser under the same account, load the world, handbooks and
+   character with matching values, descriptions and computed results.
+4. Preserve changes after reopening and restarting the backend.
+5. Changing/deleting linked entries causes neither silent data loss nor
+   unnoticed substitution of rules.
+6. Another account cannot read, update or delete any of these resources,
+   including direct API requests.
+7. Import/export checks preserve data and relationships within existing contracts.
+
+Excluded: portraits and other media, sharing, and legacy browser-data transfer.
+Existing local data stays intact without automatic account assignment.
+
+Accounts remains **Partial** for the production evidence and
+security/configuration checks listed above. Stage 3 local acceptance does not
+complete its Pending production verification.
 
 ## Update rule
 

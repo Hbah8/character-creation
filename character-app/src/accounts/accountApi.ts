@@ -32,7 +32,7 @@ export function onSessionEnded(listener: (reason: SessionEndReason) => void): ()
   return () => { sessionEndedListeners.delete(listener) }
 }
 
-function notifySessionEnded(reason?: SessionEndReason) {
+export function notifySessionEnded(reason?: SessionEndReason) {
   sessionEndedListeners.forEach(listener => listener(reason))
 }
 

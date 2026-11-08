@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useCharacterLibrary } from '@/store/useCharacterLibrary'
+import { useSessionAccount } from '@/accounts/useSessionAccount'
 import { removeRaceFromWorld } from '@/world/store/useWorldStore'
 import type { Race, World } from '@/world/types'
 
@@ -29,7 +30,8 @@ export function DeleteRaceDialog({
   onDeleted,
 }: DeleteRaceDialogProps) {
   const { t } = useTranslation('raceBuilder')
-  const { entries } = useCharacterLibrary()
+  const account = useSessionAccount()
+  const { entries } = useCharacterLibrary(account.id)
 
   const characterUsageCount = useMemo(() => {
     if (!race) return 0

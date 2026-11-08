@@ -5,6 +5,8 @@ import { ArrowLeft, Eye, User, Zap, Shield, Target, Star, AlertTriangle, Crossha
 import { useCharacterStore } from '@/store/useCharacterStore'
 import { useCharacterLibrary } from '@/store/useCharacterLibrary'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
+import { useSessionAccount } from '@/accounts/useSessionAccount'
+import { SavedCharacterApiError } from '@/services/savedCharacterApi'
 import { CharacterSheet } from '@/components/preview/CharacterSheet'
 import type { ScaleMode } from '@/components/preview/CharacterSheet'
 import { SheetTemplateControls } from '@/components/preview/SheetTemplateControls'
@@ -32,6 +34,7 @@ import { WelcomeDialog, hasSeenWelcome, markWelcomeSeen } from '@/components/Wel
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
@@ -98,11 +101,12 @@ export function CharacterCreatorPage() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
 
-  const library = useCharacterLibrary()
+  const account = useSessionAccount()
+  const library = useCharacterLibrary(account.id)
   const { activeWorldId, entries: worldEntries } = useWorldLibrary()
   const initialCharacter = id
     ? getDefaultCharacter(initialLocale)
-    : { ...getDefaultCharacter(initialLocale), worldId: activeWorldId ?? undefined }
+    : getDefaultCharacter(initialLocale)
   const store = useCharacterStore(initialCharacter)
   const { character } = store
   const resolvedCharacter = useEffectiveCharacter(character)
@@ -124,33 +128,48 @@ export function CharacterCreatorPage() {
   const [pendingSharePortraitStripped, setPendingSharePortraitStripped] = useState(false)
   const [welcomeOpen, setWelcomeOpen] = useState(() => !hasSeenWelcome())
   const [savedAt, setSavedAt] = useState<Date | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<SavedCharacterApiError | null>(null)
+  const [loadingSavedCharacter, setLoadingSavedCharacter] = useState(Boolean(id))
+  const [loadError, setLoadError] = useState<SavedCharacterApiError | null>(null)
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [activeSection, setActiveSection] = useState<string>('identity')
   const [scaleMode, setScaleMode] = useState<ScaleMode>('fit-width')
   const [templatePreferences, setTemplatePreferences] = useState(loadSheetTemplatePreferences)
   const [pendingCharacterChange, setPendingCharacterChange] = useState<PendingCharacterChange | null>(null)
   const copyLinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const loadedIdRef = useRef<string | undefined>(undefined)
   const printSheetRef = useRef<HTMLDivElement>(null)
+  const replaceCharacter = store.replaceCharacter
+  const loadById = library.loadById
 
   const templateId = templatePreferences.templateId
 
   // Load character from library when navigating to /creator/:id
   useEffect(() => {
-    if (id && id !== loadedIdRef.current) {
-      try {
-        const loaded = library.loadById(id)
-        store.replaceCharacter(loaded)
-        // Keep the saved/dirty baseline in sync with the newly loaded route entity.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setCleanSnapshot(JSON.stringify(loaded))
-        setSavedAt(null)
-        loadedIdRef.current = id
-      } catch {
-        navigate('/', { replace: true })
-      }
+    if (!id) {
+      return
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
+
+    let active = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadingSavedCharacter(true)
+    setLoadError(null)
+    void loadById(id).then(record => {
+      if (!active) return
+      replaceCharacter(record.character)
+      setCleanSnapshot(JSON.stringify(record.character))
+      setSavedAt(new Date(record.updatedAt))
+    }).catch(error => {
+      if (active) {
+        setLoadError(error instanceof SavedCharacterApiError
+          ? error
+          : new SavedCharacterApiError('unavailable'))
+      }
+    }).finally(() => {
+      if (active) setLoadingSavedCharacter(false)
+    })
+    return () => { active = false }
+  }, [id, loadAttempt, loadById, replaceCharacter])
 
   // Handle share hash on /creator route
   useEffect(() => {
@@ -178,27 +197,37 @@ export function CharacterCreatorPage() {
     [character, cleanSnapshot]
   )
 
-  function handleSave() {
-    const savedId = library.save(character)
-    setCleanSnapshot(JSON.stringify(character))
-    setSavedAt(new Date())
-    // Update URL to /creator/:id if we just saved a new character
-    if (!id) {
-      navigate(`/creator/${savedId}`, { replace: true })
+  async function handleSave() {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      const saved = await library.save(character)
+      setCleanSnapshot(JSON.stringify(character))
+      setSavedAt(new Date(saved.updatedAt))
+      if (!id) navigate(`/creator/${saved.id}`, { replace: true })
+    } catch (error) {
+      setSaveError(error instanceof SavedCharacterApiError
+        ? error
+        : new SavedCharacterApiError('unavailable'))
+    } finally {
+      setSaving(false)
     }
   }
 
-  function handleLoad(char: ReturnType<typeof library.loadById>) {
+  function handleLoad(char: Character, updatedAt: string, characterId: string) {
     store.replaceCharacter(char)
     setCleanSnapshot(JSON.stringify(char))
-    setSavedAt(null)
+    setSavedAt(new Date(updatedAt))
+    setSaveError(null)
+    navigate(`/creator/${characterId}`, { replace: true })
   }
 
   function handleNewCharacter() {
-    const fresh = { ...getDefaultCharacter(locale), worldId: activeWorldId ?? undefined }
+    const fresh = getDefaultCharacter(locale)
     store.replaceCharacter(fresh)
     setCleanSnapshot(JSON.stringify(fresh))
     setSavedAt(null)
+    setSaveError(null)
     library.markNew()
     navigate('/creator', { replace: true })
   }
@@ -207,11 +236,11 @@ export function CharacterCreatorPage() {
     try {
       const activeWorldHandbook = worldEntries.find(entry => entry.id === activeWorldId)?.world.worldHandbook ?? []
       const imported = await importFromJson(file, activeWorldHandbook)
-      const withWorld = { ...imported, worldId: activeWorldId ?? undefined }
-      store.replaceCharacter(withWorld)
+      store.replaceCharacter(imported)
       setImportWarnings(imported.importWarnings ?? [])
-      setCleanSnapshot(JSON.stringify(withWorld))
+      setCleanSnapshot(JSON.stringify(imported))
       setSavedAt(null)
+      setSaveError(null)
       library.markNew()
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'validation.import.notAnObject')
@@ -230,11 +259,11 @@ export function CharacterCreatorPage() {
 
   function handleShareConfirm() {
     if (!pendingShareChar) return
-    const withWorld = { ...pendingShareChar, worldId: activeWorldId ?? undefined }
-    store.replaceCharacter(withWorld)
+    store.replaceCharacter(pendingShareChar)
     setImportWarnings(pendingShareChar.importWarnings ?? [])
-    setCleanSnapshot(JSON.stringify(withWorld))
+    setCleanSnapshot(JSON.stringify(pendingShareChar))
     setSavedAt(null)
+    setSaveError(null)
     library.markNew()
     setPendingShareChar(null)
   }
@@ -475,6 +504,32 @@ export function CharacterCreatorPage() {
     }
   }
 
+  if (id && loadingSavedCharacter) {
+    return (
+      <main className="p-6" role="status">
+        {tLibrary('loadingCharacters')}
+      </main>
+    )
+  }
+
+  if (id && loadError) {
+    return (
+      <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
+        <Alert variant="destructive">
+          <AlertDescription>{tLibrary(`errors.${loadError.code}`)}</AlertDescription>
+        </Alert>
+        <div className="flex gap-2">
+          <Button onClick={() => setLoadAttempt(value => value + 1)}>
+            {tLibrary('retry')}
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/')}>
+            {tLibrary('backToDashboard')}
+          </Button>
+        </div>
+      </main>
+    )
+  }
+
   const mobileSectionNav = (
     <div className="shrink-0 border-b px-3 py-2 print:hidden">
       <Select value={activeSection} onValueChange={setActiveSection}>
@@ -540,7 +595,7 @@ export function CharacterCreatorPage() {
             <span className="text-amber-500 text-xs">{tHeader('unsaved')}</span>
           )}
           {!isDirty && savedAt && (
-            <span className="text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-xs" role="status">
               {tHeader('savedAt', { time: formatTime(savedAt) })}
             </span>
           )}
@@ -567,8 +622,8 @@ export function CharacterCreatorPage() {
             onLoad={handleLoad}
             onNewCharacter={handleNewCharacter}
           />
-          <Button variant="default" size="sm" onClick={handleSave}>
-            {tLibrary('save')}
+          <Button variant="default" size="sm" disabled={saving} onClick={handleSave}>
+            {saving ? tLibrary('saving') : tLibrary('save')}
           </Button>
           <ExportDropdown
             onExportPdf={handleExportPdf}
@@ -579,6 +634,12 @@ export function CharacterCreatorPage() {
           />
         </div>
       </header>
+
+      {saveError && (
+        <Alert variant="destructive" className="mx-4 mt-2 w-auto print:hidden">
+          <AlertDescription>{tLibrary(`errors.${saveError.code}`)}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Desktop: three-panel layout */}
       <div className="hidden md:flex flex-1 min-h-0 print:flex print:h-auto">

@@ -1,63 +1,40 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Globe2, Plus, Users, Clock, UserCircle } from 'lucide-react'
+import { Plus, Users, Clock, UserCircle, Globe2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DashboardCharacterGrid } from '@/components/DashboardCharacterGrid'
 import { useCharacterLibrary } from '@/store/useCharacterLibrary'
-import { useWorldLibrary } from '@/world/store/useWorldLibrary'
+import { useSessionAccount } from '@/accounts/useSessionAccount'
 
-function formatDate(iso: string | undefined): string {
+function formatDate(iso: string | undefined, locale: string | undefined): string {
   if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-  } catch {
-    return '—'
-  }
+  return new Date(iso).toLocaleDateString(locale)
 }
 
 export function DashboardPage() {
   const navigate = useNavigate()
   const { t: tNav } = useTranslation('navigation')
-  const library = useCharacterLibrary()
-  const { activeWorldId, entries: worldEntries } = useWorldLibrary()
+  const { t, i18n } = useTranslation('library')
+  const account = useSessionAccount()
+  const library = useCharacterLibrary(account.id)
 
-  const filteredEntries = activeWorldId
-    ? library.entries.filter(e => e.character.worldId === activeWorldId)
-    : library.entries.filter(e => !e.character.worldId)
-
-  const activeWorldName = activeWorldId
-    ? worldEntries.find(w => w.id === activeWorldId)?.world.name
-    : undefined
-
-  const lastEntry = filteredEntries.length > 0
-    ? filteredEntries.reduce((latest, e) =>
-        e.savedAt > latest.savedAt ? e : latest,
-        filteredEntries[0]
-      )
-    : undefined
+  const lastEntry = library.entries[0]
 
   return (
     <div className="flex flex-col h-full w-full min-h-0 overflow-y-auto">
       <div className="p-6 max-w-6xl w-full mx-auto flex flex-col gap-8">
-
-        {/* Hero */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">Персонажи SWADE</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('dashboardTitle')}</h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            {activeWorldName
-              ? `Мир: ${activeWorldName}`
-              : 'Персонажи без мира'}
+            {t('standaloneCharacters')}
           </p>
           <div className="mt-1 flex flex-wrap gap-2">
             <Button onClick={() => navigate('/creator')}>
               <Plus className="size-4 mr-1.5" />
-              Новый персонаж
+              {t('newCharacter')}
             </Button>
             <Button variant="outline" onClick={() => navigate('/worlds')}>
               <Globe2 className="size-4 mr-1.5" />
@@ -68,14 +45,15 @@ export function DashboardPage() {
 
         <Separator />
 
-        {/* Stat chips */}
         <div className="flex flex-wrap gap-3">
           <Card className="flex-none">
             <CardContent className="flex items-center gap-3 px-4 py-3">
               <Users className="size-4 text-muted-foreground shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground leading-none mb-1">Персонажей</p>
-                <p className="text-xl font-bold leading-none">{filteredEntries.length}</p>
+                <p className="text-xs text-muted-foreground leading-none mb-1">{t('characterCount')}</p>
+                <p className="text-xl font-bold leading-none">
+                  {library.loading ? '…' : library.entries.length}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -84,8 +62,10 @@ export function DashboardPage() {
             <CardContent className="flex items-center gap-3 px-4 py-3">
               <Clock className="size-4 text-muted-foreground shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground leading-none mb-1">Последнее изменение</p>
-                <p className="text-sm font-semibold leading-none">{formatDate(lastEntry?.savedAt)}</p>
+                <p className="text-xs text-muted-foreground leading-none mb-1">{t('lastChanged')}</p>
+                <p className="text-sm font-semibold leading-none">
+                  {formatDate(lastEntry?.updatedAt, i18n.resolvedLanguage)}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -95,9 +75,9 @@ export function DashboardPage() {
               <CardContent className="flex items-center gap-3 px-4 py-3">
                 <UserCircle className="size-4 text-muted-foreground shrink-0" />
                 <div>
-                  <p className="text-xs text-muted-foreground leading-none mb-1">Последний изменён</p>
+                  <p className="text-xs text-muted-foreground leading-none mb-1">{t('lastEdited')}</p>
                   <p className="text-sm font-semibold leading-none max-w-36 truncate">
-                    {lastEntry.character.callsign || '—'}
+                    {lastEntry.character.callsign || t('unnamed')}
                   </p>
                 </div>
               </CardContent>
@@ -105,28 +85,41 @@ export function DashboardPage() {
           )}
         </div>
 
-        {/* Characters section */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold">
-              Персонажи
-              {filteredEntries.length > 0 && (
+              {t('charactersSection')}
+              {!library.loading && library.entries.length > 0 && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
-                  ({filteredEntries.length})
+                  ({library.entries.length})
                 </span>
               )}
             </h2>
-            {filteredEntries.length > 0 && (
+            {!library.loading && library.entries.length > 0 && (
               <Button size="sm" variant="outline" onClick={() => navigate('/creator')}>
                 <Plus className="size-3.5 mr-1" />
-                Добавить
+                {t('addCharacter')}
               </Button>
             )}
           </div>
-          <DashboardCharacterGrid
-            entries={filteredEntries}
-            onDelete={library.remove}
-          />
+
+          {library.loading ? (
+            <p className="py-8 text-center text-sm text-muted-foreground" role="status">
+              {t('loadingCharacters')}
+            </p>
+          ) : library.error ? (
+            <Alert variant="destructive">
+              <AlertDescription>{t(`errors.${library.error.code}`)}</AlertDescription>
+              <Button size="sm" variant="outline" onClick={() => void library.reload()}>
+                {t('retry')}
+              </Button>
+            </Alert>
+          ) : (
+            <DashboardCharacterGrid
+              entries={library.entries}
+              onDelete={library.remove}
+            />
+          )}
         </div>
 
       </div>

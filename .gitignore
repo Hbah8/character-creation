@@ -29,6 +29,8 @@ swade-rules/
 .github/instructions/
 .github/skills/
 characters/
+!/backend/src/main/java/ru/hbah8/charactercreation/backend/characters/
+!/backend/src/main/java/ru/hbah8/charactercreation/backend/characters/**
 /docs/*
 !/docs/backend-transition-progress.md
 
