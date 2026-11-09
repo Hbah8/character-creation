@@ -48,7 +48,8 @@ export function SessionBoundary({ children }: { children: ReactNode }) {
     async function verify() {
       const request = ++sequence
       clearTimeout(timer)
-      setCheck(previous => isLogin && previous.key === key && !previous.loading
+      // Rechecking the same session must not unmount editors or native file inputs.
+      setCheck(previous => previous.key === key && !previous.loading && (isLogin || previous.account !== null)
         ? previous : { key, loading: true, account: null, error: null })
       try {
         const account = await accountApi.current()
@@ -110,5 +111,5 @@ export function SessionBoundary({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace
       state={{ returnTo: location.pathname + location.search + location.hash, passwordChanged }} />
   }
-  return <SessionAccountContext value={check.account}>{children}</SessionAccountContext>
+  return <SessionAccountContext key={check.account.id} value={check.account}>{children}</SessionAccountContext>
 }
