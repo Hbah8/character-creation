@@ -44,10 +44,11 @@ vi.mock('react-router-dom', async importOriginal => {
 })
 
 import { AudioSoundboardPage } from '@/audio/pages/AudioSoundboardPage'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 describe('AudioSoundboardPage component integration', () => {
   function renderPage() {
-    return renderToStaticMarkup(createElement(AudioSoundboardPage))
+    return renderToStaticMarkup(createElement(TooltipProvider, null, createElement(AudioSoundboardPage)))
   }
 
   const worldEntry: WorldLibraryEntry = {
@@ -91,6 +92,7 @@ describe('AudioSoundboardPage component integration', () => {
     expect(html).toContain(audioAsset.filename)
     expect(html).toContain('data-slot="badge"')
     expect(html).toContain('Active mixer')
+    expect(html).toContain('data-sound-effects')
     expect(html).toContain('Add files from the library to start mixing.')
     expect(html).toContain(audioScene.name)
     expect(html).toContain('aria-label="Remove scene"')

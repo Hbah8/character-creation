@@ -84,6 +84,7 @@ export function removeAudioAsset(audio: WorldAudio, assetId: string): WorldAudio
   return {
     ...audio,
     assets: audio.assets.filter(asset => asset.id !== assetId),
+    soundButtons: audio.soundButtons.filter(button => button.assetId !== assetId),
     tracks: audio.tracks.filter(track => !removedTrackIds.has(track.id)),
     scenes: audio.scenes.map(scene => ({
       ...scene,

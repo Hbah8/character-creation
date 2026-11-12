@@ -14,6 +14,27 @@ const record = {
 }
 
 describe('world API', () => {
+  it('round-trips saved sound buttons through world reads and updates', async () => {
+    const soundWorld = {
+      ...world,
+      audio: {
+        ...world.audio!,
+        assets: [{ id: 'asset-1', filename: 'knock.wav', mediaType: 'audio/wav', byteLength: 4 }],
+        soundButtons: [{ id: 'button-1', assetId: 'asset-1', name: 'Door knock' }],
+      },
+    }
+    const saved = { ...record, world: soundWorld }
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json([saved]))
+      .mockResolvedValueOnce(Response.json({ token: 'csrf' }))
+      .mockResolvedValueOnce(Response.json(saved, { headers: { ETag: '"3"' } }))
+    vi.stubGlobal('fetch', fetch)
+    expect((await worldApi.list())[0].world.audio?.soundButtons).toEqual(soundWorld.audio.soundButtons)
+    expect((await worldApi.update(record.id, 3, soundWorld)).world.audio?.soundButtons)
+      .toEqual(soundWorld.audio.soundButtons)
+    expect(JSON.parse(fetch.mock.calls[2][1].body).world.audio.soundButtons).toEqual(soundWorld.audio.soundButtons)
+  })
+
   it('creates and updates worlds with CSRF protection and optimistic versions', async () => {
     const updated = { ...record, version: 4, updatedAt: '2026-11-07T18:01:00Z' }
     const fetch = vi.fn()

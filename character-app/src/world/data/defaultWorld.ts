@@ -35,6 +35,7 @@ function cloneWorld(world: World): World {
             ) } : {}),
           })),
           presets: world.audio.presets.map(preset => ({ ...preset })),
+          soundButtons: world.audio.soundButtons.map(button => ({ ...button })),
         }
       : createEmptyWorldAudio(),
   }

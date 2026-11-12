@@ -71,12 +71,14 @@ describe('addAudioAssets', () => {
         { id: 'track-2', assetId: 'asset-2', name: 'Wind', loop: true, defaultVolume: 1 },
       ],
       scenes: [{ id: 'scene-1', name: 'Cave', trackIds: ['track-1', 'track-2'] }],
+      soundButtons: [{ id: 'button-1', assetId: 'asset-1' }, { id: 'button-2', assetId: 'asset-2' }],
     }
 
     expect(removeAudioAsset(audio, 'asset-1')).toMatchObject({
       assets: [{ id: 'asset-2' }],
       tracks: [{ id: 'track-2' }],
       scenes: [{ id: 'scene-1', trackIds: ['track-2'] }],
+      soundButtons: [{ id: 'button-2', assetId: 'asset-2' }],
     })
   })
 

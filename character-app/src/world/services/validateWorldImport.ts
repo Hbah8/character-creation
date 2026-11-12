@@ -441,7 +441,24 @@ function validateWorldAudio(raw: unknown): WorldAudio {
     new Set(tracks.map(track => track.id)),
     new Set(presets.map(preset => preset.id)),
   )
-  return { schemaVersion: WORLD_AUDIO_SCHEMA_VERSION, assets, tracks, scenes, presets }
+  const rawButtons = raw.soundButtons === undefined ? [] : raw.soundButtons
+  if (!Array.isArray(rawButtons)) throw new Error('validation.world.audioSoundButtonsNotArray')
+  const ids = new Set<string>()
+  const assetIds = new Set(assets.map(asset => asset.id))
+  const soundButtons = rawButtons.map((item, index) => {
+    if (!isObject(item)) throw new Error(`validation.world.audioSoundButtonNotObject:${index}`)
+    const id = validateAudioId(item.id, `validation.world.audioSoundButtonMissingId:${index}`)
+    if (ids.has(id)) throw new Error(`validation.world.duplicateAudioSoundButtonId:${id}`)
+    ids.add(id)
+    if (!isString(item.assetId) || !assetIds.has(item.assetId)) {
+      throw new Error(`validation.world.audioUnknownAsset:${String(item.assetId)}`)
+    }
+    if (item.name !== undefined && (!isString(item.name) || item.name.trim() === '')) {
+      throw new Error(`validation.world.audioSoundButtonInvalidName:${id}`)
+    }
+    return { id, assetId: item.assetId, ...(item.name === undefined ? {} : { name: item.name }) }
+  })
+  return { schemaVersion: WORLD_AUDIO_SCHEMA_VERSION, assets, tracks, scenes, presets, soundButtons }
 }
 
 function validateRelationship(

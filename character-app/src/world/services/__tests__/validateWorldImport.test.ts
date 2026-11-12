@@ -55,6 +55,47 @@ describe('validateWorldImport', () => {
   })
 
   describe('audio', () => {
+    it('preserves custom sound button names and rejects invalid names', () => {
+      const base = {
+        ...validWorld(),
+        audio: {
+          schemaVersion: 1,
+          assets: [{ id: 'asset-1', filename: 'knock.wav', mediaType: 'audio/wav', byteLength: 4 }],
+          tracks: [], scenes: [], presets: [],
+          soundButtons: [{ id: 'button-1', assetId: 'asset-1', name: 'Door knock' }],
+        },
+      }
+      expect(validateWorldImport(base).audio?.soundButtons).toEqual([
+        { id: 'button-1', assetId: 'asset-1', name: 'Door knock' },
+      ])
+      expect(() => validateWorldImport({
+        ...base,
+        audio: { ...base.audio, soundButtons: [{ id: 'button-1', assetId: 'asset-1', name: '  ' }] },
+      })).toThrow('validation.world.audioSoundButtonInvalidName:button-1')
+    })
+
+    it('defaults legacy sound buttons and preserves valid button references', () => {
+      expect(validateWorldImport(validWorld()).audio?.soundButtons).toEqual([])
+      const world = validateWorldImport({
+        ...validWorld(),
+        audio: {
+          schemaVersion: 1,
+          assets: [{ id: 'asset-1', filename: 'knock.wav', mediaType: 'audio/wav', byteLength: 4 }],
+          tracks: [], scenes: [], presets: [],
+          soundButtons: [{ id: 'button-1', assetId: 'asset-1' }],
+        },
+      })
+      expect(world.audio?.soundButtons).toEqual([{ id: 'button-1', assetId: 'asset-1' }])
+    })
+
+    it('rejects sound buttons referencing missing assets', () => {
+      expect(() => validateWorldImport({
+        ...validWorld(),
+        audio: { schemaVersion: 1, assets: [], tracks: [], scenes: [], presets: [],
+          soundButtons: [{ id: 'button-1', assetId: 'missing' }] },
+      })).toThrow('validation.world.audioUnknownAsset:missing')
+    })
+
     it('defaults an absent audio section for worlds exported before audio support', () => {
       const world = validateWorldImport(validWorld())
 

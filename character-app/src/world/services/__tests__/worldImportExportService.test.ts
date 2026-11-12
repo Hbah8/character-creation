@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { validateWorldImport } from '@/world/services/validateWorldImport'
 import { exportWorldToJson } from '@/world/services/worldImportExportService'
 import type { World } from '@/world/types'
+import { createEmptyWorldAudio } from '@/world/types'
 
 function validWorld(): World {
   return {
@@ -38,6 +39,11 @@ describe('worldImportExportService', () => {
 
   it('exports races and keeps them valid for import', async () => {
     const world = validWorld()
+    world.audio = {
+      ...createEmptyWorldAudio(),
+      assets: [{ id: 'asset-1', filename: 'knock.wav', mediaType: 'audio/wav', byteLength: 4 }],
+      soundButtons: [{ id: 'button-1', assetId: 'asset-1', name: 'Door knock' }],
+    }
     let exportedBlob: Blob | undefined
     const anchor = {
       href: '',
@@ -67,6 +73,8 @@ describe('worldImportExportService', () => {
 
     const exportedWorld = JSON.parse(await exportedBlob.text()) as World
     const importedWorld = validateWorldImport(exportedWorld)
+    expect(importedWorld.audio?.soundButtons).toEqual(world.audio.soundButtons)
+    expect(JSON.stringify(exportedWorld)).not.toContain('fileHandle')
 
     expect(exportedWorld.races).toEqual(world.races)
     expect(importedWorld.races[0].abilities).toEqual([

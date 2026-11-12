@@ -130,12 +130,19 @@ export interface AudioPreset {
   name: string
 }
 
+export interface AudioSoundButton {
+  id: string
+  assetId: string
+  name?: string
+}
+
 export interface WorldAudio {
   schemaVersion: typeof WORLD_AUDIO_SCHEMA_VERSION
   assets: AudioAsset[]
   tracks: AudioTrack[]
   scenes: AudioScene[]
   presets: AudioPreset[]
+  soundButtons: AudioSoundButton[]
 }
 
 export function createEmptyWorldAudio(): WorldAudio {
@@ -145,6 +152,7 @@ export function createEmptyWorldAudio(): WorldAudio {
     tracks: [],
     scenes: [],
     presets: [],
+    soundButtons: [],
   }
 }
 

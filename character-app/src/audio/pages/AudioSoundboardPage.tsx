@@ -11,6 +11,7 @@ import {
   updateAudioSceneTrackSettings,
 } from '@/audio/services/audioLibraryService'
 import { createAudioAssetMetadata } from '@/audio/services/audioAssetImportService'
+import { SoundEffectsPanel } from '@/audio/components/SoundEffectsPanel'
 import {
   getLocalAudioAssetBinding,
   deleteLocalAudioAssetBinding,
@@ -374,63 +375,72 @@ export function AudioSoundboardPage() {
   }
 
   return (
-    <div className="h-full w-full min-h-0 overflow-y-auto bg-background text-foreground">
-      <div className="mx-auto flex min-h-full w-full max-w-[1600px] flex-col gap-5 p-6 max-md:gap-4 max-md:px-3.5 max-md:py-4">
-        <AudioWorldHeader
-          activeWorldId={activeEntry.id}
-          activeWorldName={activeEntry.world.name}
-          worlds={entries.map(entry => ({ id: entry.id, name: entry.world.name }))}
-          onSelectWorld={setActiveWorldId}
-        />
-
-        {errorKey && (
-          <Alert variant="destructive">
-            <AlertTitle>{t('title')}</AlertTitle>
-            <AlertDescription>{t(errorKey)}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className="grid grid-cols-[minmax(235px,0.92fr)_minmax(340px,1.34fr)_minmax(225px,0.82fr)] items-start gap-3 max-[1180px]:grid-cols-2 max-md:grid-cols-1">
-          <AudioLibraryPanel
-            assets={assets}
-            availability={availability}
-            onAddFiles={() => void addFiles()}
-            onAddToMixer={addTrack}
-            onRelink={asset => void relinkAsset(asset)}
-            onRemove={assetId => void removeAsset(assetId)}
+    <div className="flex h-full w-full min-h-0 flex-col bg-background text-foreground">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto flex min-h-full w-full max-w-[1600px] flex-col gap-5 p-6 max-md:gap-4 max-md:px-3.5 max-md:py-4">
+          <AudioWorldHeader
+            activeWorldId={activeEntry.id}
+            activeWorldName={activeEntry.world.name}
+            worlds={entries.map(entry => ({ id: entry.id, name: entry.world.name }))}
+            onSelectWorld={setActiveWorldId}
           />
 
-          <AudioMixerPanel
-            tracks={activeTrackIds.flatMap(trackId => {
-              const track = getAudioSceneTrack(audio, activeSceneId, trackId)
-              return track ? [track] : []
-            })}
-            playingTrackIds={playingTrackIds}
-            crossfadeTargetId={crossfadeTargetId}
-            onTrackChange={updateTrack}
-            onPlayPause={trackId => {
-              if (playingTrackIds.includes(trackId)) pauseTrack(trackId)
-              else void playTrack(trackId)
-            }}
-            onRemove={removeTrackFromMixer}
-            onStop={stopTrack}
-            onDuck={duckOtherTracks}
-            onCrossfadeTargetChange={setCrossfadeTargetId}
-            onCrossfade={() => void crossfadeToTarget()}
-          />
+          {errorKey && (
+            <Alert variant="destructive">
+              <AlertTitle>{t('title')}</AlertTitle>
+              <AlertDescription>{t(errorKey)}</AlertDescription>
+            </Alert>
+          )}
 
-          <AudioScenesPanel
-            scenes={audio.scenes}
-            activeSceneId={activeSceneId}
-            activeTrackIds={activeTrackIds}
-            sceneName={sceneName}
-            onSceneNameChange={setSceneName}
-            onSaveScene={saveScene}
-            onActivateScene={sceneId => void activateScene(sceneId)}
-            onRemoveScene={deleteScene}
-          />
+          <div className="grid grid-cols-[minmax(235px,0.92fr)_minmax(340px,1.34fr)_minmax(225px,0.82fr)] items-start gap-3 max-[1180px]:grid-cols-2 max-md:grid-cols-1">
+            <AudioLibraryPanel
+              assets={assets}
+              availability={availability}
+              onAddFiles={() => void addFiles()}
+              onAddToMixer={addTrack}
+              onRelink={asset => void relinkAsset(asset)}
+              onRemove={assetId => void removeAsset(assetId)}
+            />
+
+            <AudioMixerPanel
+              tracks={activeTrackIds.flatMap(trackId => {
+                const track = getAudioSceneTrack(audio, activeSceneId, trackId)
+                return track ? [track] : []
+              })}
+              playingTrackIds={playingTrackIds}
+              crossfadeTargetId={crossfadeTargetId}
+              onTrackChange={updateTrack}
+              onPlayPause={trackId => {
+                if (playingTrackIds.includes(trackId)) pauseTrack(trackId)
+                else void playTrack(trackId)
+              }}
+              onRemove={removeTrackFromMixer}
+              onStop={stopTrack}
+              onDuck={duckOtherTracks}
+              onCrossfadeTargetChange={setCrossfadeTargetId}
+              onCrossfade={() => void crossfadeToTarget()}
+            />
+
+            <AudioScenesPanel
+              scenes={audio.scenes}
+              activeSceneId={activeSceneId}
+              activeTrackIds={activeTrackIds}
+              sceneName={sceneName}
+              onSceneNameChange={setSceneName}
+              onSaveScene={saveScene}
+              onActivateScene={sceneId => void activateScene(sceneId)}
+              onRemoveScene={deleteScene}
+            />
+          </div>
         </div>
       </div>
+      <SoundEffectsPanel
+        key={activeEntry.id}
+        audio={audio}
+        availability={availability}
+        onChange={updated => { void saveById(activeEntry.id, { ...activeEntry.world, audio: updated }) }}
+        onPlaybackError={() => setErrorKey('playbackFailed')}
+      />
     </div>
   )
 }
