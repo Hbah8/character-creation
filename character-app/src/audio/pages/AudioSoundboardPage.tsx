@@ -375,9 +375,9 @@ export function AudioSoundboardPage() {
   }
 
   return (
-    <div className="flex h-full w-full min-h-0 flex-col bg-background text-foreground">
+    <div className="audio-soundboard flex h-full w-full min-h-0 flex-col bg-background text-foreground">
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex min-h-full w-full max-w-[1600px] flex-col gap-5 p-6 max-md:gap-4 max-md:px-3.5 max-md:py-4">
+        <div className="flex h-full min-h-0 w-full flex-col gap-4 p-4 max-md:gap-3 max-md:px-3 max-md:py-3">
           <AudioWorldHeader
             activeWorldId={activeEntry.id}
             activeWorldName={activeEntry.world.name}
@@ -392,7 +392,7 @@ export function AudioSoundboardPage() {
             </Alert>
           )}
 
-          <div className="grid grid-cols-[minmax(235px,0.92fr)_minmax(340px,1.34fr)_minmax(225px,0.82fr)] items-start gap-3 max-[1180px]:grid-cols-2 max-md:grid-cols-1">
+          <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] grid-cols-[minmax(15rem,1.2fr)_minmax(22rem,1.25fr)_minmax(15rem,0.85fr)] items-stretch gap-3 max-[1180px]:flex-none max-[1180px]:grid-rows-[auto] max-[1180px]:grid-cols-2 max-md:grid-cols-1">
             <AudioLibraryPanel
               assets={assets}
               availability={availability}

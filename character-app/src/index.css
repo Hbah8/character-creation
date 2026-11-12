@@ -10,6 +10,29 @@
   --page-bg: #e7e1d4;
   --paper: #f7f2e8;
   --ink: #171717;
+  --type-page-title-size: 1.5rem;
+  --type-page-title-weight: 650;
+  --type-page-title-line-height: 1.2;
+  --type-section-title-size: 1.125rem;
+  --type-section-title-weight: 600;
+  --type-section-title-line-height: 1.35;
+  --type-body-size: 0.9375rem;
+  --type-body-line-height: 1.5;
+  --type-secondary-size: 0.875rem;
+  --type-secondary-line-height: 1.45;
+  --type-control-size: 0.875rem;
+  --type-control-line-height: 1.25;
+  --type-control-compact-size: 0.8rem;
+  --control-height-xs: 1.5rem;
+  --control-height-sm: 1.75rem;
+  --control-height-default: 2rem;
+  --control-height-lg: 2.25rem;
+  --control-padding-inline: 0.625rem;
+  --control-icon-gap: 0.375rem;
+  --control-icon-size-xs: 0.75rem;
+  --control-icon-size-sm: 0.875rem;
+  --control-icon-size: 1rem;
+  --control-check-size: 1rem;
 
   color-scheme: light;
   background-color: #ffffff;
@@ -107,6 +130,16 @@ body {
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
+  --text-xs: var(--type-secondary-size);
+  --text-xs--line-height: var(--type-secondary-line-height);
+  --text-sm: var(--type-control-size);
+  --text-sm--line-height: var(--type-control-line-height);
+  --text-base: var(--type-body-size);
+  --text-base--line-height: var(--type-body-line-height);
+  --text-lg: var(--type-section-title-size);
+  --text-lg--line-height: var(--type-section-title-line-height);
+  --text-xl: var(--type-page-title-size);
+  --text-xl--line-height: var(--type-page-title-line-height);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -145,6 +178,38 @@ body {
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@utility type-page-title {
+  font-size: var(--type-page-title-size);
+  font-weight: var(--type-page-title-weight);
+  line-height: var(--type-page-title-line-height);
+}
+
+@utility type-section-title {
+  font-size: var(--type-section-title-size);
+  font-weight: var(--type-section-title-weight);
+  line-height: var(--type-section-title-line-height);
+}
+
+@utility type-body {
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
+}
+
+@utility type-secondary {
+  font-size: var(--type-secondary-size);
+  line-height: var(--type-secondary-line-height);
+}
+
+@utility type-control {
+  font-size: var(--type-control-size);
+  line-height: var(--type-control-line-height);
+}
+
+@utility type-control-compact {
+  font-size: var(--type-control-compact-size);
+  line-height: var(--type-control-line-height);
 }
 
 .dark {
@@ -187,8 +252,29 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    font-size: var(--type-body-size);
+    line-height: var(--type-body-line-height);
   }
+
+  h1 {
+    font-size: var(--type-page-title-size);
+    font-weight: var(--type-page-title-weight);
+    line-height: var(--type-page-title-line-height);
+  }
+
+  h2,
+  h3 {
+    font-size: var(--type-section-title-size);
+    font-weight: var(--type-section-title-weight);
+    line-height: var(--type-section-title-line-height);
+  }
+
   html {
     @apply font-sans;
   }
+}
+
+.audio-soundboard {
+  --audio-effects-max-height: min(35dvh, 18rem);
+  --audio-stacked-panel-max-height: max(12rem, calc(100dvh - var(--audio-effects-max-height) - 12rem));
 }

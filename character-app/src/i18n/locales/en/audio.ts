@@ -37,7 +37,7 @@ const audio = {
   addToMixer: 'Add',
   mixerTitle: 'Active mixer',
   mixerTrackCount: '{{count}} mixer tracks',
-  emptyMixer: 'Add files from the library to start mixing.',
+  emptyMixer: 'To add your first track, choose “Add” on a file in the Audio library.',
   volume: 'Volume',
   playTrack: 'Play',
   pauseTrack: 'Pause',

@@ -51,7 +51,7 @@ function FieldLabel({ className, ...props }: ComponentProps<typeof Label>) {
 function FieldDescription({ className, ...props }: ComponentProps<'p'>) {
   return (
     <p data-slot="field-description"
-      className={cn('text-left text-sm leading-normal font-normal text-muted-foreground', className)}
+      className={cn('type-secondary text-left font-normal text-muted-foreground', className)}
       {...props} />
   )
 }

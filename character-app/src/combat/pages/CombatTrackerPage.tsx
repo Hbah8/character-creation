@@ -94,7 +94,7 @@ export function CombatTrackerPage() {
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="h-5" />
         <Swords className="size-4 text-muted-foreground" />
-        <h1 className="text-base font-semibold">Трекер боя</h1>
+        <h1 className="type-page-title">Трекер боя</h1>
         <div className="flex-1" />
         <Button
           size="icon"

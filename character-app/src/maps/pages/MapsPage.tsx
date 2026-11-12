@@ -236,7 +236,7 @@ export function MapsPage() {
     return (
       <main className="flex h-full min-h-0 flex-col gap-5 overflow-y-auto bg-background p-6 text-foreground max-md:px-3.5 max-md:py-4">
         <header>
-          <h1 className="text-xl font-bold tracking-tight">{t('title')}</h1>
+          <h1 className="type-page-title tracking-tight">{t('title')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
         </header>
         <section className="flex min-h-0 flex-1 items-center justify-center">
@@ -274,7 +274,7 @@ export function MapsPage() {
     <main className="flex h-full min-h-0 flex-col overflow-hidden bg-background text-foreground">
       <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-3 max-md:px-3">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold">{t('title')}</h1>
+          <h1 className="type-page-title">{t('title')}</h1>
           <p className="truncate text-sm text-muted-foreground">{activeWorld.world.name}</p>
         </div>
         <input

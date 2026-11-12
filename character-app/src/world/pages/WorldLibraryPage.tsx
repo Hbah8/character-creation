@@ -33,7 +33,7 @@ export function WorldLibraryPage() {
         <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">{t('worlds.title')}</h1>
+              <h1 className="type-page-title tracking-tight">{t('worlds.title')}</h1>
               <p className="text-sm text-muted-foreground leading-relaxed mt-1">
                 {t('worlds.description')}
               </p>

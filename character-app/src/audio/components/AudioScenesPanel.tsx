@@ -28,11 +28,11 @@ export function AudioSceneCard({ scene, isActive, onActivate, onRemove }: AudioS
   const { t } = useTranslation('audio')
 
   return (
-    <article className="flex flex-col gap-2 rounded-lg border border-border bg-muted p-2.5">
+    <article className="flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted p-2.5">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <strong className="truncate text-[11px] font-semibold">{scene.name}</strong>
-          <span className="text-[9px] text-muted-foreground">
+          <strong className="type-body break-words font-medium [overflow-wrap:anywhere]">{scene.name}</strong>
+          <span className="text-xs text-muted-foreground">
             {t('sceneTrackCount', { count: scene.trackIds.length })}
           </span>
         </div>
@@ -61,7 +61,7 @@ export function AudioSceneCard({ scene, isActive, onActivate, onRemove }: AudioS
           </AlertDialog>
         </div>
       </div>
-      <Button variant="outline" className="w-full text-[10px]" onClick={() => onActivate(scene.id)}>
+      <Button variant="outline" className="w-full" onClick={() => onActivate(scene.id)}>
         <Play data-icon="inline-start" />
         {isActive ? t('restartScene') : t('launchScene')}
       </Button>
@@ -93,7 +93,7 @@ export function AudioScenesPanel({
   const { t } = useTranslation('audio')
 
   return (
-    <Card className="flex min-h-0 max-h-[calc(100dvh-10rem)] flex-col gap-3.5 overflow-hidden rounded-xl border border-border bg-card shadow-none max-[1180px]:col-span-2 max-md:col-span-1 max-md:max-h-[calc(100dvh-14rem)]">
+    <Card className="flex h-full min-h-0 flex-col gap-3.5 overflow-hidden rounded-xl border border-border bg-card shadow-none max-[1180px]:h-auto max-[1180px]:max-h-[var(--audio-stacked-panel-max-height)] max-[1180px]:col-span-2 max-md:col-span-1">
       <CardHeader className="flex items-start justify-between gap-2 px-3.5">
         <div>
           <CardTitle>{t('scenesTitle')}</CardTitle>
@@ -104,7 +104,7 @@ export function AudioScenesPanel({
         <div className="flex gap-1.5">
           <Input
             aria-label={t('sceneNamePlaceholder')}
-            className="h-8 min-w-0 text-[11px]"
+            className="min-w-0"
             value={sceneName}
             onChange={event => onSceneNameChange(event.target.value)}
             placeholder={t('sceneNamePlaceholder')}
@@ -119,7 +119,7 @@ export function AudioScenesPanel({
           </Button>
         </div>
         {scenes.length === 0 ? (
-          <p className="m-0 text-xs leading-relaxed text-muted-foreground">{t('emptyScenes')}</p>
+          <p className="m-0 text-sm leading-relaxed text-muted-foreground">{t('emptyScenes')}</p>
         ) : (
           <div className="min-h-0 overflow-y-auto flex flex-1 flex-col gap-1.5 max-[1180px]:grid max-[1180px]:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
             {scenes.map(scene => {
@@ -136,7 +136,7 @@ export function AudioScenesPanel({
             })}
           </div>
         )}
-        <p className="m-0 text-[10px] leading-relaxed text-muted-foreground">{t('sceneFootnote')}</p>
+        <p className="m-0 text-xs leading-relaxed text-muted-foreground">{t('sceneFootnote')}</p>
       </CardContent>
     </Card>
   )

@@ -52,7 +52,7 @@ export function RaceLibraryPage() {
       <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="truncate text-2xl font-bold tracking-tight">
+            <h1 className="type-page-title truncate tracking-tight">
               {t('titleWithWorld', { world: activeWorld.name })}
             </h1>
           </div>

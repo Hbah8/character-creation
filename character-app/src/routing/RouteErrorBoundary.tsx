@@ -17,7 +17,7 @@ function RouteRenderErrorPage() {
 
   return (
     <main className="flex min-h-full flex-col items-center justify-center gap-4 p-6 text-center">
-      <h1 className="text-2xl font-bold tracking-tight">{t('routeError.title')}</h1>
+      <h1 className="type-page-title tracking-tight">{t('routeError.title')}</h1>
       <p className="max-w-md text-sm text-muted-foreground">
         {t('routeError.description')}
       </p>

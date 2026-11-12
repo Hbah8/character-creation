@@ -32,7 +32,7 @@ export function DashboardPage() {
     <div className="flex flex-col h-full w-full min-h-0 overflow-y-auto">
       <div className="p-6 max-w-6xl w-full mx-auto flex flex-col gap-8">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">{t('dashboardTitle')}</h1>
+          <h1 className="type-page-title tracking-tight">{t('dashboardTitle')}</h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
             {activeWorldId
               ? t('worldCharacters', { name: activeWorld?.world.name ?? '' })

@@ -128,7 +128,7 @@ export function HandbooksPage() {
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center px-6 py-4 border-b">
-        <h1 className="text-lg font-semibold">{t('title')}</h1>
+        <h1 className="type-page-title">{t('title')}</h1>
       </div>
       <div className="flex-1 min-h-0 overflow-hidden">
         <Tabs

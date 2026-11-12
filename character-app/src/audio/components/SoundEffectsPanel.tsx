@@ -93,7 +93,7 @@ export function SoundEffectsPanel({ audio, availability, onChange, onPlaybackErr
   }
 
   return (
-    <section data-sound-effects className="flex max-h-[45dvh] shrink-0 flex-col border-t bg-card text-card-foreground">
+    <section data-sound-effects className="flex min-h-0 max-h-[var(--audio-effects-max-height)] shrink-0 flex-col overflow-hidden border-t bg-card text-card-foreground">
       <Button
         variant="ghost"
         className="w-full justify-between rounded-none"
@@ -105,7 +105,7 @@ export function SoundEffectsPanel({ audio, availability, onChange, onPlaybackErr
         {expanded ? <ChevronDown data-icon="inline-end" /> : <ChevronUp data-icon="inline-end" />}
       </Button>
       {expanded && (
-        <div id="sound-effects-content" className="flex flex-wrap gap-2 overflow-y-auto p-3">
+        <div id="sound-effects-content" className="flex min-h-0 flex-1 flex-wrap gap-2 overflow-y-auto p-3">
           {audio.soundButtons.map(button => {
             const asset = audio.assets.find(item => item.id === button.assetId)
             if (!asset) return null

@@ -45,7 +45,7 @@ export function AccountPage() {
   const date = (value: string) => new Date(value).toLocaleString(i18n.language)
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-5 p-4 md:p-6">
-      <h1 className="text-2xl font-semibold">{t('title')}</h1>
+      <h1 className="type-page-title">{t('title')}</h1>
       {error && <Alert variant="destructive"><AlertDescription>{t(`errors.${error}`)}</AlertDescription></Alert>}
       <Card>
         <CardHeader>

@@ -93,7 +93,7 @@ describe('AudioSoundboardPage component integration', () => {
     expect(html).toContain('data-slot="badge"')
     expect(html).toContain('Active mixer')
     expect(html).toContain('data-sound-effects')
-    expect(html).toContain('Add files from the library to start mixing.')
+    expect(html).toContain('To add your first track, choose “Add” on a file in the Audio library.')
     expect(html).toContain(audioScene.name)
     expect(html).toContain('aria-label="Remove scene"')
     expect(html).not.toMatch(/class="dark(?:\s|")/)
@@ -102,8 +102,32 @@ describe('AudioSoundboardPage component integration', () => {
   it('constrains audio panels and scrolls their content independently', () => {
     const html = renderPage()
 
-    expect(html.match(/max-h-\[calc\(100dvh-10rem\)\]/g) ?? []).toHaveLength(3)
-    expect(html.match(/min-h-0[^"]*overflow-y-auto/g) ?? []).toHaveLength(4)
+    expect(html.match(/max-\[1180px\]:max-h-\[var\(--audio-stacked-panel-max-height\)\]/g) ?? []).toHaveLength(3)
+    expect(html).toContain('grid-rows-[minmax(0,1fr)]')
+    expect(html).not.toContain('audio-content-max-height')
+    expect(html).toContain('max-h-[var(--audio-effects-max-height)]')
+    expect(html).toMatch(/id="sound-effects-content"[^>]*class="[^"]*overflow-y-auto/)
+  })
+
+  it('renders empty library, mixer, and scene states for a selected world', () => {
+    mockUseWorldLibrary.mockReturnValue({
+      entries: [{
+        ...worldEntry,
+        world: {
+          ...worldEntry.world,
+          audio: { ...worldEntry.world.audio!, assets: [], tracks: [], scenes: [], soundButtons: [] },
+        },
+      }],
+      activeWorldId: worldEntry.id,
+      saveById: vi.fn(),
+      setActiveWorldId: vi.fn(),
+    })
+
+    const html = renderPage()
+
+    expect(html).toContain('No audio files have been added to this World yet.')
+    expect(html).toContain('To add your first track, choose “Add” on a file in the Audio library.')
+    expect(html).toContain('Saved scenes will appear here.')
   })
 
   it('renders a volume range that includes zero', () => {

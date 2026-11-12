@@ -58,7 +58,7 @@ export function AudioTrackCard({
 
   return (
     <article
-      className="flex flex-col gap-2.5 rounded-xl border border-border bg-muted p-2.5 data-[playing=true]:border-primary"
+      className="flex shrink-0 flex-col gap-2.5 rounded-xl border border-border bg-muted p-2.5 data-[playing=true]:border-primary"
       data-playing={isPlaying}
     >
       <div className="flex items-center gap-1.5">
@@ -71,8 +71,8 @@ export function AudioTrackCard({
           {isPlaying ? <Pause /> : <Play />}
         </Button>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 pl-0.5">
-          <strong className="truncate text-[11px] font-semibold">{track.name}</strong>
-          <span className="text-[9px] text-muted-foreground">
+          <strong className="type-body break-words font-medium [overflow-wrap:anywhere]">{track.name}</strong>
+          <span className="text-xs text-muted-foreground">
             {isPlaying ? t('playing') : t('paused')} · {track.loop ? t('looping') : t('once')}
           </span>
         </div>
@@ -98,10 +98,10 @@ export function AudioTrackCard({
         </Button>
       </div>
       <div className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1">
-        <label className="text-[9px] uppercase tracking-wide text-muted-foreground" htmlFor={`audio-volume-${track.id}`}>
+        <label className="text-xs uppercase tracking-wide text-muted-foreground" htmlFor={`audio-volume-${track.id}`}>
           {t('volume')}
         </label>
-        <span className="text-[9px] text-muted-foreground">{Math.round(volume * 100)}%</span>
+        <span className="text-xs text-muted-foreground">{Math.round(volume * 100)}%</span>
         <input
           id={`audio-volume-${track.id}`}
           className="col-span-2 h-3 w-full cursor-pointer accent-primary"
@@ -122,12 +122,12 @@ export function AudioTrackCard({
       </div>
       <div className="grid grid-cols-2 gap-2">
         <label className="flex min-w-0 flex-col gap-1">
-          <span className="text-[9px] uppercase tracking-wide text-muted-foreground">{t('transitionLabel')}</span>
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">{t('transitionLabel')}</span>
           <Select
             value={track.transition ?? 'instant'}
             onValueChange={transition => onTrackChange(track.id, { transition: transition as AudioTrack['transition'] })}
           >
-            <SelectTrigger className="h-[30px] w-full min-w-0 text-[10px]">
+            <SelectTrigger className="w-full min-w-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -141,7 +141,7 @@ export function AudioTrackCard({
           </Select>
         </label>
         <label className="flex min-w-0 flex-col gap-1">
-          <span className="text-[9px] uppercase tracking-wide text-muted-foreground">{t('effectLabel')}</span>
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">{t('effectLabel')}</span>
           <Select
             value={track.presetId ?? 'clean'}
             onValueChange={presetId => onTrackChange(
@@ -149,7 +149,7 @@ export function AudioTrackCard({
               { presetId: presetId === 'clean' ? undefined : presetId as AudioPresetId },
             )}
           >
-            <SelectTrigger className="h-[30px] w-full min-w-0 text-[10px]">
+            <SelectTrigger className="w-full min-w-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -163,11 +163,11 @@ export function AudioTrackCard({
         </label>
       </div>
       <div className="flex gap-1.5">
-        <Button size="sm" variant="outline" className="text-[10px]" onClick={() => onStop(track.id)}>
+        <Button size="sm" variant="outline" onClick={() => onStop(track.id)}>
           <Square data-icon="inline-start" />
           {t('stopTrack')}
         </Button>
-        <Button size="sm" variant="outline" className="text-[10px]" onClick={() => onDuck(track.id)}>
+        <Button size="sm" variant="outline" onClick={() => onDuck(track.id)}>
           {t('duckOthers')}
         </Button>
       </div>
@@ -194,7 +194,7 @@ export function AudioMixerPanel({
   const { t } = useTranslation('audio')
 
   return (
-    <Card className="flex min-h-0 max-h-[calc(100dvh-10rem)] flex-col gap-3.5 overflow-hidden rounded-xl border border-border bg-card shadow-none max-md:max-h-[calc(100dvh-14rem)]">
+    <Card className="flex h-full min-h-0 flex-col gap-3.5 overflow-hidden rounded-xl border border-border bg-card shadow-none max-[1180px]:h-auto max-[1180px]:max-h-[var(--audio-stacked-panel-max-height)]">
       <CardHeader className="flex items-start justify-between gap-2 px-3.5">
         <div>
           <CardTitle className="flex items-center gap-2">
@@ -206,7 +206,7 @@ export function AudioMixerPanel({
       </CardHeader>
       <CardContent className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-2.5 px-3.5">
         {tracks.length === 0 ? (
-          <p className="m-0 text-xs leading-relaxed text-muted-foreground">{t('emptyMixer')}</p>
+          <p className="type-body m-0 rounded-lg border border-border bg-muted p-3 font-medium text-foreground">{t('emptyMixer')}</p>
         ) : (
           tracks.map(track => (
             <AudioTrackCard
@@ -219,11 +219,11 @@ export function AudioMixerPanel({
         )}
       </CardContent>
       {tracks.length > 1 && (
-        <CardContent className="mx-3.5 mb-3.5 flex flex-col gap-2 rounded-lg border border-border bg-muted p-3">
-          <span className="text-[9px] uppercase tracking-wide text-muted-foreground">{t('crossfade')}</span>
+        <CardContent className="mx-3.5 mb-3.5 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted p-3">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">{t('crossfade')}</span>
           <div className="flex items-center gap-2">
             <Select value={crossfadeTargetId} onValueChange={onCrossfadeTargetChange}>
-              <SelectTrigger className="h-[30px] min-w-0 flex-1 text-[10px]">
+              <SelectTrigger className="min-w-0 flex-1">
                 <SelectValue placeholder={t('crossfadeTarget')} />
               </SelectTrigger>
               <SelectContent>

@@ -53,7 +53,7 @@ export function RaceBuilderPage() {
             <ArrowLeftIcon />
           </Button>
           <div className="min-w-0">
-            <h1 className="truncate text-2xl font-bold tracking-tight">
+            <h1 className="type-page-title truncate tracking-tight">
               {t('titleWithWorld', { world: activeWorld.name })}
             </h1>
           </div>

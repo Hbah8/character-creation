@@ -48,16 +48,16 @@ export function AudioAssetRow({
 
   return (
     <div
-      className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-border bg-muted p-2 transition-colors hover:bg-accent data-[unavailable=true]:border-destructive data-[unavailable=true]:bg-destructive/10"
+      className="flex min-w-0 shrink-0 items-start justify-between gap-2 rounded-lg border border-border bg-muted p-2 transition-colors hover:bg-accent data-[unavailable=true]:border-destructive/30 data-[unavailable=true]:bg-destructive/5"
       data-unavailable={availability !== undefined && !isAvailable}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-[11px] font-semibold">{asset.filename}</span>
-        <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
+        <span className="type-body break-words font-medium [overflow-wrap:anywhere]">{asset.filename}</span>
+        <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
           {format}
           {duration && ` · ${duration}`}
           {' · '}
-          <Badge variant={isAvailable ? 'secondary' : 'destructive'}>
+          <Badge variant={isAvailable ? 'secondary' : 'outline'}>
             {isAvailable && <Check data-icon="inline-start" />}
             {t(getAvailabilityKey(availability))}
           </Badge>
@@ -125,7 +125,7 @@ export function AudioLibraryPanel({
   ).length
 
   return (
-    <Card className="flex min-h-0 max-h-[calc(100dvh-10rem)] flex-col gap-3.5 overflow-hidden rounded-xl border border-border bg-card shadow-none max-md:max-h-[calc(100dvh-14rem)]">
+    <Card className="flex h-full min-h-0 flex-col gap-3.5 overflow-hidden rounded-xl border border-border bg-card shadow-none max-[1180px]:h-auto max-[1180px]:max-h-[var(--audio-stacked-panel-max-height)]">
       <CardHeader className="flex items-start justify-between gap-2 px-3.5">
         <div>
           <CardTitle>{t('libraryTitle')}</CardTitle>
@@ -144,11 +144,11 @@ export function AudioLibraryPanel({
         </Button>
       </CardHeader>
       <CardContent className="min-h-0 flex-1 overflow-y-auto flex flex-col gap-2.5 px-3.5">
-        <p className="m-0 text-[10px] tracking-wide text-muted-foreground">{t('supportedFormats')}</p>
+        <p className="type-secondary m-0 tracking-wide text-muted-foreground">{t('supportedFormats')}</p>
         {assets.length === 0 ? (
-          <p className="m-0 text-xs leading-relaxed text-muted-foreground">{t('emptyLibrary')}</p>
+          <p className="m-0 text-sm leading-relaxed text-muted-foreground">{t('emptyLibrary')}</p>
         ) : (
-          <div className="flex flex-col gap-1.5">
+          <div className="flex shrink-0 flex-col gap-1.5">
             {assets.map(asset => (
               <AudioAssetRow
                 key={asset.id}
@@ -161,7 +161,7 @@ export function AudioLibraryPanel({
             ))}
           </div>
         )}
-        <p className="m-0 text-[10px] leading-relaxed text-muted-foreground">{t('libraryFootnote')}</p>
+        <p className="m-0 text-xs leading-relaxed text-muted-foreground">{t('libraryFootnote')}</p>
       </CardContent>
     </Card>
   )
