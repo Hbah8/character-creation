@@ -4,6 +4,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,29 +17,31 @@ public class AccountRepository {
         this.jdbc = jdbc;
     }
 
-    record Account(UUID id, String email, String passwordHash, boolean verified) {
+    record Account(UUID id, String email, String passwordHash, boolean verified, boolean approved, boolean blocked) {
     }
 
     Optional<UUID> insert(String email, String passwordHash) {
         return jdbc.sql("""
-                INSERT INTO app.accounts (id, email, password_hash) VALUES (:id, :email, :password)
+                INSERT INTO app.accounts (id, email, password_hash, approved) VALUES (:id, :email, :password, false)
                 ON CONFLICT (email) DO NOTHING RETURNING id
                 """).param("id", UUID.randomUUID()).param("email", email).param("password", passwordHash)
                 .query(UUID.class).optional();
     }
 
     Optional<Account> byEmail(String email) {
-        return jdbc.sql("SELECT id, email, password_hash, email_verified FROM app.accounts WHERE email = :email")
+        return jdbc.sql("SELECT id, email, password_hash, email_verified, approved, blocked FROM app.accounts WHERE email = :email")
                 .param("email", email).query((rs, row) -> new Account(rs.getObject("id", UUID.class),
-                        rs.getString("email"), rs.getString("password_hash"), rs.getBoolean("email_verified"))).optional();
+                        rs.getString("email"), rs.getString("password_hash"), rs.getBoolean("email_verified"),
+                        rs.getBoolean("approved"), rs.getBoolean("blocked"))).optional();
     }
 
     Optional<Account> lockByEmail(String email) {
         return jdbc.sql("""
-                SELECT id, email, password_hash, email_verified FROM app.accounts
+                SELECT id, email, password_hash, email_verified, approved, blocked FROM app.accounts
                 WHERE email = :email FOR UPDATE
                 """).param("email", email).query((rs, row) -> new Account(rs.getObject("id", UUID.class),
-                        rs.getString("email"), rs.getString("password_hash"), rs.getBoolean("email_verified"))).optional();
+                        rs.getString("email"), rs.getString("password_hash"), rs.getBoolean("email_verified"),
+                        rs.getBoolean("approved"), rs.getBoolean("blocked"))).optional();
     }
 
     Optional<UUID> accountForToken(String hash) {
@@ -46,7 +49,12 @@ public class AccountRepository {
                 .param("hash", hash).query(UUID.class).optional();
     }
 
-    void lock(UUID account) {
+    /**
+     * Locks an existing account until the current transaction ends.
+     *
+     * @param account account identifier
+     */
+    public void lock(UUID account) {
         jdbc.sql("SELECT id FROM app.accounts WHERE id = :id FOR UPDATE").param("id", account).query(UUID.class).single();
     }
 
@@ -72,9 +80,10 @@ public class AccountRepository {
     }
 
     Optional<Account> lockById(UUID id) {
-        return jdbc.sql("SELECT id, email, password_hash, email_verified FROM app.accounts WHERE id = :id FOR UPDATE")
+        return jdbc.sql("SELECT id, email, password_hash, email_verified, approved, blocked FROM app.accounts WHERE id = :id FOR UPDATE")
                 .param("id", id).query((rs, row) -> new Account(rs.getObject("id", UUID.class),
-                        rs.getString("email"), rs.getString("password_hash"), rs.getBoolean("email_verified"))).optional();
+                        rs.getString("email"), rs.getString("password_hash"), rs.getBoolean("email_verified"),
+                        rs.getBoolean("approved"), rs.getBoolean("blocked"))).optional();
     }
 
     void insertResetToken(UUID account, String hash, Instant expiry) {
@@ -106,11 +115,38 @@ public class AccountRepository {
     }
 
     AccountView view(UUID id) {
-        return jdbc.sql("SELECT id, email FROM app.accounts WHERE id = :id")
+        return jdbc.sql("SELECT id, email, approved FROM app.accounts WHERE id = :id")
                 .param("id", id).query(AccountView.class).single();
     }
 
     /** Public account representation, with no credential material. */
-    public record AccountView(UUID id, String email) {
+    public record AccountView(UUID id, String email, boolean approved) {
+    }
+
+    Optional<Account> byId(UUID id) {
+        return jdbc.sql("SELECT id, email, password_hash, email_verified, approved, blocked FROM app.accounts WHERE id = :id")
+                .param("id", id).query((rs, row) -> new Account(rs.getObject("id", UUID.class),
+                        rs.getString("email"), rs.getString("password_hash"), rs.getBoolean("email_verified"),
+                        rs.getBoolean("approved"), rs.getBoolean("blocked"))).optional();
+    }
+
+    public void revokeSessions(UUID account) {
+        jdbc.sql("DELETE FROM app.spring_session WHERE principal_name = :id")
+                .param("id", account.toString()).update();
+    }
+
+    int deleteExpiredPendingAccounts(Instant cutoff, List<UUID> administratorIds) {
+        String sql = """
+                DELETE FROM app.accounts
+                WHERE created_at < :cutoff AND (email_verified = false OR approved = false)
+                """;
+        if (!administratorIds.isEmpty()) {
+            sql += " AND id NOT IN (:administratorIds)";
+        }
+        var deletion = jdbc.sql(sql).param("cutoff", java.sql.Timestamp.from(cutoff));
+        if (!administratorIds.isEmpty()) {
+            deletion.param("administratorIds", administratorIds);
+        }
+        return deletion.update();
     }
 }

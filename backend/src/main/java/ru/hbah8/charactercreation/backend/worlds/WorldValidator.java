@@ -3,6 +3,7 @@ package ru.hbah8.charactercreation.backend.worlds;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Component;
+import ru.hbah8.charactercreation.backend.limits.StorageLimits;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,14 +32,17 @@ public class WorldValidator {
     private static final Set<String> MAX_REPEAT_VALUES = Set.of("unlimited");
 
     private final SystemCatalog catalog;
+    private final StorageLimits limits;
 
     /**
      * Creates the world contract validator.
      *
      * @param catalog immutable system handbook identifiers
+     * @param limits configured world collection ceilings
      */
-    public WorldValidator(SystemCatalog catalog) {
+    public WorldValidator(SystemCatalog catalog, StorageLimits limits) {
         this.catalog = catalog;
+        this.limits = limits;
     }
 
     /** Validates and applies documented defaults to an incoming world payload. */
@@ -58,6 +62,8 @@ public class WorldValidator {
         if (entities == null || !entities.isArray() || relationships == null || !relationships.isArray()) {
             throw invalidWorld();
         }
+        requireCapacity(entities, limits.entitiesPerWorld(), "worldEntitiesLimitReached");
+        requireCapacity(relationships, limits.relationshipsPerWorld(), "worldRelationshipsLimitReached");
         validateEntities(entities);
         validateRelationships(relationships, entities);
         if (world.has("races") && !world.path("races").isArray()) {
@@ -72,6 +78,8 @@ public class WorldValidator {
         if (!world.has("worldHandbook")) {
             world.putArray("worldHandbook");
         }
+        requireCapacity(world.path("races"), limits.racesPerWorld(), "worldRacesLimitReached");
+        requireCapacity(world.path("worldHandbook"), limits.handbookEntriesPerWorld(), "worldHandbookLimitReached");
         if (world.has("audio") && !world.path("audio").isObject()) {
             throw invalidWorld();
         }
@@ -79,6 +87,12 @@ public class WorldValidator {
         validateRaces(world.path("races"), world);
         validateHandbookReferences(world);
         return world;
+    }
+
+    private static void requireCapacity(JsonNode entries, int maximum, String code) {
+        if (entries.size() > maximum) {
+            throw new WorldException(400, code);
+        }
     }
 
     /** Validates a linked character's references against a previously resolved world. */

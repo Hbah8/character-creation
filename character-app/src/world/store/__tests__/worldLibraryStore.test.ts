@@ -46,6 +46,26 @@ describe('world library store', () => {
     expect(store.getSnapshot('account-a').entries).toEqual([])
   })
 
+  it.each([
+    'worldEntitiesLimitReached', 'worldRelationshipsLimitReached',
+    'worldRacesLimitReached', 'worldHandbookLimitReached',
+  ])('retains optimistic edits after %s', async code => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(response('world-1'))
+      .mockResolvedValueOnce(Response.json({ token: 'csrf' }))
+      .mockResolvedValueOnce(Response.json({ code }, { status: 400 })))
+    const store = new WorldLibraryStore()
+    await store.load('account-a')
+    const draft = { ...getDefaultWorld('en'), summary: 'Unsaved graph edits' }
+
+    await store.saveById('account-a', 'world-1', draft)
+
+    expect(store.getSnapshot('account-a')).toMatchObject({
+      entries: [{ id: 'world-1', world: draft }],
+      error: { code, operation: 'save', worldId: 'world-1' },
+    })
+  })
+
   it('keeps failed edits and requires an explicit rebase before resolving a version conflict', async () => {
     const id = 'world-1'
     const latest = {
@@ -83,7 +103,7 @@ describe('world library store', () => {
     })
   })
 
-  it('retains a failed new world draft for an explicit retry', async () => {
+  it('retains a quota-rejected new world draft for an explicit retry', async () => {
     const saved = {
       id: 'created-world',
       version: 1,
@@ -94,13 +114,13 @@ describe('world library store', () => {
     const fetch = vi.fn()
       .mockResolvedValueOnce(Response.json([]))
       .mockResolvedValueOnce(Response.json({ token: 'csrf-failed' }))
-      .mockResolvedValueOnce(Response.json({ code: 'unavailable' }, { status: 503 }))
+      .mockResolvedValueOnce(Response.json({ code: 'worldLimitReached' }, { status: 409 }))
       .mockResolvedValueOnce(Response.json({ token: 'csrf-retry' }))
       .mockResolvedValueOnce(Response.json(saved, { status: 201, headers: { ETag: '"1"' } }))
     vi.stubGlobal('fetch', fetch)
     const store = new WorldLibraryStore()
     await store.load('account-a')
-    await expect(store.save('account-a', saved.world)).rejects.toMatchObject({ code: 'unavailable' })
+    await expect(store.save('account-a', saved.world)).rejects.toMatchObject({ code: 'worldLimitReached' })
 
     await store.retryCreate('account-a')
 

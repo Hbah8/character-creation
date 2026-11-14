@@ -20,6 +20,7 @@ const RaceLibraryPage = lazy(() => import('@/racebuilder/pages/RaceLibraryPage')
 const AudioSoundboardPage = lazy(() => import('@/audio/pages/AudioSoundboardPage').then(module => ({ default: module.AudioSoundboardPage })))
 const MapsPage = lazy(() => import('@/maps/pages/MapsPage').then(module => ({ default: module.MapsPage })))
 const AccountPage = lazy(() => import('@/accounts/AccountPage').then(module => ({ default: module.AccountPage })))
+const AdminPage = lazy(() => import('@/admin/AdminPage').then(module => ({ default: module.AdminPage })))
 
 function CharacterCreatorRoute() {
   const { id } = useParams<{ id?: string }>()
@@ -57,6 +58,7 @@ function AppRoutes() {
             <Route path="maps" element={<MapsPage />} />
             <Route path="account" element={<AccountPage />} />
           </Route>
+            <Route path="admin" element={<AdminPage />} />
           <Route path="creator" element={<CharacterCreatorRoute />} />
           <Route path="creator/:id" element={<CharacterCreatorRoute />} />
           <Route path="worlds/new" element={<WorldBuilderRoute />} />

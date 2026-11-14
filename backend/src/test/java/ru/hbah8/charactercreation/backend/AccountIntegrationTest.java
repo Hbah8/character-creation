@@ -28,6 +28,12 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
@@ -62,14 +68,20 @@ class AccountIntegrationTest {
 
     @BeforeAll
     static void start() {
+        startWithProperties();
+    }
+
+    static void startWithProperties(String... overrides) {
+        var args = new ArrayList<>(List.of("--server.port=0", "--spring.docker.compose.enabled=false",
+                "--spring.datasource.url=" + postgres.getJdbcUrl(),
+                "--spring.datasource.username=" + postgres.getUsername(),
+                "--spring.datasource.password=" + postgres.getPassword(),
+                "--app.identity.public-base-url=http://localhost:5173",
+                "--spring.session.jdbc.initialize-schema=never"));
+        args.addAll(Arrays.asList(overrides));
         app = new SpringApplicationBuilder(CharacterCreationApplication.class, MailCapture.class)
                 .profiles("test")
-                .run("--server.port=0", "--spring.docker.compose.enabled=false",
-                        "--spring.datasource.url=" + postgres.getJdbcUrl(),
-                        "--spring.datasource.username=" + postgres.getUsername(),
-                        "--spring.datasource.password=" + postgres.getPassword(),
-                        "--app.identity.public-base-url=http://localhost:5173",
-                        "--spring.session.jdbc.initialize-schema=never");
+                .run(args.toArray(String[]::new));
         base = "http://localhost:" + app.getEnvironment().getProperty("local.server.port");
         jdbc = app.getBean(JdbcTemplate.class);
         try (var fixture = AccountIntegrationTest.class.getResourceAsStream("/fixtures/character-rich.json")) {
@@ -90,6 +102,199 @@ class AccountIntegrationTest {
     void clean() {
         jdbc.execute("TRUNCATE app.spring_session, app.accounts, app.request_limits CASCADE");
         letters.clear();
+    }
+
+    @Test
+    void worldQuotaIsAccountScopedAndGrandfathersExistingWorlds() throws Exception {
+        Browser owner = verifiedBrowser("world-quota@example.com");
+        Browser other = verifiedBrowser("other-quota@example.com");
+        JsonNode first = null;
+        for (int i = 0; i < 3; i++) {
+            var created = owner.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true);
+            assertEquals(201, created.statusCode(), created.body());
+            first = json.readTree(created.body());
+        }
+        assertError("worldLimitReached", 409,
+                owner.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true));
+        assertEquals(201, other.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true).statusCode());
+        UUID account = UUID.fromString(owner.get("/me").path("id").asText());
+        jdbc.update("""
+                INSERT INTO app.worlds (id, owner_account_id, name, summary,
+                    skill_points_budget, attribute_points_budget, race_points_budget)
+                VALUES (?, ?, 'Legacy world', '', 12, 5, 2)
+                """, UUID.randomUUID(), account);
+        assertEquals(4, json.readTree(owner.worldRequest("GET", "", null, null, false).body()).size());
+        String path = "/" + first.path("id").asText();
+        assertEquals(200, owner.worldRequest("PUT", path, Map.of("world", emptyWorld()), "\"1\"", true).statusCode());
+        assertEquals(204, owner.worldRequest("DELETE", path, null, "\"2\"", true).statusCode());
+        assertError("worldLimitReached", 409,
+                owner.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true));
+        JsonNode remaining = json.readTree(owner.worldRequest("GET", "", null, null, false).body()).get(0);
+        assertEquals(204, owner.worldRequest("DELETE", "/" + remaining.path("id").asText(), null,
+                "\"" + remaining.path("version").asLong() + "\"", true).statusCode());
+        assertEquals(201, owner.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true).statusCode());
+    }
+
+    @Test
+    void characterQuotasCoverCreateMoveDetachAndOverLimitEdits() throws Exception {
+        Browser owner = verifiedBrowser("character-quota@example.com");
+        UUID account = UUID.fromString(owner.get("/me").path("id").asText());
+        var worldResponse = owner.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true);
+        UUID world = UUID.fromString(json.readTree(worldResponse.body()).path("id").asText());
+        seedCharacters(account, world, 50);
+        seedCharacters(account, null, 51);
+        ObjectNode linked = (ObjectNode) characterFixture.deepCopy();
+        linked.put("worldId", world.toString());
+        assertError("worldCharacterLimitReached", 409,
+                owner.characterRequest("POST", "", Map.of("character", linked), null, true));
+        assertError("standaloneCharacterLimitReached", 409,
+                owner.characterRequest("POST", "", Map.of("character", characterFixture), null, true));
+        var records = json.readTree(owner.characterRequest("GET", "", null, null, false).body());
+        JsonNode standalone = null;
+        JsonNode inWorld = null;
+        for (JsonNode record : records) {
+            if (record.path("character").hasNonNull("worldId")) inWorld = record;
+            else standalone = record;
+        }
+        String standalonePath = "/" + standalone.path("id").asText();
+        String linkedPath = "/" + inWorld.path("id").asText();
+        assertError("worldCharacterLimitReached", 409,
+                owner.characterRequest("PUT", standalonePath, Map.of("character", linked), "\"1\"", true));
+        assertError("standaloneCharacterLimitReached", 409,
+                owner.characterRequest("PUT", linkedPath, Map.of("character", characterFixture), "\"1\"", true));
+        assertEquals(200, owner.characterRequest("PUT", standalonePath,
+                Map.of("character", characterFixture), "\"1\"", true).statusCode());
+        assertEquals(200, owner.characterRequest("PUT", linkedPath,
+                Map.of("character", linked), "\"1\"", true).statusCode());
+        assertEquals(204, owner.characterRequest("DELETE", linkedPath, null, "\"2\"", true).statusCode());
+        assertEquals(200, owner.characterRequest("PUT", standalonePath,
+                Map.of("character", linked), "\"2\"", true).statusCode());
+        assertError("worldCharacterLimitReached", 409,
+                owner.characterRequest("POST", "", Map.of("character", linked), null, true));
+        assertError("standaloneCharacterLimitReached", 409,
+                owner.characterRequest("POST", "", Map.of("character", characterFixture), null, true));
+        assertEquals(200, owner.characterRequest("GET", standalonePath, null, null, false).statusCode());
+    }
+
+    @Test
+    void concurrentRequestsCannotClaimTheSameLastSlot() throws Exception {
+        Browser owner = verifiedBrowser("concurrent-quota@example.com");
+        UUID account = UUID.fromString(owner.get("/me").path("id").asText());
+        for (int i = 0; i < 2; i++) {
+            assertEquals(201, owner.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true).statusCode());
+        }
+        assertLastSlot(() -> owner.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true),
+                () -> owner.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true));
+        seedCharacters(account, null, 49);
+        assertLastSlot(() -> owner.characterRequest("POST", "", Map.of("character", characterFixture), null, true),
+                () -> owner.characterRequest("POST", "", Map.of("character", characterFixture), null, true));
+        JsonNode worldRecord = json.readTree(owner.worldRequest("GET", "", null, null, false).body()).get(0);
+        UUID world = UUID.fromString(worldRecord.path("id").asText());
+        seedCharacters(account, world, 49);
+        ObjectNode linked = (ObjectNode) characterFixture.deepCopy();
+        linked.put("worldId", world.toString());
+        String standaloneId = jdbc.queryForObject(
+                "SELECT id::text FROM app.characters WHERE world_id IS NULL LIMIT 1", String.class);
+        assertLastSlot(() -> owner.characterRequest("POST", "", Map.of("character", linked), null, true),
+                () -> owner.characterRequest("PUT", "/" + standaloneId, Map.of("character", linked), "\"1\"", true));
+        assertEquals(50, jdbc.queryForObject(
+                "SELECT count(*) FROM app.characters WHERE world_id = ?", Integer.class, world));
+    }
+
+    @Test
+    void requestLimitsDistinguishCharacterAndWorldBodiesOnBothWriteRoutes() throws Exception {
+        Browser owner = verifiedBrowser("body-quota@example.com");
+        String body = "{\"character\":" + characterFixture + ",\"padding\":\"" + "x".repeat(262144) + "\"}";
+        assertError("requestTooLarge", 413, owner.characterRequest("POST", "", body, null, true));
+        assertError("requestTooLarge", 413, owner.characterRequest("PUT", "/" + UUID.randomUUID(), body, "\"1\"", true));
+        String world = "{\"world\":" + emptyWorld() + ",\"padding\":\"" + "x".repeat(300000) + "\"}";
+        var created = owner.worldRequest("POST", "", world, null, true);
+        assertEquals(201, created.statusCode(), created.body());
+        String id = json.readTree(created.body()).path("id").asText();
+        assertEquals(200, owner.worldRequest("PUT", "/" + id, world, "\"1\"", true).statusCode());
+        String oversized = "{\"world\":" + emptyWorld() + ",\"padding\":\"" + "x".repeat(2097152) + "\"}";
+        assertError("requestTooLarge", 413, owner.worldRequest("POST", "", oversized, null, true));
+        assertError("requestTooLarge", 413, owner.worldRequest("PUT", "/" + id, oversized, "\"2\"", true));
+    }
+
+    @Test
+    void closedRegistrationHasNoAccountOrMailSideEffectsAndKeepsExistingFlows() throws Exception {
+        Browser owner = verifiedBrowser("closed-owner@example.com");
+        Browser pending = new Browser();
+        assertEquals(202, pending.post("/register", credentials("closed-pending@example.com")).statusCode());
+        stop();
+        startWithProperties("--app.identity.registration-enabled=false");
+        try {
+            letters.clear();
+            int accountCount = jdbc.queryForObject("SELECT count(*) FROM app.accounts", Integer.class);
+            int tokenCount = jdbc.queryForObject("SELECT count(*) FROM app.email_tokens", Integer.class);
+            jdbc.execute("TRUNCATE app.request_limits");
+            for (String email : new String[]{"closed-owner@example.com", "unknown@example.com"}) {
+                for (int i = 0; i < 4; i++) {
+                    assertError("registrationClosed", 403, new Browser().post("/register", credentials(email)));
+                }
+            }
+            assertAll(
+                    () -> assertEquals(accountCount, jdbc.queryForObject("SELECT count(*) FROM app.accounts", Integer.class)),
+                    () -> assertEquals(tokenCount, jdbc.queryForObject("SELECT count(*) FROM app.email_tokens", Integer.class)),
+                    () -> assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM app.request_limits", Integer.class)),
+                    () -> assertTrue(letters.isEmpty())
+            );
+            assertEquals(202, pending.post("/resend", Map.of("email", "closed-pending@example.com")).statusCode());
+            assertEquals(204, pending.post("/confirm", Map.of("token", token("closed-pending@example.com"))).statusCode());
+            assertEquals(200, pending.post("/login", credentials("closed-pending@example.com")).statusCode());
+            assertEquals(200, new Browser().post("/login", credentials("closed-owner@example.com")).statusCode());
+            assertEquals(202, owner.post("/password-reset/request", Map.of("email", "closed-owner@example.com")).statusCode());
+            String reset = letters.get("closed-owner@example.com").split("resetToken=")[1];
+            assertEquals(204, owner.post("/password-reset/complete",
+                    Map.of("token", reset, "password", "new correct horse battery staple")).statusCode());
+        } finally {
+            stop();
+            start();
+        }
+    }
+
+    static ObjectNode emptyWorld() {
+        var world = json.createObjectNode().put("schemaVersion", 1).put("name", "Quota world").put("summary", "");
+        world.putArray("entities");
+        world.putArray("relationships");
+        return world;
+    }
+
+    static void seedCharacters(UUID owner, UUID world, int count) {
+        ObjectNode character = (ObjectNode) characterFixture.deepCopy();
+        if (world == null) character.remove("worldId");
+        else character.put("worldId", world.toString());
+        jdbc.update("""
+                INSERT INTO app.characters (id, owner_account_id, world_id, character_data)
+                SELECT gen_random_uuid(), ?, ?, CAST(? AS jsonb) FROM generate_series(1, ?)
+                """, owner, world, character.toString(), count);
+    }
+
+    static void assertError(String code, int status, HttpResponse<String> response) throws Exception {
+        assertAll(
+                () -> assertEquals(status, response.statusCode(), response.body()),
+                () -> assertEquals(code, json.readTree(response.body()).path("code").asText())
+        );
+    }
+
+    static void assertLastSlot(java.util.concurrent.Callable<HttpResponse<String>> first,
+                               java.util.concurrent.Callable<HttpResponse<String>> second) throws Exception {
+        var ready = new CountDownLatch(2);
+        var go = new CountDownLatch(1);
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            var tasks = List.of(first, second).stream().map(action -> pool.submit(() -> {
+                ready.countDown();
+                assertTrue(go.await(10, TimeUnit.SECONDS));
+                return action.call().statusCode();
+            })).toList();
+            assertTrue(ready.await(10, TimeUnit.SECONDS));
+            go.countDown();
+            var statuses = List.of(tasks.get(0).get(30, TimeUnit.SECONDS), tasks.get(1).get(30, TimeUnit.SECONDS))
+                    .stream().sorted().toList();
+            assertTrue(statuses.getFirst() == 200 || statuses.getFirst() == 201, statuses.toString());
+            assertEquals(409, statuses.getLast());
+        }
     }
 
     @Test
@@ -282,6 +487,138 @@ class AccountIntegrationTest {
         String handle = authenticated.get("/sessions").get(0).path("id").asText();
         assertEquals(403, authenticated.request("DELETE", "/sessions/" + handle, null, false).statusCode());
         assertEquals(403, authenticated.request("POST", "/logout", Map.of(), false).statusCode());
+    }
+
+    @Test
+    void administratorsApproveBlockAndDeleteAccountsWithoutLeavingLinkedData() throws Exception {
+        Browser administrator = verifiedBrowser("owner@example.com");
+        String administratorId = administrator.get("/me").path("id").asText();
+        stop();
+        startWithProperties("--app.identity.admin-account-ids=" + administratorId);
+        try {
+            Browser applicant = new Browser();
+            assertEquals(202, applicant.post("/register", credentials("applicant@example.com")).statusCode());
+            assertEquals(204, applicant.post("/confirm", Map.of("token", token("applicant@example.com"))).statusCode());
+            assertEquals(200, applicant.post("/login", credentials("applicant@example.com")).statusCode());
+            assertError("accountPendingApproval", 403,
+                    applicant.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true));
+
+            var accounts = administrator.adminRequest("GET", "/accounts?query=applicant", null, false);
+            assertEquals(200, accounts.statusCode(), accounts.body());
+            JsonNode account = json.readTree(accounts.body()).path("items").get(0);
+            String accountId = account.path("id").asText();
+            assertAll(
+                    () -> assertEquals("applicant@example.com", account.path("email").asText()),
+                    () -> assertEquals("pending", account.path("status").asText()),
+                    () -> assertFalse(account.toString().contains("password")),
+                    () -> assertFalse(account.toString().contains("token"))
+            );
+
+            assertEquals(204, administrator.adminRequest("POST", "/accounts/" + accountId + "/approve", null, true).statusCode());
+            assertEquals(201, applicant.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true).statusCode());
+            assertEquals(204, administrator.adminRequest("POST", "/accounts/" + accountId + "/block", null, true).statusCode());
+            assertEquals(401, applicant.request("GET", "/me", null, false).statusCode());
+            assertEquals(401, applicant.post("/login", credentials("applicant@example.com")).statusCode());
+
+            assertEquals(204, administrator.adminRequest("DELETE", "/accounts/" + accountId, null, true).statusCode());
+            assertAll(
+                    () -> assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM app.accounts WHERE id = ?::uuid",
+                            Integer.class, accountId)),
+                    () -> assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM app.worlds WHERE owner_account_id = ?::uuid",
+                            Integer.class, accountId)),
+                    () -> assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM app.spring_session WHERE principal_name = ?",
+                            Integer.class, accountId)),
+                    () -> assertEquals(3, jdbc.queryForObject("SELECT count(*) FROM app.admin_audit_log", Integer.class))
+            );
+        } finally {
+            stop();
+            startWithProperties();
+        }
+    }
+
+    @Test
+    void configuredAdministratorUsesUuidAndNeedsNoApprovalButStillNeedsVerifiedUnblockedAccount() throws Exception {
+        Browser administrator = verifiedBrowser("bootstrap@example.com");
+        UUID id = UUID.fromString(administrator.get("/me").path("id").asText());
+        jdbc.update("UPDATE app.accounts SET approved = false WHERE id = ?", id);
+        stop();
+        try {
+            startWithProperties("--app.identity.admin-account-ids=" + id);
+            assertTrue(administrator.get("/me").path("approved").asBoolean());
+            assertEquals(200, administrator.adminRequest("GET", "/accounts", null, false).statusCode());
+            assertEquals(201, administrator.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true).statusCode());
+            assertEquals(201, administrator.characterRequest("POST", "",
+                    Map.of("character", characterFixture), null, true).statusCode());
+            assertFalse(jdbc.queryForObject("SELECT approved FROM app.accounts WHERE id = ?", Boolean.class, id),
+                    "Configuration must not permanently approve an account");
+
+            jdbc.update("UPDATE app.accounts SET email = 'renamed@example.com' WHERE id = ?", id);
+            assertEquals(200, administrator.adminRequest("GET", "/accounts", null, false).statusCode());
+            Browser replacement = verifiedBrowser("bootstrap@example.com");
+            assertEquals(403, replacement.adminRequest("GET", "/accounts", null, false).statusCode(),
+                    "A different account with the old email must not inherit administrator access");
+
+            jdbc.update("UPDATE app.accounts SET email_verified = false WHERE id = ?", id);
+            assertEquals(403, administrator.adminRequest("GET", "/accounts", null, false).statusCode());
+            assertFalse(administrator.get("/me").path("approved").asBoolean());
+            assertError("emailUnverified", 401, new Browser().post("/login", credentials("renamed@example.com")));
+            jdbc.update("UPDATE app.accounts SET email_verified = true, blocked = true WHERE id = ?", id);
+            assertEquals(403, administrator.adminRequest("GET", "/accounts", null, false).statusCode());
+            assertFalse(administrator.get("/me").path("approved").asBoolean());
+            assertError("accountPendingApproval", 403,
+                    administrator.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true));
+            assertError("accountBlocked", 401, new Browser().post("/login", credentials("renamed@example.com")));
+            jdbc.update("UPDATE app.accounts SET blocked = false WHERE id = ?", id);
+
+            stop();
+            startWithProperties("--app.identity.admin-emails=renamed@example.com");
+            assertEquals(403, administrator.adminRequest("GET", "/accounts", null, false).statusCode());
+            assertFalse(administrator.get("/me").path("approved").asBoolean());
+            assertError("accountPendingApproval", 403,
+                    administrator.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true));
+        } finally {
+            stop();
+            startWithProperties();
+        }
+    }
+
+    @Test
+    void cleanupPreservesConfiguredAccountsAndTheirDataButExpiresOtherPendingAccounts() throws Exception {
+        Browser administrator = verifiedBrowser("retained-admin@example.com");
+        UUID id = UUID.fromString(administrator.get("/me").path("id").asText());
+        var created = administrator.worldRequest("POST", "", Map.of("world", emptyWorld()), null, true);
+        assertEquals(201, created.statusCode());
+        UUID worldId = UUID.fromString(json.readTree(created.body()).path("id").asText());
+        seedCharacters(id, worldId, 1);
+        jdbc.update("UPDATE app.accounts SET approved = false WHERE id = ?", id);
+        Browser other = verifiedBrowser("expired-pending@example.com");
+        UUID otherId = UUID.fromString(other.get("/me").path("id").asText());
+        jdbc.update("UPDATE app.accounts SET approved = false WHERE id = ?", otherId);
+        Browser anonymous = new Browser();
+        assertEquals(202, anonymous.post("/register", credentials("unverified-admin@example.com")).statusCode());
+        UUID unverifiedId = jdbc.queryForObject(
+                "SELECT id FROM app.accounts WHERE email = 'unverified-admin@example.com'", UUID.class);
+        stop();
+        try {
+            startWithProperties("--app.identity.admin-account-ids=" + id + "," + unverifiedId);
+            jdbc.update("UPDATE app.accounts SET created_at = now() - interval '25 hours'");
+            assertEquals(202, anonymous.post("/register", credentials("fresh-pending@example.com")).statusCode());
+            app.getBean(ru.hbah8.charactercreation.backend.identity.PendingAccountCleanup.class).removeExpiredAccounts();
+            assertAll(
+                    () -> assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM app.accounts WHERE id = ?", Integer.class, id)),
+                    () -> assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM app.accounts WHERE id = ?", Integer.class, unverifiedId)),
+                    () -> assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM app.accounts WHERE id = ?", Integer.class, otherId)),
+                    () -> assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM app.accounts WHERE email = 'fresh-pending@example.com'", Integer.class)),
+                    () -> assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM app.worlds WHERE id = ?", Integer.class, worldId)),
+                    () -> assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM app.characters WHERE world_id = ?", Integer.class, worldId))
+            );
+            assertTrue(administrator.get("/me").path("approved").asBoolean());
+        } finally {
+            // Restore fixture timestamps before restarting with no protected IDs.
+            jdbc.update("UPDATE app.accounts SET created_at = now()");
+            stop();
+            startWithProperties();
+        }
     }
 
     @Test
@@ -849,6 +1186,7 @@ class AccountIntegrationTest {
         Browser browser = new Browser();
         assertEquals(202, browser.post("/register", credentials(email)).statusCode());
         assertEquals(204, browser.post("/confirm", Map.of("token", token(email))).statusCode());
+        jdbc.update("UPDATE app.accounts SET approved = true WHERE email = ?", email.toLowerCase(java.util.Locale.ROOT));
         assertEquals(200, browser.post("/login", credentials(email)).statusCode());
         return browser;
     }
@@ -908,6 +1246,17 @@ class AccountIntegrationTest {
             }
             String payload = body == null ? null
                     : body instanceof String raw ? raw : json.writeValueAsString(body);
+            return http.send(request.method(method, payload == null ? HttpRequest.BodyPublishers.noBody()
+                    : HttpRequest.BodyPublishers.ofString(payload)).build(), HttpResponse.BodyHandlers.ofString());
+        }
+
+        HttpResponse<String> adminRequest(String method, String path, Object body, boolean csrf) throws Exception {
+            var request = HttpRequest.newBuilder(URI.create(base + "/api/admin" + path))
+                    .timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json");
+            if (csrf) {
+                request.header("X-CSRF-TOKEN", get("/csrf").path("token").asText());
+            }
+            String payload = body == null ? null : json.writeValueAsString(body);
             return http.send(request.method(method, payload == null ? HttpRequest.BodyPublishers.noBody()
                     : HttpRequest.BodyPublishers.ofString(payload)).build(), HttpResponse.BodyHandlers.ofString());
         }

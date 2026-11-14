@@ -16,6 +16,7 @@ import enRaceBuilder from './locales/en/raceBuilder'
 import enAudio from './locales/en/audio'
 import enMaps from './locales/en/maps'
 import enAccount from '@/i18n/locales/en/account'
+import enAdmin from '@/i18n/locales/en/admin'
 
 import ruCommon from './locales/ru/common'
 import ruHeader from './locales/ru/header'
@@ -30,6 +31,7 @@ import ruRaceBuilder from './locales/ru/raceBuilder'
 import ruAudio from './locales/ru/audio'
 import ruMaps from './locales/ru/maps'
 import ruAccount from '@/i18n/locales/ru/account'
+import ruAdmin from '@/i18n/locales/ru/admin'
 
 const LOCALE_STORAGE_KEY = 'swade-locale'
 
@@ -71,6 +73,7 @@ i18n
         audio: enAudio,
         maps: enMaps,
         account: enAccount,
+        admin: enAdmin,
       },
       ru: {
         common: ruCommon,
@@ -86,6 +89,7 @@ i18n
         audio: ruAudio,
         maps: ruMaps,
         account: ruAccount,
+        admin: ruAdmin,
       },
     },
     interpolation: {

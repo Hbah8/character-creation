@@ -2,6 +2,7 @@ export interface Account {
   id: string
   email: string
   expiresAt: string
+  approved: boolean
 }
 
 export interface AccountSession {
@@ -15,6 +16,8 @@ export interface AccountSession {
 const errorCodes = [
   'invalidCredentials', 'emailUnverified', 'invalidToken', 'invalidInput', 'rateLimited',
   'unauthenticated', 'forbidden', 'sessionNotFound', 'unavailable', 'invalidResponse', 'incorrectPassword',
+  'registrationClosed',
+  'accountBlocked',
 ] as const
 export type AccountErrorCode = typeof errorCodes[number]
 
@@ -82,10 +85,11 @@ async function request(path: string, method = 'GET', body?: object): Promise<Res
 
 function readAccount(value: unknown): Account {
   if (!isObject(value) || typeof value.id !== 'string' || typeof value.email !== 'string'
-    || typeof value.expiresAt !== 'string' || !Number.isFinite(Date.parse(value.expiresAt))) {
+    || typeof value.expiresAt !== 'string' || !Number.isFinite(Date.parse(value.expiresAt))
+    || typeof value.approved !== 'boolean') {
     throw new AccountApiError('invalidResponse')
   }
-  return { id: value.id, email: value.email, expiresAt: value.expiresAt }
+  return { id: value.id, email: value.email, expiresAt: value.expiresAt, approved: value.approved }
 }
 
 function readSession(value: unknown): AccountSession {

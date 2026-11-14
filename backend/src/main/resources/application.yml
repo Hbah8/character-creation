@@ -25,9 +25,22 @@ spring:
       mail.debug: false
 
 app:
+  storage-limits:
+    worlds-per-account: ${MAX_WORLDS_PER_ACCOUNT:3}
+    characters-per-world: ${MAX_CHARACTERS_PER_WORLD:50}
+    standalone-characters: ${MAX_STANDALONE_CHARACTERS:50}
+    entities-per-world: ${MAX_WORLD_ENTITIES:500}
+    relationships-per-world: ${MAX_WORLD_RELATIONSHIPS:1000}
+    races-per-world: ${MAX_WORLD_RACES:50}
+    handbook-entries-per-world: ${MAX_WORLD_HANDBOOK_ENTRIES:500}
+    character-request-bytes: ${CHARACTER_MAX_REQUEST_BYTES:262144}
+    world-request-bytes: ${WORLD_MAX_REQUEST_BYTES:2097152}
   identity:
+    registration-enabled: ${REGISTRATION_ENABLED:true}
     public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:5173}
     verification-ttl: ${EMAIL_VERIFICATION_TTL:24h}
+    pending-account-ttl: ${PENDING_ACCOUNT_TTL:24h}
+    admin-account-ids: ${ADMIN_ACCOUNT_IDS:}
 
 management:
   health:

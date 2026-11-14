@@ -8,6 +8,8 @@ compose_project=character-creation
 environment_file="$app_dir/.env"
 next_environment_file="$app_dir/.env.next"
 previous_compose_file="$app_dir/.compose.yaml.previous"
+previous_environment_file="$app_dir/.env.previous"
+action=${1:-deploy}
 
 if [ "${LOCK_HELD:-0}" != 1 ]; then
   exec 9>"$app_dir/.operation.lock"
@@ -26,47 +28,16 @@ mkdir -p \
 
 cd "$app_dir"
 
-previous_image=''
-previous_backend_image=''
-if [ -f "$environment_file" ]; then
-  previous_image=$(sed -n 's/^IMAGE=//p' "$environment_file" | head -n 1)
-  previous_backend_image=$(sed -n 's/^BACKEND_IMAGE=//p' "$environment_file" | head -n 1)
-fi
+unset IMAGE BACKEND_IMAGE
 
-printf 'IMAGE=%s\nBACKEND_IMAGE=%s\n' "$image" "$backend_image" > "$next_environment_file"
-mv "$next_environment_file" "$environment_file"
-
-rollback() {
-  if [ -n "$previous_image" ] && [ -n "$previous_backend_image" ]; then
-    printf 'Deployment failed; restoring previous application images.\n' >&2
-    printf 'IMAGE=%s\nBACKEND_IMAGE=%s\n' \
-      "$previous_image" "$previous_backend_image" > "$next_environment_file"
-    mv "$next_environment_file" "$environment_file"
-    docker compose --project-name "$compose_project" pull
-    docker compose --project-name "$compose_project" up -d --remove-orphans
-  elif [ -n "$previous_image" ] && [ -f "$previous_compose_file" ]; then
-    printf 'Deployment failed; restoring the frontend-only deployment.\n' >&2
-    printf 'IMAGE=%s\n' "$previous_image" > "$next_environment_file"
-    mv "$next_environment_file" "$environment_file"
-    install -m 0644 "$previous_compose_file" "$app_dir/.compose.yaml.rollback"
-    mv "$app_dir/.compose.yaml.rollback" "$app_dir/compose.yaml"
-    docker compose --project-name "$compose_project" pull
-    docker compose --project-name "$compose_project" up -d --remove-orphans
-  else
-    printf 'Deployment failed and no previous image is available for rollback.\n' >&2
-    docker compose --project-name "$compose_project" down
-  fi
+pull_images() {
+  pull_attempt=1
+  until docker compose --project-name "$compose_project" pull; do
+    if [ "$pull_attempt" -ge 3 ]; then return 1; fi
+    pull_attempt=$((pull_attempt + 1))
+    sleep 5
+  done
 }
-
-if ! docker compose --project-name "$compose_project" pull; then
-  rollback
-  exit 1
-fi
-
-if ! docker compose --project-name "$compose_project" up -d --remove-orphans; then
-  rollback
-  exit 1
-fi
 
 wait_for_healthy_service() {
   service=$1
@@ -88,6 +59,71 @@ wait_for_healthy_service() {
   return 1
 }
 
+rollback() {
+  printf 'Deployment failed; restoring previous configuration and application images.\n' >&2
+  for file in .admin.runtime.env .runtime.env; do
+    if [ -f "$app_dir/$file.previous" ]; then
+      install -m 0600 "$app_dir/$file.previous" "$app_dir/$file.rollback"
+      mv "$app_dir/$file.rollback" "$app_dir/$file"
+    elif [ -f "$app_dir/$file.previous.absent" ]; then
+      rm -f "$app_dir/$file"
+    fi
+  done
+  if [ -f "$previous_compose_file" ]; then
+    install -m 0644 "$previous_compose_file" "$app_dir/.compose.yaml.rollback"
+    mv "$app_dir/.compose.yaml.rollback" "$app_dir/compose.yaml"
+  fi
+  if [ ! -f "$previous_environment_file" ]; then
+    printf 'No previous image manifest is available; services and volumes were not removed.\n' >&2
+    return 1
+  fi
+  install -m 0600 "$previous_environment_file" "$next_environment_file"
+  mv "$next_environment_file" "$environment_file"
+  docker compose --project-name "$compose_project" config --quiet
+  pull_images
+  docker compose --project-name "$compose_project" up -d --remove-orphans
+  if grep -q '^BACKEND_IMAGE=.' "$environment_file"; then
+    wait_for_healthy_service backend
+  fi
+  wait_for_healthy_service web
+}
+
+case "$action" in
+  rollback|finalize)
+    if [ "$(sed -n 's/^IMAGE=//p' "$environment_file")" != "$image" ] ||
+       [ "$(sed -n 's/^BACKEND_IMAGE=//p' "$environment_file")" != "$backend_image" ]; then
+      printf 'Refusing to change a different release.\n' >&2
+      exit 1
+    fi
+    if [ "$action" = rollback ]; then
+      rollback
+    else
+      rm -f "$previous_environment_file" "$previous_compose_file" \
+        "$app_dir/.admin.runtime.env.previous" "$app_dir/.admin.runtime.env.previous.absent" \
+        "$app_dir/.runtime.env.previous" "$app_dir/.runtime.env.previous.absent"
+      printf 'External verification completed; release finalized.\n'
+    fi
+    exit 0
+    ;;
+  deploy) ;;
+  *) printf 'Unknown deployment action.\n' >&2; exit 1 ;;
+esac
+
+if [ -f "$environment_file" ]; then
+  install -m 0600 "$environment_file" "$previous_environment_file"
+else
+  rm -f "$previous_environment_file"
+fi
+printf 'IMAGE=%s\nBACKEND_IMAGE=%s\n' "$image" "$backend_image" > "$next_environment_file"
+mv "$next_environment_file" "$environment_file"
+
+if ! docker compose --project-name "$compose_project" config --quiet ||
+   ! pull_images ||
+   ! docker compose --project-name "$compose_project" up -d --remove-orphans; then
+  rollback
+  exit 1
+fi
+
 if ! wait_for_healthy_service backend; then
   rollback
   exit 1
@@ -98,4 +134,4 @@ if ! wait_for_healthy_service web; then
   exit 1
 fi
 
-printf 'Deployment completed with application images %s and %s\n' "$image" "$backend_image"
+printf 'Application images are healthy; awaiting external verification: %s and %s\n' "$image" "$backend_image"

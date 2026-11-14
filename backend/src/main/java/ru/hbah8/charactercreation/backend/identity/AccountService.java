@@ -32,8 +32,16 @@ public class AccountService {
         return email.strip().toLowerCase(Locale.ROOT);
     }
 
+    /** Rejects closed registration before rate-limit, credential, or delivery side effects. */
+    public void requireRegistrationOpen() {
+        if (!properties.registrationEnabled()) {
+            throw new IdentityException(403, "registrationClosed");
+        }
+    }
+
     @Transactional
     public Optional<Delivery> register(String email, String password) {
+        requireRegistrationOpen();
         String normalized = normalize(email);
         String hash = passwords.encode(password);
         return accounts.insert(normalized, hash).map(id -> issue(id, normalized));

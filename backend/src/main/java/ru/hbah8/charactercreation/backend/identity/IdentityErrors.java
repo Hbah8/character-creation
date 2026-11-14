@@ -35,7 +35,8 @@ public class IdentityErrors {
             return ResponseEntity.status(503).body(Map.of("code", "unavailable"));
         }
         return ResponseEntity.status(401).body(Map.of("code",
-                exception instanceof DisabledException ? "emailUnverified" : "invalidCredentials"));
+                exception instanceof DisabledException && "accountBlocked".equals(exception.getMessage())
+                        ? "accountBlocked" : exception instanceof DisabledException ? "emailUnverified" : "invalidCredentials"));
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class,

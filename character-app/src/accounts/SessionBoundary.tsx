@@ -111,5 +111,10 @@ export function SessionBoundary({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace
       state={{ returnTo: location.pathname + location.search + location.hash, passwordChanged }} />
   }
-  return <SessionAccountContext key={check.account.id} value={check.account}>{children}</SessionAccountContext>
+  return <SessionAccountContext key={check.account.id} value={check.account}>
+    {!check.account.approved && <Alert className="m-4" role="status">
+      <AlertDescription>{t('pendingApproval')}</AlertDescription>
+    </Alert>}
+    {children}
+  </SessionAccountContext>
 }

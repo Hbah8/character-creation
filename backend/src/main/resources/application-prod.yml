@@ -15,4 +15,6 @@ server:
 
 app:
   identity:
+    registration-enabled: ${REGISTRATION_ENABLED:false}
     public-base-url: ${APP_PUBLIC_BASE_URL}
+    admin-account-ids: ${ADMIN_ACCOUNT_IDS:}

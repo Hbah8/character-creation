@@ -40,10 +40,13 @@ const account = {
   expiresAt: 'Expires: {{date}}',
   revoke: 'Revoke session',
   refresh: 'Refresh sessions',
+  pendingApproval: 'Your account is awaiting administrator approval. You can use account settings, but cannot create or change worlds or characters yet.',
   errors: {
+    registrationClosed: 'Registration is closed. Existing accounts can still sign in, confirm email, or reset their password.',
     invalidCredentials: 'Invalid email or password',
     incorrectPassword: 'The current password is incorrect.',
     emailUnverified: 'Confirm your email using the link in the message before signing in.',
+    accountBlocked: 'This account has been blocked.',
     invalidToken: 'This link is invalid, expired or already used. Request a new email.',
     invalidInput: 'Check the email and password. For confirmation, use the link in your email.',
     rateLimited: 'Too many attempts. Please wait 15 minutes before trying again.',

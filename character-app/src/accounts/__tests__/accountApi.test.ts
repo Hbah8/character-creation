@@ -4,6 +4,14 @@ import { accountApi, AccountApiError, onSessionEnded } from '@/accounts/accountA
 afterEach(() => vi.unstubAllGlobals())
 
 describe('same-origin account API', () => {
+  it('preserves the registration-closed error instead of reporting an outage', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(Response.json({ token: 'csrf' }))
+      .mockResolvedValueOnce(Response.json({ code: 'registrationClosed' }, { status: 403 })))
+    await expect(accountApi.register('player@example.com', 'correct horse battery staple'))
+      .rejects.toMatchObject({ code: 'registrationClosed' })
+  })
+
   it('submits password reset and change with CSRF and ends the session only after success', async () => {
     const fetch = vi.fn()
       .mockResolvedValueOnce(Response.json({ token: 'csrf' }))

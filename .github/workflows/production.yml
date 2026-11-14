@@ -73,6 +73,10 @@ jobs:
           IMAGE=example.invalid/character-creation:validation \
           BACKEND_IMAGE=example.invalid/character-creation-backend:validation \
             docker compose config --quiet
+      - name: Validate deployment scripts and administrator configuration
+        run: |
+          for script in deploy/*.sh; do sh -n "$script"; done
+          python3 deploy/test_admin_deploy.py -v
 
   publish:
     name: Build and publish image
@@ -121,6 +125,13 @@ jobs:
       url: https://${{ vars.VPS_HOST }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate administrator secret
+        env:
+          ADMIN_ACCOUNT_IDS: ${{ secrets.ADMIN_ACCOUNT_IDS }}
+        run: |
+          umask 077
+          printf '%s' "$ADMIN_ACCOUNT_IDS" > "$RUNNER_TEMP/admin-account-ids"
+          sh deploy/validate-admin-account-ids.sh "$RUNNER_TEMP/admin-account-ids"
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.VPS_DEPLOY_SSH_KEY }}
@@ -132,6 +143,7 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
       - name: Stage deployment files
+        id: stage
         run: |
           ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
             "mkdir -p '${APP_DIRECTORY}/.deploy-staging'"
@@ -139,6 +151,7 @@ jobs:
             compose.yaml \
             deploy/deploy.sh \
             deploy/apply-staged-deploy.sh \
+            deploy/validate-admin-account-ids.sh \
             deploy/nginx.conf \
             deploy/nginx-https.conf \
             deploy/issue-certificates.sh \
@@ -147,6 +160,7 @@ jobs:
             deploy/systemd/character-creation-certbot-renew.timer \
             "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}:${APP_DIRECTORY}/.deploy-staging/"
       - name: Deploy immutable image
+        id: rollout
         env:
           IMAGE: ${{ needs.publish.outputs.image }}
           BACKEND_IMAGE: ${{ needs.publish.outputs.backend_image }}
@@ -159,4 +173,45 @@ jobs:
           printf '%s' "$DATABASE_PASSWORD" | ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
             "umask 077; cat > '${APP_DIRECTORY}/.deploy-staging/database-password'"
           ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
-            "IMAGE='${IMAGE}' BACKEND_IMAGE='${BACKEND_IMAGE}' APP_DIR='${APP_DIRECTORY}' sh '${APP_DIRECTORY}/.deploy-staging/apply-staged-deploy.sh'; status=\$?; rm -f '${APP_DIRECTORY}/.deploy-staging/database-password'; exit \$status"
+            "umask 077; cat > '${APP_DIRECTORY}/.deploy-staging/admin-account-ids'" \
+            < "$RUNNER_TEMP/admin-account-ids"
+          ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            "IMAGE='${IMAGE}' BACKEND_IMAGE='${BACKEND_IMAGE}' APP_DIR='${APP_DIRECTORY}' sh '${APP_DIRECTORY}/.deploy-staging/apply-staged-deploy.sh'"
+      - name: Verify public HTTPS and API
+        id: public-check
+        env:
+          PUBLIC_ORIGIN: https://${{ vars.VPS_HOST }}
+        run: |
+          response=$(mktemp)
+          trap 'rm -f "$response"' EXIT
+          for path in /healthz /api/auth/csrf; do
+            status=$(curl --silent --show-error --fail --retry 3 --retry-all-errors \
+              --connect-timeout 5 --max-time 20 --output "$response" \
+              --write-out '%{http_code}' "$PUBLIC_ORIGIN$path")
+            test "$status" = 200
+          done
+          jq -e 'type == "object" and (.token | type == "string" and length > 0)' "$response" > /dev/null
+      - name: Roll back after failed public verification
+        if: failure() && steps.rollout.outcome == 'success' && steps.public-check.outcome == 'failure'
+        env:
+          IMAGE: ${{ needs.publish.outputs.image }}
+          BACKEND_IMAGE: ${{ needs.publish.outputs.backend_image }}
+        run: |
+          ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            "IMAGE='${IMAGE}' BACKEND_IMAGE='${BACKEND_IMAGE}' APP_DIR='${APP_DIRECTORY}' sh '${APP_DIRECTORY}/deploy.sh' rollback"
+      - name: Finalize verified release
+        if: success() && steps.public-check.outcome == 'success'
+        env:
+          IMAGE: ${{ needs.publish.outputs.image }}
+          BACKEND_IMAGE: ${{ needs.publish.outputs.backend_image }}
+        run: |
+          ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+            "IMAGE='${IMAGE}' BACKEND_IMAGE='${BACKEND_IMAGE}' APP_DIR='${APP_DIRECTORY}' sh '${APP_DIRECTORY}/deploy.sh' finalize"
+      - name: Remove staged secrets
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/admin-account-ids"
+          if [ "${{ steps.stage.outcome }}" = success ]; then
+            ssh -o BatchMode=yes "${{ vars.VPS_USER }}@${{ vars.VPS_HOST }}" \
+              "rm -f '${APP_DIRECTORY}/.deploy-staging/database-password' '${APP_DIRECTORY}/.deploy-staging/admin-account-ids'"
+          fi

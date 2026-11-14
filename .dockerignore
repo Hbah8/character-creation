@@ -15,4 +15,9 @@ character-app/.env
 character-app/.env.local
 .env
 .env.local
+.env.previous*
+.runtime.env*
+.accounts.runtime.env*
+.admin.runtime.env*
+.deploy-staging
 *.md

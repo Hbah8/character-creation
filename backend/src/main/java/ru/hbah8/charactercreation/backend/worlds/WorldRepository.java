@@ -35,6 +35,17 @@ public class WorldRepository {
         this.json = json;
     }
 
+    /**
+     * Counts only worlds owned by the account.
+     *
+     * @param ownerId authenticated account
+     * @return owned world count
+     */
+    public long count(UUID ownerId) {
+        return jdbc.sql("SELECT count(*) FROM app.worlds WHERE owner_account_id = :owner")
+                .param("owner", ownerId).query(Long.class).single();
+    }
+
     List<SavedWorld> list(UUID ownerId) {
         List<UUID> ids = jdbc.sql("""
                 SELECT id

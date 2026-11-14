@@ -20,6 +20,7 @@ public class AccountAuthentication implements UserDetailsService {
         var account = accounts.byEmail(AccountService.normalize(email))
                 .orElseThrow(() -> new UsernameNotFoundException("invalidCredentials"));
         return User.withUsername(account.id().toString()).password(account.passwordHash())
-                .disabled(!account.verified()).authorities("ROLE_ACCOUNT").build();
+                .disabled(!account.verified()).authorities(account.blocked()
+                        ? new String[]{"ROLE_ACCOUNT", "ROLE_BLOCKED"} : new String[]{"ROLE_ACCOUNT"}).build();
     }
 }

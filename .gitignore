@@ -22,6 +22,12 @@ Thumbs.db
 .env.local
 /.runtime.env
 /.accounts.runtime.env
+/.admin.runtime.env
+/.admin.runtime.env.*
+/.runtime.env.*
+/.env.previous
+/.env.previous.absent
+/.compose.yaml.previous
 
 user-stories/
 example/
@@ -31,6 +37,8 @@ swade-rules/
 characters/
 !/backend/src/main/java/ru/hbah8/charactercreation/backend/characters/
 !/backend/src/main/java/ru/hbah8/charactercreation/backend/characters/**
+!/backend/src/test/java/ru/hbah8/charactercreation/backend/characters/
+!/backend/src/test/java/ru/hbah8/charactercreation/backend/characters/**
 /docs/*
 !/docs/backend-transition-progress.md
 

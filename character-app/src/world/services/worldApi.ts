@@ -17,6 +17,11 @@ export type WorldApiErrorCode =
   | 'invalidReference'
   | 'referencedResource'
   | 'requestTooLarge'
+  | 'worldLimitReached'
+  | 'worldEntitiesLimitReached'
+  | 'worldRelationshipsLimitReached'
+  | 'worldRacesLimitReached'
+  | 'worldHandbookLimitReached'
   | 'preconditionRequired'
   | 'invalidVersion'
   | 'unauthenticated'
@@ -28,6 +33,8 @@ const errorCodes: WorldApiErrorCode[] = [
   'conflict', 'notFound', 'invalidWorld', 'invalidReference', 'referencedResource',
   'requestTooLarge', 'preconditionRequired', 'invalidVersion', 'unauthenticated',
   'forbidden', 'unavailable', 'invalidResponse',
+  'worldLimitReached', 'worldEntitiesLimitReached', 'worldRelationshipsLimitReached',
+  'worldRacesLimitReached', 'worldHandbookLimitReached',
 ]
 
 export class WorldApiError extends Error {

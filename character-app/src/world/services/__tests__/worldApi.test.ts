@@ -14,6 +14,16 @@ const record = {
 }
 
 describe('world API', () => {
+  it.each([
+    'worldLimitReached', 'worldEntitiesLimitReached', 'worldRelationshipsLimitReached',
+    'worldRacesLimitReached', 'worldHandbookLimitReached',
+  ])('preserves the actionable %s error', async code => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(Response.json({ token: 'csrf' }))
+      .mockResolvedValueOnce(Response.json({ code }, { status: 409 })))
+    await expect(worldApi.create(world)).rejects.toMatchObject({ code })
+  })
+
   it('round-trips saved sound buttons through world reads and updates', async () => {
     const soundWorld = {
       ...world,

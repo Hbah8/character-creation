@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.hbah8.charactercreation.backend.limits.AccountQuotaService;
+import ru.hbah8.charactercreation.backend.identity.AccountAccessService;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,6 +17,8 @@ public class WorldService implements WorldReferenceResolver {
     private final WorldRepository worlds;
     private final WorldValidator validator;
     private final WorldCharacterReferences characters;
+    private final AccountQuotaService quotas;
+    private final AccountAccessService access;
 
     /**
      * Creates the world application service.
@@ -22,11 +26,15 @@ public class WorldService implements WorldReferenceResolver {
      * @param worlds world repository
      * @param validator world and link validator
      * @param characters linked-character lookup
+     * @param quotas transactional account capacity policy
      */
-    public WorldService(WorldRepository worlds, WorldValidator validator, WorldCharacterReferences characters) {
+    public WorldService(WorldRepository worlds, WorldValidator validator, WorldCharacterReferences characters,
+                        AccountQuotaService quotas, AccountAccessService access) {
         this.worlds = worlds;
         this.validator = validator;
         this.characters = characters;
+        this.quotas = quotas;
+        this.access = access;
     }
 
     /** Lists only worlds belonging to the authenticated account. */
@@ -44,13 +52,17 @@ public class WorldService implements WorldReferenceResolver {
     /** Creates a world and all of its graph, race, and handbook records atomically. */
     @Transactional
     public SavedWorld create(UUID ownerId, JsonNode input) {
+        access.requireApproved(ownerId);
         ObjectNode world = validator.validate(input);
+        quotas.requireWorldCapacity(ownerId);
         return worlds.insert(ownerId, UUID.randomUUID(), world);
     }
 
     /** Replaces a world only at its current version and preserves all linked character references. */
     @Transactional
     public SavedWorld update(UUID ownerId, UUID id, long expectedVersion, JsonNode input) {
+        access.requireApproved(ownerId);
+        quotas.lockAccount(ownerId);
         ObjectNode world = validator.validate(input);
         SavedWorld updated = worlds.updateRoot(ownerId, id, expectedVersion, world)
                 .orElseThrow(() -> currentOrNotFound(ownerId, id));
@@ -70,6 +82,8 @@ public class WorldService implements WorldReferenceResolver {
     /** Deletes a world only at its current version and never cascades to its characters. */
     @Transactional
     public void delete(UUID ownerId, UUID id, long expectedVersion) {
+        access.requireApproved(ownerId);
+        quotas.lockAccount(ownerId);
         requireOwned(ownerId, id);
         if (characters.hasCharacters(ownerId, id)) {
             throw new WorldException(409, "referencedResource");

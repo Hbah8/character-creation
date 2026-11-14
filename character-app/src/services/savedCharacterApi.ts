@@ -17,6 +17,8 @@ export type SavedCharacterErrorCode =
   | 'invalidReference'
   | 'referencedResource'
   | 'requestTooLarge'
+  | 'worldCharacterLimitReached'
+  | 'standaloneCharacterLimitReached'
   | 'preconditionRequired'
   | 'invalidVersion'
   | 'unauthenticated'
@@ -26,7 +28,7 @@ export type SavedCharacterErrorCode =
 
 const errorCodes: SavedCharacterErrorCode[] = [
   'conflict', 'notFound', 'unsupportedData', 'invalidCharacter', 'invalidReference',
-  'referencedResource', 'requestTooLarge',
+  'referencedResource', 'requestTooLarge', 'worldCharacterLimitReached', 'standaloneCharacterLimitReached',
   'preconditionRequired', 'invalidVersion', 'unauthenticated', 'forbidden',
   'unavailable', 'invalidResponse',
 ]

@@ -14,6 +14,9 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -27,8 +30,11 @@ import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 import ru.hbah8.charactercreation.backend.identity.IdentityProperties;
+import ru.hbah8.charactercreation.backend.identity.AccountAccessService;
 
 import java.util.List;
+import java.util.UUID;
+import java.util.function.Supplier;
 
 /** Same-origin cookie security with explicit context persistence for JSON login. */
 @Configuration
@@ -52,6 +58,9 @@ public class SecurityConfiguration {
         provider.setPostAuthenticationChecks(user -> {
             if (!user.isCredentialsNonExpired()) throw new CredentialsExpiredException("invalidCredentials");
             if (!user.isEnabled()) throw new DisabledException("emailUnverified");
+            if (user.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_BLOCKED"))) {
+                throw new DisabledException("accountBlocked");
+            }
         });
         return new ProviderManager(provider);
     }
@@ -84,9 +93,10 @@ public class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain security(HttpSecurity http, SecurityContextRepository contexts,
-                                 CsrfTokenRepository tokens) throws Exception {
+                                 CsrfTokenRepository tokens, AccountAccessService access) throws Exception {
         return http
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/admin/**").access(administrator(access))
                         .requestMatchers("/api/auth/me", "/api/auth/sessions", "/api/auth/sessions/**",
                                 "/api/auth/password-change", "/api/characters", "/api/characters/**",
                                 "/api/worlds", "/api/worlds/**").authenticated()
@@ -112,5 +122,20 @@ public class SecurityConfiguration {
                 .logout(logout -> logout.logoutUrl("/api/auth/logout")
                         .logoutSuccessHandler((request, response, authentication) -> response.setStatus(204)))
                 .build();
+    }
+
+    private static AuthorizationManager<RequestAuthorizationContext> administrator(AccountAccessService access) {
+        return (Supplier<org.springframework.security.core.Authentication> authentication,
+                RequestAuthorizationContext context) -> {
+            var current = authentication.get();
+            if (current == null || !current.isAuthenticated()) {
+                return new AuthorizationDecision(false);
+            }
+            try {
+                return new AuthorizationDecision(access.isAdministrator(UUID.fromString(current.getName())));
+            } catch (IllegalArgumentException exception) {
+                return new AuthorizationDecision(false);
+            }
+        };
     }
 }

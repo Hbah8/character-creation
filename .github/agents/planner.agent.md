@@ -1,6 +1,6 @@
 ---
 description: This prompt is used to create a plan for a project or task.
-model: GPT-5.6 Terra (copilot)
+model: gpt-6.1-terra
 tools: [todo, agent, read]
 name: Planner
 ---

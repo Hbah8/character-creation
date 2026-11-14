@@ -1,6 +1,6 @@
 ---
 description: Focused read-only analyst for SWADE equipment planning context.
-model: GPT-5.6 Terra (copilot)
+model: gpt-6.1-terra
 tools: [read, search, agent]
 name: SwadeEquipmentAnalyst
 ---

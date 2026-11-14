@@ -16,6 +16,22 @@ const savedCharacter = {
 }
 
 describe('saved character API', () => {
+  it.each(['worldCharacterLimitReached', 'standaloneCharacterLimitReached'])(
+    'preserves %s for creates and moves without changing the draft',
+    async code => {
+      const character = structuredClone(richCharacter)
+      const original = structuredClone(character)
+      vi.stubGlobal('fetch', vi.fn()
+        .mockResolvedValueOnce(Response.json({ token: 'csrf' }))
+        .mockResolvedValueOnce(Response.json({ code }, { status: 409 }))
+        .mockResolvedValueOnce(Response.json({ token: 'csrf' }))
+        .mockResolvedValueOnce(Response.json({ code }, { status: 409 })))
+      await expect(savedCharacterApi.create(character)).rejects.toMatchObject({ code })
+      await expect(savedCharacterApi.update(savedCharacter.id, 3, character)).rejects.toMatchObject({ code })
+      expect(character).toEqual(original)
+    },
+  )
+
   it('uses the authenticated same-origin API and preserves the complete character payload', async () => {
     const fetch = vi.fn()
       .mockResolvedValueOnce(Response.json({ token: 'csrf-token' }))

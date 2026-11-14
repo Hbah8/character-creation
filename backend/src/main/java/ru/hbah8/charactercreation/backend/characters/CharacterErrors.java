@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import ru.hbah8.charactercreation.backend.worlds.WorldException;
+import ru.hbah8.charactercreation.backend.identity.IdentityException;
 
 import java.util.Map;
 
@@ -23,6 +24,12 @@ public class CharacterErrors {
     @ExceptionHandler(WorldException.class)
     public ResponseEntity<Map<String, String>> world(WorldException exception) {
         return ResponseEntity.status(exception.status()).body(Map.of("code", exception.code()));
+    }
+
+    /** Converts account access failures to a stable character API response. */
+    @ExceptionHandler(IdentityException.class)
+    public ResponseEntity<Map<String, String>> identity(IdentityException exception) {
+        return ResponseEntity.status(exception.status()).body(Map.of("code", exception.getMessage()));
     }
 
     /** Converts invalid request JSON, DTOs, and IDs into a stable client error. */

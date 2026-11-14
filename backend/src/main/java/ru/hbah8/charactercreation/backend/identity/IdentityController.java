@@ -41,11 +41,12 @@ public class IdentityController {
     private final SessionAuthenticationStrategy sessionStrategy;
     private final SecurityContextRepository contexts;
     private final SessionService sessions;
+    private final AccountAccessService access;
 
     public IdentityController(AccountService accounts, AccountRepository repository, RequestLimits limits,
                               VerificationMailSender mail, AuthenticationManager authentication,
                               SessionAuthenticationStrategy sessionStrategy, SecurityContextRepository contexts,
-                              SessionService sessions) {
+                              SessionService sessions, AccountAccessService access) {
         this.accounts = accounts;
         this.repository = repository;
         this.limits = limits;
@@ -54,6 +55,7 @@ public class IdentityController {
         this.sessionStrategy = sessionStrategy;
         this.contexts = contexts;
         this.sessions = sessions;
+        this.access = access;
     }
 
     record Credentials(@NotBlank @Email(regexp = EMAIL_PATTERN) @Size(max = 254) String email,
@@ -110,6 +112,7 @@ public class IdentityController {
 
     @PostMapping("/register")
     public ResponseEntity<Void> register(@Valid @RequestBody Credentials input, HttpServletRequest request) {
+        accounts.requireRegistrationOpen();
         checkLimit("mail", input.email(), request);
         accounts.register(input.email(), input.password()).ifPresent(delivery ->
                 mail.sendVerification(delivery.email(), delivery.url()));
@@ -175,11 +178,12 @@ public class IdentityController {
         var account = repository.view(UUID.fromString(authentication.getName()));
         var session = request.getSession(false);
         return new CurrentAccount(account.id(), account.email(),
-                Instant.ofEpochMilli(session.getLastAccessedTime()).plusSeconds(session.getMaxInactiveInterval()));
+                Instant.ofEpochMilli(session.getLastAccessedTime()).plusSeconds(session.getMaxInactiveInterval()),
+                access.isApproved(account.id()));
     }
 
     /** Safe current-account metadata used to close an idle client at session expiry. */
-    public record CurrentAccount(UUID id, String email, Instant expiresAt) {
+    public record CurrentAccount(UUID id, String email, Instant expiresAt, boolean approved) {
     }
 
     @GetMapping("/sessions")

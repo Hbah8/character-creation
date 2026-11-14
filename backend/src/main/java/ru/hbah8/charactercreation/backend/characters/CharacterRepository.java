@@ -33,6 +33,20 @@ public class CharacterRepository implements WorldCharacterReferences {
         this.rowMapper = this::mapRow;
     }
 
+    /**
+     * Counts characters in one account-owned destination.
+     *
+     * @param ownerId authenticated account
+     * @param worldId world identifier, or null for standalone characters
+     * @return destination character count
+     */
+    public long count(UUID ownerId, UUID worldId) {
+        return jdbc.sql("""
+                SELECT count(*) FROM app.characters
+                WHERE owner_account_id = :owner AND world_id IS NOT DISTINCT FROM CAST(:world AS uuid)
+                """).param("owner", ownerId).param("world", worldId).query(Long.class).single();
+    }
+
     List<SavedCharacter> list(UUID ownerId) {
         return jdbc.sql("""
                 SELECT id, version, created_at, updated_at, character_data
@@ -119,7 +133,7 @@ public class CharacterRepository implements WorldCharacterReferences {
         }
     }
 
-    private static UUID worldId(JsonNode character) {
+    static UUID worldId(JsonNode character) {
         JsonNode value = character.get("worldId");
         return value != null && value.isTextual() && !value.asText().isBlank()
                 ? UUID.fromString(value.asText())

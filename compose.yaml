@@ -40,6 +40,8 @@ services:
       - .runtime.env
       - path: .accounts.runtime.env
         required: false
+      - path: .admin.runtime.env
+        required: false
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DOCKER_COMPOSE_ENABLED: "false"

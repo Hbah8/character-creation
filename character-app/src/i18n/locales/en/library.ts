@@ -29,6 +29,8 @@ const library = {
   unnamed: 'Unnamed',
   open: 'Open',
   errors: {
+    worldCharacterLimitReached: 'This world has reached its character limit. Choose another world or remove a character. Your draft is unchanged.',
+    standaloneCharacterLimitReached: 'You have reached the standalone character limit. Choose a world or remove a standalone character. Your draft is unchanged.',
     conflict: 'This character changed in another browser. Your current draft is preserved; reload the latest version before trying again.',
     notFound: 'This character is no longer available in your account.',
     unsupportedData: 'This character contains data that cannot be saved yet, such as a portrait. Your draft is unchanged.',
@@ -62,6 +64,11 @@ const library = {
     overwriteLatest: 'Overwrite latest',
     reloadLatest: 'Reload latest',
     errors: {
+      worldLimitReached: 'You have reached your account world limit. Remove an unused world before creating another. Your draft is preserved.',
+      worldEntitiesLimitReached: 'This world has too many entities. Remove some entities and try again. Your edits are preserved.',
+      worldRelationshipsLimitReached: 'This world has too many relationships. Remove some relationships and try again. Your edits are preserved.',
+      worldRacesLimitReached: 'This world has too many races. Remove some races and try again. Your edits are preserved.',
+      worldHandbookLimitReached: 'This world has too many handbook entries. Remove some entries and try again. Your edits are preserved.',
       conflict: 'This world changed in another browser. Your current edits are preserved; choose whether to overwrite the latest version or reload it.',
       notFound: 'This world is no longer available in your account.',
       invalidWorld: 'The world data is invalid. Review the world and try again.',

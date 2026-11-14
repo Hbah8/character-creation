@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.filter.OncePerRequestFilter;
+import ru.hbah8.charactercreation.backend.limits.StorageLimits;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -17,7 +18,16 @@ import java.nio.charset.StandardCharsets;
 
 /** Enforces bounded JSON request bodies for characters and worlds, including chunked requests. */
 public class CharacterRequestSizeFilter extends OncePerRequestFilter {
-    static final int MAX_REQUEST_BYTES = 2 * 1024 * 1024;
+    private final StorageLimits limits;
+
+    /**
+     * Creates the bounded request reader.
+     *
+     * @param limits character and world byte ceilings
+     */
+    public CharacterRequestSizeFilter(StorageLimits limits) {
+        this.limits = limits;
+    }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -32,12 +42,14 @@ public class CharacterRequestSizeFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        if (request.getContentLengthLong() > MAX_REQUEST_BYTES) {
+        int maximum = request.getRequestURI().startsWith("/api/characters")
+                ? limits.characterRequestBytes() : limits.worldRequestBytes();
+        if (request.getContentLengthLong() > maximum) {
             tooLarge(response);
             return;
         }
-        byte[] body = request.getInputStream().readNBytes(MAX_REQUEST_BYTES + 1);
-        if (body.length > MAX_REQUEST_BYTES) {
+        byte[] body = request.getInputStream().readNBytes(maximum + 1);
+        if (body.length > maximum) {
             tooLarge(response);
             return;
         }
