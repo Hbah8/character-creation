@@ -107,6 +107,26 @@ describe('validateHandbookEntry', () => {
     })
   })
 
+  it('accepts arcane background modifiers including available powers', () => {
+    expect(validateHandbookEntry({
+      mode: 'custom',
+      handbookCategory: 'arcaneBackground',
+      id: 'ancestral-magic',
+      name: 'Ancestral Magic',
+      description: '',
+      skillId: 'ritualism',
+      modifiers: [
+        { type: 'combat', stat: 'powerPoints', amount: 10 },
+        { type: 'powers-count', amount: 3 },
+      ],
+    })).toMatchObject({
+      modifiers: [
+        { type: 'combat', stat: 'powerPoints', amount: 10 },
+        { type: 'powers-count', amount: 3 },
+      ],
+    })
+  })
+
   it('accepts power references to custom arcane background ids', () => {
     expect(validateHandbookEntry({
       mode: 'custom',

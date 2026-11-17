@@ -1,14 +1,14 @@
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Character } from '@/types/character'
+import type { ResolvedCharacterPower } from '@/types/character'
 
 interface Props {
-  character: Character
+  powers: ResolvedCharacterPower[]
 }
 
-export function SheetPowers({ character }: Props) {
+export function SheetPowers({ powers }: Props) {
   const { t } = useTranslation('preview')
-  if (character.powers.length === 0) return null
+  if (powers.length === 0) return null
   return (
     <section className="section">
       <div className="section-title">{t('powers.title')}</div>
@@ -22,7 +22,7 @@ export function SheetPowers({ character }: Props) {
           </tr>
         </thead>
         <tbody>
-          {character.powers.map(power => (
+          {powers.map(power => (
             <Fragment key={power.id}>
               {/* Main stats row */}
               <tr>

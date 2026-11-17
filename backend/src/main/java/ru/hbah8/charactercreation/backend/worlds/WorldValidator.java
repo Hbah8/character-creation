@@ -552,6 +552,10 @@ public class WorldValidator {
                         || !modifier.path("amount").isIntegralNumber()) {
                     throw invalidWorld();
                 }
+            } else if ("powers-count".equals(type)) {
+                if (!modifier.path("amount").isIntegralNumber()) {
+                    throw invalidWorld();
+                }
             } else {
                 throw invalidWorld();
             }

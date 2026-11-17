@@ -13,7 +13,8 @@
         "handbookCategory": { "const": "arcaneBackground" },
         "name": { "type": "string" },
         "description": { "type": "string" },
-        "skillId": { "type": "string", "minLength": 1 }
+        "skillId": { "type": "string", "minLength": 1 },
+        "modifiers": { "type": "array", "items": { "$ref": "/character-creation/schemas/modifier.schema.json" } }
       }
     },
     {
@@ -26,7 +27,8 @@
         "handbookCategory": { "const": "arcaneBackground" },
         "name": { "type": "string" },
         "description": { "type": "string" },
-        "skillId": { "type": "string", "minLength": 1 }
+        "skillId": { "type": "string", "minLength": 1 },
+        "modifiers": { "type": "array", "items": { "$ref": "/character-creation/schemas/modifier.schema.json" } }
       }
     }
   ]

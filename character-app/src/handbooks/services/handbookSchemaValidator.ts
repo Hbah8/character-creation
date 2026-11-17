@@ -23,6 +23,15 @@ const modifierSchema = {
         amount: { type: 'integer' },
       },
     },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['type', 'amount'],
+      properties: {
+        type: { const: 'powers-count' },
+        amount: { type: 'integer' },
+      },
+    },
   ],
 } as const
 

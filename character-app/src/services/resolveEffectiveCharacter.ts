@@ -1,5 +1,5 @@
 import { DEFAULT_CHARACTER_RESOURCE_LIMITS } from '@/types/character'
-import type { Character, AttributeKey, CombatModifier, DieName, ResolvedCharacterHindrance, ResolvedCharacterSkill } from '@/types/character'
+import type { Character, AttributeKey, CombatModifier, DieName, ResolvedCharacterHindrance, ResolvedCharacterPower, ResolvedCharacterSkill } from '@/types/character'
 import type { World } from '@/world/types'
 import { resolveCharacterSkills } from '@/handbooks/services/resolveCharacterSkills'
 import { resolveCharacterEdges, type ResolvedCharacterEdge } from '@/handbooks/services/resolveCharacterEdges'
@@ -8,9 +8,12 @@ import { resolveRacialAbilitiesForWorld } from '@/racebuilder/services/racialAbi
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
 import { SWADE_EDGES } from '@/data/handbooks/edges'
 import { SWADE_HINDRANCES } from '@/data/handbooks/hindrances'
+import { resolveArcaneBackgrounds } from '@/handbooks/services/resolveArcaneBackgrounds'
+import { normalizeArcaneBackgroundId } from '@/handbooks/utils/arcaneBackgrounds'
 import type { HandbookCombatStat, HandbookModifier } from '@/types/handbook'
 import { computeRacialModifiers } from './computeRacialModifiers'
 import { advanceDie, recessDie } from '@/utils/dieUtils'
+import { resolveCharacterPowers } from './resolveCharacterPowers'
 
 const ATTRIBUTE_KEYS: AttributeKey[] = ['agility', 'strength', 'smarts', 'spirit', 'vigor']
 
@@ -33,13 +36,15 @@ export interface ResolvedCharacter {
   skills: ResolvedCharacterSkill[]
   edges: ResolvedCharacterEdge[]
   hindrances: ResolvedCharacterHindrance[]
+  powers: ResolvedCharacterPower[]
+  availablePowers: number
   combat: ResolvedCombatStats
   modifierBreakdown: ResolvedModifierBreakdown[]
 }
 
 export interface ResolvedModifierBreakdown {
   id: string
-  source: 'edge' | 'hindrance' | 'racialAbility' | CombatModifier['source']
+  source: 'edge' | 'hindrance' | 'racialAbility' | 'arcaneBackground' | CombatModifier['source']
   name: string
   stat: HandbookCombatStat
   amount: number
@@ -47,7 +52,7 @@ export interface ResolvedModifierBreakdown {
 
 interface ActiveHandbookModifier {
   id: string
-  source: 'edge' | 'hindrance' | 'racialAbility'
+  source: 'edge' | 'hindrance' | 'racialAbility' | 'arcaneBackground'
   name: string
   modifier: HandbookModifier
 }
@@ -113,6 +118,10 @@ export function resolveCharacter(character: Character, world: World | null): Res
   const maxWounds = DEFAULT_CHARACTER_RESOURCE_LIMITS.maxWounds + characterModifiers.maxWounds + handbookCombatModifiers.maxWounds
   const maxFatigue = DEFAULT_CHARACTER_RESOURCE_LIMITS.maxFatigue + characterModifiers.maxFatigue + handbookCombatModifiers.maxFatigue
   const powerPoints = DEFAULT_CHARACTER_RESOURCE_LIMITS.powerPoints + characterModifiers.powerPoints + handbookCombatModifiers.powerPoints
+  const availablePowers = handbookModifiers.reduce(
+    (total, { modifier }) => total + (modifier.type === 'powers-count' ? modifier.amount : 0),
+    0,
+  )
 
   return {
     source: character,
@@ -120,6 +129,10 @@ export function resolveCharacter(character: Character, world: World | null): Res
     skills,
     edges,
     hindrances,
+    powers: character.powers
+      .filter(power => typeof power.powerId === 'string' && power.powerId.trim() !== '')
+      .map(power => resolveCharacterPowers(power, character.arcaneBackground, worldHandbook)),
+    availablePowers,
     combat: { pace, parry, toughness, armor, runningDie, size: effectiveSize, bennies, maxWounds, maxFatigue, powerPoints },
     modifierBreakdown: [
       ...toCombatModifierBreakdown(character.combatModifiers ?? []),
@@ -136,13 +149,27 @@ function collectActiveHandbookModifiers(
 ): ActiveHandbookModifier[] {
   const edges = resolveHandbookEntries('edge', worldHandbook, [...SWADE_EDGES])
   const hindrances = resolveHandbookEntries('hindrance', worldHandbook, [...SWADE_HINDRANCES])
-  const selectedEdgeIds = new Set(character.edges.map(edge => edge.edgeId))
+  const selectedEdgeCounts = new Map<string, number>()
+  for (const edge of character.edges) {
+    selectedEdgeCounts.set(edge.edgeId, (selectedEdgeCounts.get(edge.edgeId) ?? 0) + 1)
+  }
   const selectedHindranceIds = new Set(character.hindrances.map(hindrance => hindrance.hindranceId ?? hindrance.id))
   const active: ActiveHandbookModifier[] = []
 
   for (const edge of edges) {
-    if (selectedEdgeIds.has(edge.id)) {
-      appendModifiers(active, edge.id, 'edge', edge.name, edge.modifiers)
+    const repeatCount = selectedEdgeCounts.get(edge.id)
+    if (repeatCount !== undefined) {
+      appendModifiers(active, edge.id, 'edge', edge.name, edge.modifiers, repeatCount)
+    }
+  }
+  if (character.arcaneBackground && selectedEdgeCounts.has('misticheskiy-dar')) {
+    const backgrounds = resolveArcaneBackgrounds(worldHandbook)
+    const background = backgrounds.find(candidate =>
+      normalizeArcaneBackgroundId(candidate.id)
+        === normalizeArcaneBackgroundId(character.arcaneBackground ?? ''),
+    )
+    if (background) {
+      appendModifiers(active, background.id, 'arcaneBackground', background.name, background.modifiers)
     }
   }
   for (const hindrance of hindrances) {

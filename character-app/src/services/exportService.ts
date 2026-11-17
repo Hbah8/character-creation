@@ -1,11 +1,28 @@
 import type { Character } from '@/types/character'
+import type { ResolvedCharacterPower } from '@/types/character'
 
 export type CharacterExportPayload = Omit<
   Character,
   'pace' | 'parry' | 'toughness' | 'armor' | 'bennies' | 'wounds' | 'fatigue' | 'mana' | 'importWarnings'
 >
 
-export function createCharacterExportPayload(character: Character): CharacterExportPayload {
+export function materializeResolvedPowers(
+  character: Character,
+  resolvedPowers: readonly ResolvedCharacterPower[],
+): Character {
+  return {
+    ...character,
+    powers: resolvedPowers.map(({ sourceAvailable: _sourceAvailable, ...power }) => power),
+  }
+}
+
+export function createCharacterExportPayload(
+  character: Character,
+  resolvedPowers: readonly ResolvedCharacterPower[] = [],
+): CharacterExportPayload {
+  const materialized = resolvedPowers.length > 0
+    ? materializeResolvedPowers(character, resolvedPowers)
+    : character
   const {
     pace: _pace,
     parry: _parry,
@@ -17,12 +34,12 @@ export function createCharacterExportPayload(character: Character): CharacterExp
     mana: _mana,
     importWarnings: _importWarnings,
     ...payload
-  } = character
+  } = materialized
   return payload
 }
 
-export function exportToJson(character: Character): void {
-  const json = JSON.stringify(createCharacterExportPayload(character), null, 2)
+export function exportToJson(character: Character, resolvedPowers: readonly ResolvedCharacterPower[] = []): void {
+  const json = JSON.stringify(createCharacterExportPayload(character, resolvedPowers), null, 2)
   const blob = new Blob([json], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')

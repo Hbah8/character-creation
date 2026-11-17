@@ -76,10 +76,14 @@ export function HandbookModifierFields({ modifiers, onChange, labels }: Props) {
               {labels.type ?? 'Type'}
               <Select
                 value={modifier.type}
-                onValueChange={type => replaceModifier(index, type === 'attribute-die-step'
-                  ? { type: 'attribute-die-step', attribute: 'agility', amount: modifier.amount }
-                  : { type: 'combat', stat: 'pace', amount: modifier.amount }
-                )}
+                onValueChange={type => {
+                  const replacement: HandbookModifier = type === 'attribute-die-step'
+                    ? { type: 'attribute-die-step', attribute: 'agility', amount: modifier.amount }
+                    : type === 'powers-count'
+                      ? { type: 'powers-count', amount: modifier.amount }
+                      : { type: 'combat', stat: 'pace', amount: modifier.amount }
+                  replaceModifier(index, replacement)
+                }}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -88,12 +92,13 @@ export function HandbookModifierFields({ modifiers, onChange, labels }: Props) {
                   <SelectGroup>
                     <SelectItem value="combat">{labels.combat ?? 'Combat'}</SelectItem>
                     <SelectItem value="attribute-die-step">{labels.attributeDieStep ?? 'Attribute die step'}</SelectItem>
+                    <SelectItem value="powers-count">{labels.powersCount ?? 'Available powers'}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
             </label>
             <label className="flex min-w-0 flex-col gap-1 text-xs">
-              {modifier.type === 'combat' ? labels.stat : labels.attribute ?? 'Attribute'}
+              {modifier.type === 'combat' ? labels.stat : modifier.type === 'attribute-die-step' ? labels.attribute ?? 'Attribute' : ' '}
               {modifier.type === 'combat' ? (
                 <Select value={modifier.stat} onValueChange={stat => replaceModifier(index, { ...modifier, stat: stat as HandbookCombatStat })}>
                   <SelectTrigger className="w-full">
@@ -107,7 +112,7 @@ export function HandbookModifierFields({ modifiers, onChange, labels }: Props) {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-              ) : (
+              ) : modifier.type === 'attribute-die-step' ? (
                 <Select value={modifier.attribute} onValueChange={attribute => replaceModifier(index, { ...modifier, attribute })}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -120,6 +125,8 @@ export function HandbookModifierFields({ modifiers, onChange, labels }: Props) {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
+              ) : (
+                <span className="flex min-h-9 items-center text-muted-foreground">{labels.powersCount ?? 'Available powers'}</span>
               )}
             </label>
             <label className="flex flex-col gap-1 text-xs">

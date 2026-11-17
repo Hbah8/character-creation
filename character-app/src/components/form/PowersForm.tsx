@@ -1,16 +1,26 @@
 import { useTranslation } from 'react-i18next'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import type { CharacterPower, PowerModifier, ColumnSide } from '@/types/character'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import type { ResolvedCharacterPower, PowerModifier, ColumnSide } from '@/types/character'
+import type { Power, ResolvedEntry } from '@/types/handbook'
 import { Trash2, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 
 interface Props {
-  powers: CharacterPower[]
-  onAdd: () => void
-  onUpdate: (id: string, patch: Partial<CharacterPower>) => void
+  powers: ResolvedCharacterPower[]
+  availablePowers: ResolvedEntry<Power>[]
+  availablePowerCount: number
+  onAdd: (power: Power) => void
   onRemove: (id: string) => void
   onAddModifier: (powerId: string) => void
   onUpdateModifier: (powerId: string, modId: string, patch: Partial<PowerModifier>) => void
@@ -21,8 +31,9 @@ interface Props {
 
 export function PowersForm({
   powers,
+  availablePowers,
+  availablePowerCount,
   onAdd,
-  onUpdate,
   onRemove,
   onAddModifier,
   onUpdateModifier,
@@ -45,6 +56,7 @@ export function PowersForm({
           {t('sections.powers')}
         </h2>
         <div className="flex items-center gap-2">
+          <Badge variant="secondary">{powers.length} / {availablePowerCount}</Badge>
           <div className="flex items-center rounded-md border overflow-hidden">
             <Button
               size="sm"
@@ -63,9 +75,26 @@ export function PowersForm({
               →
             </Button>
           </div>
-          <Button size="sm" variant="outline" onClick={onAdd}>
-            <Plus data-icon="inline-start" /> {t('powers.addPower')}
-          </Button>
+          <Select
+            value=""
+            disabled={availablePowers.length === 0}
+            onValueChange={powerId => {
+              const power = availablePowers.find(candidate => candidate.id === powerId)
+              if (power) onAdd(power)
+            }}
+          >
+            <SelectTrigger size="sm">
+              <Plus data-icon="inline-start" />
+              <SelectValue placeholder={t('powers.choosePower')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {availablePowers.map(power => (
+                  <SelectItem key={power.id} value={power.id}>{power.name}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -85,20 +114,13 @@ export function PowersForm({
             >
               {expanded[power.id] ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
             </button>
-            <Input
-              className="flex-1 h-7 text-sm font-medium"
-              value={power.name}
-              onChange={e => onUpdate(power.id, { name: e.target.value })}
-              placeholder={t('powers.namePlaceholder')}
-            />
-            {/* PP cost — compact inline */}
-            <Input
-              className="w-14 h-7 text-xs text-center"
-              value={power.ppCost}
-              onChange={e => onUpdate(power.id, { ppCost: e.target.value })}
-              placeholder={t('powers.ppCost')}
-              title={t('powers.ppCost')}
-            />
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">{power.name || '—'}</span>
+            <span className="w-14 text-center text-xs text-muted-foreground" title={t('powers.ppCost')}>
+              {power.ppCost || '—'}
+            </span>
+            {!power.sourceAvailable && (
+              <Badge variant="outline">{t('powers.savedCopy')}</Badge>
+            )}
             <Button
               size="sm"
               variant="ghost"
@@ -117,33 +139,18 @@ export function PowersForm({
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">{t('powers.range')}</Label>
-                  <Input
-                    className="h-7 text-xs"
-                    value={power.range}
-                    onChange={e => onUpdate(power.id, { range: e.target.value })}
-                    placeholder="Смекалка×2"
-                  />
+                  <span className="min-h-7 rounded-md border px-2 py-1 text-xs">{power.range || '—'}</span>
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs">{t('powers.duration')}</Label>
-                  <Input
-                    className="h-7 text-xs"
-                    value={power.duration}
-                    onChange={e => onUpdate(power.id, { duration: e.target.value })}
-                    placeholder="5 раундов"
-                  />
+                  <span className="min-h-7 rounded-md border px-2 py-1 text-xs">{power.duration || '—'}</span>
                 </div>
               </div>
 
               {/* Description */}
               <div className="flex flex-col gap-1">
                 <Label className="text-xs">{t('powers.description')}</Label>
-                <Textarea
-                  className="text-xs min-h-[60px] resize-y"
-                  value={power.description}
-                  onChange={e => onUpdate(power.id, { description: e.target.value })}
-                  placeholder={t('powers.descriptionPlaceholder')}
-                />
+                <p className="whitespace-pre-wrap rounded-md border px-2 py-1.5 text-xs">{power.description || '—'}</p>
               </div>
 
               {/* Modifiers */}

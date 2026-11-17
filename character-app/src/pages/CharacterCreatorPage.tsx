@@ -50,11 +50,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
-import { exportToJson, exportToPdf } from '@/services/exportService'
+import { exportToJson, exportToPdf, materializeResolvedPowers } from '@/services/exportService'
 import { importFromJson } from '@/services/importService'
 import { getDependentEdges, removeEdgeReference } from '@/services/characterEdgeService'
 import { resolveEdgeDefinitions } from '@/handbooks/services/resolveCharacterEdges'
 import { resolveArcaneBackgrounds } from '@/handbooks/services/resolveArcaneBackgrounds'
+import { resolveAvailablePowers } from '@/services/resolveCharacterPowers'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
 import { localizeStandardWeapon } from '@/handbooks/utils/localizeStandardWeapon'
 import { SWADE_WEAPONS } from '@/data/handbooks/weapons'
@@ -216,8 +217,10 @@ export function CharacterCreatorPage() {
     setSaving(true)
     setSaveError(null)
     try {
-      const saved = await library.save(character)
-      setCleanSnapshot(JSON.stringify(character))
+      const persistedCharacter = materializeResolvedPowers(character, resolvedCharacter.powers)
+      const saved = await library.save(persistedCharacter)
+      store.replaceCharacter(persistedCharacter)
+      setCleanSnapshot(JSON.stringify(persistedCharacter))
       setSavedAt(new Date(saved.updatedAt))
       if (!id) navigate(`/creator/${saved.id}`, { replace: true })
     } catch (error) {
@@ -268,7 +271,8 @@ export function CharacterCreatorPage() {
   }
 
   function handleCopyLink() {
-    const { hash } = encodeCharacterToHash(character)
+    const persistedCharacter = materializeResolvedPowers(character, resolvedCharacter.powers)
+    const { hash } = encodeCharacterToHash(persistedCharacter)
     const url = buildShareUrl(hash)
     void navigator.clipboard.writeText(url).then(() => {
       setCopyLinkStatus('copied')
@@ -332,6 +336,7 @@ export function CharacterCreatorPage() {
     .map(weapon => localizeStandardWeapon(weapon, weapon.source, key => tHandbooks(key)))
   const edgeDefinitions = resolveEdgeDefinitions(characterWorldHandbook)
   const arcaneBackgrounds = resolveArcaneBackgrounds(characterWorldHandbook)
+  const availablePowers = resolveAvailablePowers(character.arcaneBackground, characterWorldHandbook)
 
   function handleAddWeaponFromHandbook(weaponId: string) {
     const weapon = availableWeapons.find(entry => entry.id === weaponId)
@@ -481,9 +486,10 @@ export function CharacterCreatorPage() {
       case 'powers':
         return (
           <PowersForm
-            powers={character.powers}
+            powers={resolvedCharacter.powers}
+            availablePowers={availablePowers}
+            availablePowerCount={resolvedCharacter.availablePowers}
             onAdd={store.addPower}
-            onUpdate={store.updatePower}
             onRemove={store.removePower}
             onAddModifier={store.addPowerModifier}
             onUpdateModifier={store.updatePowerModifier}
@@ -671,7 +677,7 @@ export function CharacterCreatorPage() {
           </Button>
           <ExportDropdown
             onExportPdf={handleExportPdf}
-            onExportJson={() => exportToJson(character)}
+            onExportJson={() => exportToJson(character, resolvedCharacter.powers)}
             onImportJson={handleImportJson}
             onCopyLink={handleCopyLink}
             copyLinkStatus={copyLinkStatus}

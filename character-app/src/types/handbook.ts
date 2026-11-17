@@ -42,6 +42,7 @@ export type ArcaneBackground = string
 
 export interface ArcaneBackgroundDefinition extends HandbookEntry {
   skillId: string
+  modifiers?: HandbookModifier[]
 }
 
 export type RacialAbilityMaxRepeat = number | 'unlimited'
@@ -202,8 +203,9 @@ export type HandbookCombatStat =
 export type HandbookModifier =
   | { type: 'combat'; stat: HandbookCombatStat; amount: number }
   | { type: 'attribute-die-step'; attribute: string; amount: number }
+  | { type: 'powers-count'; amount: number }
 
-export type ModifierHandbookEntry = Edge | Hindrance | RacialAbility
+export type ModifierHandbookEntry = Edge | Hindrance | RacialAbility | ArcaneBackgroundDefinition
 
 export type CustomHandbookEntry<T extends HandbookEntry, Category extends HandbookCategory> =
   T & { mode: 'custom'; handbookCategory: Category }

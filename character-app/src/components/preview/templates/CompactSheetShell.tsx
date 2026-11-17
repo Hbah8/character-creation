@@ -14,7 +14,7 @@ import type { SheetTemplateShellProps } from './sheetTemplateTypes'
 import '@/styles/sheet-compact.css'
 
 export function CompactSheetShell({ resolvedCharacter, layout, world }: SheetTemplateShellProps) {
-  const { source: character, attributes, skills, edges, hindrances, combat, modifierBreakdown } = resolvedCharacter
+  const { source: character, attributes, skills, edges, hindrances, combat, modifierBreakdown, powers } = resolvedCharacter
   const race = character.raceId ? world?.races.find(candidate => candidate.id === character.raceId) ?? null : null
 
   return (
@@ -33,7 +33,7 @@ export function CompactSheetShell({ resolvedCharacter, layout, world }: SheetTem
             {layout.hindrances === 'left' && <SheetHindrances hindrances={hindrances} variant="compact" />}
             {layout.gear === 'left' && <SheetGear character={character} variant="compact" />}
             {layout.specialRules === 'left' && <SheetSpecialRules character={character} variant="compact" />}
-            {layout.powers === 'left' && <SheetPowers character={character} />}
+            {layout.powers === 'left' && <SheetPowers powers={powers} />}
           </div>
           <div className="column">
             {layout.weapons === 'right' && <SheetWeapons character={character} />}
@@ -41,7 +41,7 @@ export function CompactSheetShell({ resolvedCharacter, layout, world }: SheetTem
             {layout.hindrances === 'right' && <SheetHindrances hindrances={hindrances} variant="compact" />}
             {layout.gear === 'right' && <SheetGear character={character} variant="compact" />}
             {layout.specialRules === 'right' && <SheetSpecialRules character={character} variant="compact" />}
-            {layout.powers === 'right' && <SheetPowers character={character} />}
+            {layout.powers === 'right' && <SheetPowers powers={powers} />}
             <SheetRacialAbilities race={race} world={world} />
           </div>
         </section>

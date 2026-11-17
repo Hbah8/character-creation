@@ -403,9 +403,10 @@
       "type": "object",
       "description": "A character arcane power and its selected modifiers.",
       "additionalProperties": false,
-      "required": ["id", "name", "ppCost", "range", "duration", "description", "modifiers"],
+      "required": ["id", "powerId", "name", "ppCost", "range", "duration", "description", "modifiers"],
       "properties": {
         "id": { "type": "string" },
+        "powerId": { "type": "string", "minLength": 1 },
         "name": { "type": "string" },
         "ppCost": { "type": "string" },
         "range": { "type": "string" },

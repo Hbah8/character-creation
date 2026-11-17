@@ -194,6 +194,8 @@ const form = {
   },
   powers: {
     addPower: 'Add Power',
+    choosePower: 'Choose a power',
+    savedCopy: 'Saved copy',
     namePlaceholder: 'Power name',
     ppCost: 'PP',
     range: 'Range',

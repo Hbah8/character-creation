@@ -222,6 +222,7 @@ const handbooks = {
     maxWounds: 'Maximum wounds',
     maxFatigue: 'Maximum fatigue',
     powerPoints: 'Power points',
+    powersCount: 'Available powers',
     agility: 'Agility',
     strength: 'Strength',
     smarts: 'Smarts',

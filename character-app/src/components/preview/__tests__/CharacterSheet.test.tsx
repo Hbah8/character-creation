@@ -39,6 +39,8 @@ describe('CharacterSheet', () => {
           source: 'system',
         }],
         hindrances: [],
+        powers: [],
+        availablePowers: 0,
         modifierBreakdown: [],
         combat: {
           pace: 6,
@@ -115,6 +117,8 @@ describe('CharacterSheet', () => {
           severity: 'minor',
           description: 'Needs corrective lenses.',
         }],
+        powers: [],
+        availablePowers: 0,
         modifierBreakdown: [],
         combat: {
           pace: 6,

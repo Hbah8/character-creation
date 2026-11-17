@@ -100,12 +100,17 @@ export interface PowerModifier {
 
 export interface CharacterPower {
   id: string
+  powerId: string
   name: string
   ppCost: string
   range: string
   duration: string
   description: string
   modifiers: PowerModifier[]
+}
+
+export interface ResolvedCharacterPower extends CharacterPower {
+  sourceAvailable: boolean
 }
 
 export type ColumnSide = 'left' | 'right'

@@ -46,6 +46,9 @@ function ModifierSummary({ modifiers }: { modifiers: HandbookModifier[] | undefi
         default: return modifier.attribute
       }
     }
+    if (modifier.type === 'powers-count') {
+      return t('modifiers.powersCount')
+    }
     if (modifier.stat === 'pace' || modifier.stat === 'toughness') {
       return t(`fields.${modifier.stat}`)
     }
@@ -183,9 +186,12 @@ export function HandbookEntryDetail({ entry, skillReferences = [], arcaneBackgro
 
   if (isArcaneBackground(entry)) {
     return (
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-        <span className="text-muted-foreground">{t('fields.linkedSkill')}</span>
-        <span>{skillNames.get(entry.skillId) ?? entry.skillId}</span>
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          <span className="text-muted-foreground">{t('fields.linkedSkill')}</span>
+          <span>{skillNames.get(entry.skillId) ?? entry.skillId}</span>
+        </div>
+        <ModifierSummary modifiers={entry.modifiers} />
       </div>
     )
   }

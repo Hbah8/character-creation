@@ -3,6 +3,7 @@ import type { Character, Skill, Hindrance, Weapon, SpecialRule, CharacterPower, 
 import { defaultCharacter } from '@/data/defaultCharacter'
 import { addCatalogSkill } from '@/services/characterSkillService'
 import { addEdgeReference, removeEdgeReference } from '@/services/characterEdgeService'
+import type { Power } from '@/types/handbook'
 
 export function useCharacterStore(initialCharacter?: Character) {
   const [character, setCharacter] = useState<Character>(initialCharacter ?? defaultCharacter)
@@ -119,20 +120,22 @@ export function useCharacterStore(initialCharacter?: Character) {
   }, [])
 
   // Powers
-  const addPower = useCallback(() => {
+  const addPower = useCallback((definition: Power) => {
     setCharacter(prev => ({
       ...prev,
       powers: [
         ...prev.powers,
-        { id: crypto.randomUUID(), name: '', ppCost: '', range: '', duration: '', description: '', modifiers: [] } satisfies CharacterPower,
+        {
+          id: crypto.randomUUID(),
+          powerId: definition.id,
+          name: definition.name,
+          ppCost: definition.ppCost,
+          range: definition.range,
+          duration: definition.duration,
+          description: definition.description,
+          modifiers: [],
+        } satisfies CharacterPower,
       ],
-    }))
-  }, [])
-
-  const updatePower = useCallback((id: string, patch: Partial<CharacterPower>) => {
-    setCharacter(prev => ({
-      ...prev,
-      powers: prev.powers.map(p => (p.id === id ? { ...p, ...patch } : p)),
     }))
   }, [])
 
@@ -187,7 +190,7 @@ export function useCharacterStore(initialCharacter?: Character) {
     addWeapon, updateWeapon, removeWeapon,
     addGearItem, updateGearItem, removeGearItem,
     addSpecialRule, updateSpecialRule, removeSpecialRule,
-    addPower, updatePower, removePower,
+    addPower, removePower,
     addPowerModifier, updatePowerModifier, removePowerModifier,
     replaceCharacter,
   }

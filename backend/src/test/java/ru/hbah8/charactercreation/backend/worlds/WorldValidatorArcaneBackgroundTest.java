@@ -74,6 +74,29 @@ class WorldValidatorArcaneBackgroundTest {
     }
 
     @Test
+    void acceptsArcaneBackgroundAndNewPowersModifiers() throws Exception {
+        ObjectNode world = newWorld();
+        ObjectNode background = world.withArray("worldHandbook").addObject();
+        background.put("mode", "custom")
+                .put("handbookCategory", "arcaneBackground")
+                .put("id", "ancestral-magic")
+                .put("name", "Ancestral Magic")
+                .put("description", "")
+                .put("skillId", "faith");
+        background.putArray("modifiers")
+                .addObject()
+                .put("type", "combat")
+                .put("stat", "powerPoints")
+                .put("amount", 10);
+        background.withArray("modifiers")
+                .addObject()
+                .put("type", "powers-count")
+                .put("amount", 3);
+
+        assertEquals(1, validator.validate(world).path("worldHandbook").size());
+    }
+
+    @Test
     void rejectsDeletingBackgroundReferencedByCharacter() {
         ObjectNode world = newWorld();
         ObjectNode character = json.createObjectNode().put("arcaneBackground", "ancestral-magic");

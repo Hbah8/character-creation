@@ -54,4 +54,42 @@ describe('validateCharacterImport edge references', () => {
 
     expect(validateCharacterImport(raw).arcaneBackground).toBe('ancestral-magic')
   })
+
+  it('drops legacy manual powers and preserves catalog references with fallback data', () => {
+    const imported = validateCharacterImport({
+      ...enDefaultCharacter,
+      powers: [
+        {
+          id: 'legacy',
+          name: 'Manual power',
+          ppCost: '2',
+          range: 'Touch',
+          duration: 'Instant',
+          description: 'Old manual entry.',
+          modifiers: [{ id: 'modifier', name: 'Old modifier', ppCost: '+1' }],
+        },
+        {
+          id: 'referenced',
+          powerId: 'missing-power',
+          name: 'Saved power',
+          ppCost: '3',
+          range: 'Smarts',
+          duration: '3 rounds',
+          description: 'Last known data.',
+          modifiers: [],
+        },
+      ],
+    })
+
+    expect(imported.powers).toEqual([{
+      id: 'referenced',
+      powerId: 'missing-power',
+      name: 'Saved power',
+      ppCost: '3',
+      range: 'Smarts',
+      duration: '3 rounds',
+      description: 'Last known data.',
+      modifiers: [],
+    }])
+  })
 })

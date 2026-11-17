@@ -558,7 +558,10 @@ export function HandbookEntryForm({
     }
   }
 
-  const supportsModifiers = category === 'edge' || category === 'hindrance' || category === 'racialAbility'
+  const supportsModifiers = category === 'edge'
+    || category === 'hindrance'
+    || category === 'racialAbility'
+    || category === 'arcaneBackground'
   const modifierLabels = {
     title: t('modifiers.title'),
     none: t('modifiers.none'),
@@ -584,6 +587,7 @@ export function HandbookEntryForm({
     smarts: t('modifiers.smarts'),
     spirit: t('modifiers.spirit'),
     vigor: t('modifiers.vigor'),
+    powersCount: t('modifiers.powersCount'),
   }
 
   const title = isCustom

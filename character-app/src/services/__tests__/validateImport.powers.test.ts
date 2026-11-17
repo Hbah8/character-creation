@@ -53,6 +53,7 @@ describe('validateCharacterImport — powers backward compatibility', () => {
     const powers = [
       {
         id: 'p1',
+        powerId: 'dispel',
         name: 'Рассеивание',
         ppCost: '3',
         range: 'Смекалка×2',
@@ -71,20 +72,17 @@ describe('validateCharacterImport — powers backward compatibility', () => {
     expect(result.powers[0].modifiers[0].name).toBe('Мультирассеивание')
   })
 
-  it('defaults missing string fields in a power to empty string', () => {
+  it('drops incomplete referenced powers instead of importing empty records', () => {
     const powers = [{ id: 'p1', name: 'Bolt' }]
     const result = validateCharacterImport({ ...BASE, powers })
-    expect(result.powers[0].ppCost).toBe('')
-    expect(result.powers[0].range).toBe('')
-    expect(result.powers[0].duration).toBe('')
-    expect(result.powers[0].description).toBe('')
-    expect(result.powers[0].modifiers).toEqual([])
+    expect(result.powers).toEqual([])
   })
 
   it('drops malformed modifier entries and preserves valid ones', () => {
     const powers = [
       {
         id: 'p1',
+        powerId: 'bolt',
         name: 'Bolt',
         ppCost: '1',
         range: '12',

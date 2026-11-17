@@ -650,6 +650,7 @@ const SWADE_EDGE_DATA: readonly Omit<Edge, 'requirements'>[] = [
     type: 'Power',
     repeatable: true,
     description: 'Персонаж осваивает две новые силы, доступные его мистическому дару и рангу. Черту можно брать несколько раз.',
+    modifiers: [{ type: 'powers-count', amount: 2 }],
   },
   {
     id: 'priliv-sily',

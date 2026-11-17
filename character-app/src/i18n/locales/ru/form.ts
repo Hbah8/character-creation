@@ -194,6 +194,8 @@ const form = {
   },
   powers: {
     addPower: 'Добавить силу',
+    choosePower: 'Выберите силу',
+    savedCopy: 'Сохранённая копия',
     namePlaceholder: 'Название силы',
     ppCost: 'ПС',
     range: 'Дистанция',

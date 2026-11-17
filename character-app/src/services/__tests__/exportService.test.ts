@@ -49,4 +49,34 @@ describe('createCharacterExportPayload', () => {
 
     expect(imported.weapons).toEqual([weapon])
   })
+
+  it('exports referenced powers with their latest resolved fallback snapshot', () => {
+    const storedPower = {
+      id: 'row',
+      powerId: 'bolt',
+      name: 'Old Bolt',
+      ppCost: '1',
+      range: 'Old range',
+      duration: 'Instant',
+      description: 'Old description.',
+      modifiers: [],
+    }
+    const resolvedPower = {
+      ...storedPower,
+      name: 'Updated Bolt',
+      ppCost: '2',
+      range: '24/48/96',
+      description: 'Updated description.',
+      sourceAvailable: true,
+    }
+    const payload = createCharacterExportPayload({ ...character, powers: [storedPower] }, [resolvedPower])
+
+    expect(payload.powers).toEqual([{
+      ...storedPower,
+      name: 'Updated Bolt',
+      ppCost: '2',
+      range: '24/48/96',
+      description: 'Updated description.',
+    }])
+  })
 })

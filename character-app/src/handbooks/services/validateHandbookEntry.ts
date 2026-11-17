@@ -121,6 +121,9 @@ function validateModifiers(raw: unknown): HandbookModifier[] | undefined {
     if (modifier.type === 'attribute-die-step' && typeof modifier.attribute === 'string' && modifier.attribute !== '') {
       return { type: 'attribute-die-step', attribute: modifier.attribute, amount: modifier.amount }
     }
+    if (modifier.type === 'powers-count') {
+      return { type: 'powers-count', amount: modifier.amount }
+    }
     throw new Error(`validation.handbook.invalidModifier:${index}`)
   })
 }
@@ -212,6 +215,7 @@ export function validateHandbookEntry(raw: unknown): WorldHandbookEntry {
     && raw.handbookCategory !== 'edge'
     && raw.handbookCategory !== 'hindrance'
     && raw.handbookCategory !== 'racialAbility'
+    && raw.handbookCategory !== 'arcaneBackground'
   ) {
     throw new Error('validation.handbook.modifiersNotSupported')
   }

@@ -143,6 +143,44 @@ describe('resolveEffectiveCharacter', () => {
     })
   })
 
+  it('applies the selected arcane background and every New Powers edge', () => {
+    const result = resolveCharacter({
+      ...BASE_CHARACTER,
+      arcaneBackground: 'Magic',
+      edges: [
+        { id: 'gift', edgeId: 'misticheskiy-dar' },
+        { id: 'new-powers-1', edgeId: 'novye-sily' },
+        { id: 'new-powers-2', edgeId: 'novye-sily' },
+      ],
+      combatModifiers: [{ id: 'manual', source: 'manual', name: 'Manual', powerPoints: 2 }],
+    }, null)
+
+    expect(result.combat.powerPoints).toBe(12)
+    expect(result.availablePowers).toBe(7)
+  })
+
+  it('uses world arcane background modifiers instead of system modifiers', () => {
+    const world = makeWorld({
+      worldHandbook: [{
+        mode: 'override',
+        handbookCategory: 'arcaneBackground',
+        id: 'Magic',
+        modifiers: [
+          { type: 'combat', stat: 'powerPoints', amount: 20 },
+          { type: 'powers-count', amount: 4 },
+        ],
+      }] as never,
+    })
+    const result = resolveCharacter({
+      ...BASE_CHARACTER,
+      arcaneBackground: 'Magic',
+      edges: [{ id: 'gift', edgeId: 'misticheskiy-dar' }],
+    }, world)
+
+    expect(result.combat.powerPoints).toBe(20)
+    expect(result.availablePowers).toBe(4)
+  })
+
   it('derives core combat statistics from Fighting and Vigor instead of stored totals', () => {
     const char = {
       ...BASE_CHARACTER,

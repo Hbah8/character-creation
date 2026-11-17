@@ -274,7 +274,17 @@ export function validateCharacterImport(raw: unknown, worldHandbook: readonly St
 
   const powers: CharacterPower[] = isArray(raw.powers)
     ? (raw.powers as unknown[]).flatMap((p): CharacterPower[] => {
-        if (!isObject(p)) return []
+        if (
+          !isObject(p)
+          || !isString(p.powerId)
+          || p.powerId.trim() === ''
+          || !isString(p.name)
+          || p.name.trim() === ''
+          || !isString(p.ppCost)
+          || !isString(p.range)
+          || !isString(p.duration)
+          || !isString(p.description)
+        ) return []
         const modifiers: PowerModifier[] = isArray(p.modifiers)
           ? (p.modifiers as unknown[]).flatMap((m): PowerModifier[] => {
               if (!isObject(m)) return []
@@ -287,13 +297,13 @@ export function validateCharacterImport(raw: unknown, worldHandbook: readonly St
             })
             : []
           return [{
-            ...p,
             id: isString(p.id) ? p.id : crypto.randomUUID(),
-            name: isString(p.name) ? p.name : '',
-            ppCost: isString(p.ppCost) ? p.ppCost : '',
-            range: isString(p.range) ? p.range : '',
-            duration: isString(p.duration) ? p.duration : '',
-            description: isString(p.description) ? p.description : '',
+            powerId: p.powerId,
+            name: p.name,
+            ppCost: p.ppCost,
+            range: p.range,
+            duration: p.duration,
+            description: p.description,
             modifiers,
           } as CharacterPower]
         })
