@@ -17,7 +17,10 @@ describe('EdgesForm', () => {
     await i18n.changeLanguage('en')
     const character = {
       ...enDefaultCharacter,
-      edges: [{ id: 'custom-row', edgeId: 'house-edge' }],
+      edges: [
+        { id: 'custom-row-1', edgeId: 'house-edge' },
+        { id: 'custom-row-2', edgeId: 'house-edge' },
+      ],
     }
 
     const html = renderToStaticMarkup(createElement(EdgesForm, {
@@ -29,6 +32,7 @@ describe('EdgesForm', () => {
         name: 'House Edge',
         description: 'World-specific edge description.',
         type: 'Weird',
+        repeatable: true,
       }],
       onAdd: vi.fn(),
       onRemove: vi.fn(),
@@ -39,6 +43,7 @@ describe('EdgesForm', () => {
 
     expect(html).toContain('House Edge')
     expect(html).toContain('World-specific edge description.')
+    expect(html).toContain('>x2<')
     expect(html).toContain('Search edges')
     expect(html).toContain('Show unavailable edges')
     expect(html).toContain('class="flex min-w-0 flex-col gap-2"')

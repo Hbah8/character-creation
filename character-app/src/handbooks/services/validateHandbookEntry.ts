@@ -1,5 +1,4 @@
 import type {
-  ArcaneBackgroundRequirement,
   AttributeKey,
   Die,
   EdgeRequirement,
@@ -13,9 +12,10 @@ import type {
   WeaponRange,
 } from '@/types/handbook'
 import { parseLegacyWeaponRange } from '@/handbooks/utils/weaponRange'
+import { normalizeArcaneBackgroundId } from '@/handbooks/utils/arcaneBackgrounds'
 
 const HANDBOOK_CATEGORIES: readonly HandbookCategory[] = [
-  'edge', 'hindrance', 'skill', 'weapon', 'gear', 'power', 'mount', 'racialAbility',
+  'edge', 'hindrance', 'skill', 'weapon', 'gear', 'power', 'mount', 'racialAbility', 'arcaneBackground',
 ]
 
 const COMBAT_STATS: readonly HandbookCombatStat[] = [
@@ -25,15 +25,12 @@ const COMBAT_STATS: readonly HandbookCombatStat[] = [
 const RANKS = ['Novice', 'Seasoned', 'Veteran', 'Heroic', 'Legendary'] as const
 const DICE = ['d4', 'd6', 'd8', 'd10', 'd12'] as const
 const ATTRIBUTES = ['agility', 'smarts', 'spirit', 'strength', 'vigor'] as const
-const ARCANE_BACKGROUND_REQUIREMENTS = ['any', 'weirdScience', 'magic', 'psionics', 'gifted', 'miracles'] as const
   const EDGE_TYPES = ['Background', 'Combat', 'Leadership', 'Power', 'Professional', 'Social', 'Weird', 'WildCard']
   const HINDRANCE_TYPES = ['Major', 'Minor']
   const WEAPON_CATEGORIES = ['Melee', 'Ranged', 'Thrown', 'Unarmed']
   const GEAR_CATEGORIES = ['Adventuring', 'Clothing', 'Food', 'Tools', 'Other']
   const MOUNT_CATEGORIES = ['animal', 'vehicle']
   const RACIAL_ABILITY_TYPES = ['positive', 'negative']
-  const ARCANE_BACKGROUNDS = ['Magic', 'Miracles', 'Psionics', 'SuperPowers', 'WeirdScience']
-
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -59,13 +56,20 @@ function validateRequirementCondition(raw: unknown): EdgeRequirementCondition {
     case 'skill':
       if (!hasNonEmptyId(raw.skill) || !DICE.includes(raw.minimum as Die)) break
       return { type: 'skill', skill: raw.skill, minimum: raw.minimum as Die }
+    case 'arcaneSkill':
+      if (!DICE.includes(raw.minimum as Die)) break
+      return { type: 'arcaneSkill', minimum: raw.minimum as Die }
     case 'edge':
       if (!hasNonEmptyId(raw.edgeId)) break
-      if (raw.arcaneBackground !== undefined && !ARCANE_BACKGROUND_REQUIREMENTS.includes(raw.arcaneBackground as ArcaneBackgroundRequirement)) break
+      if (raw.arcaneBackground !== undefined && !hasNonEmptyId(raw.arcaneBackground)) break
       return {
         type: 'edge',
         edgeId: raw.edgeId,
-        ...(raw.arcaneBackground === undefined ? {} : { arcaneBackground: raw.arcaneBackground as ArcaneBackgroundRequirement }),
+        ...(raw.arcaneBackground === undefined
+          ? {}
+          : { arcaneBackground: raw.arcaneBackground === 'any'
+            ? 'any'
+            : normalizeArcaneBackgroundId(raw.arcaneBackground) }),
       }
     case 'hindrance':
       if (!hasNonEmptyId(raw.hindranceId)) break
@@ -212,6 +216,15 @@ export function validateHandbookEntry(raw: unknown): WorldHandbookEntry {
     throw new Error('validation.handbook.modifiersNotSupported')
   }
   if (raw.mode === 'override') {
+    if (raw.handbookCategory === 'edge' && raw.repeatable !== undefined && typeof raw.repeatable !== 'boolean') {
+      throw new Error('validation.handbook.missingRequiredField')
+    }
+    if (raw.handbookCategory === 'arcaneBackground' && raw.skillId !== undefined && !hasNonEmptyId(raw.skillId)) {
+      throw new Error('validation.handbook.missingRequiredField')
+    }
+    if (raw.handbookCategory === 'power' && raw.arcaneBackground !== undefined && !isStringArray(raw.arcaneBackground)) {
+      throw new Error('validation.handbook.missingRequiredField')
+    }
     return { ...normalizedRaw, ...weaponFields, modifiers, ...(requirements ? { requirements } : {}) } as WorldHandbookEntry
   }
   if (typeof raw.name !== 'string' || typeof raw.description !== 'string') {
@@ -235,6 +248,9 @@ export function validateHandbookEntry(raw: unknown): WorldHandbookEntry {
     switch (raw.handbookCategory) {
       case 'edge':
         if (!isOneOf(raw.type, EDGE_TYPES)) throw new Error('validation.handbook.missingRequiredField')
+        if (raw.repeatable !== undefined && typeof raw.repeatable !== 'boolean') {
+          throw new Error('validation.handbook.missingRequiredField')
+        }
         return
       case 'hindrance':
         if (!isOneOf(raw.type, HINDRANCE_TYPES)) throw new Error('validation.handbook.missingRequiredField')
@@ -243,6 +259,9 @@ export function validateHandbookEntry(raw: unknown): WorldHandbookEntry {
         if (!isOneOf(raw.linkedAttribute, ATTRIBUTES) || typeof raw.isCore !== 'boolean') {
           throw new Error('validation.handbook.missingRequiredField')
         }
+        return
+      case 'arcaneBackground':
+        if (!hasNonEmptyId(raw.skillId)) throw new Error('validation.handbook.missingRequiredField')
         return
       case 'weapon':
         if (!isOneOf(raw.category, WEAPON_CATEGORIES) || typeof raw.damage !== 'string') {
@@ -254,7 +273,7 @@ export function validateHandbookEntry(raw: unknown): WorldHandbookEntry {
         return
       case 'power':
         if (
-          !isStringArray(raw.arcaneBackground, ARCANE_BACKGROUNDS)
+          !isStringArray(raw.arcaneBackground)
           || typeof raw.ppCost !== 'string'
           || typeof raw.range !== 'string'
           || typeof raw.duration !== 'string'

@@ -23,7 +23,6 @@ import {
   type EdgeRequirementReferences,
 } from '@/handbooks/components/EdgeRequirementsEditor'
 import {
-  ARCANE_BACKGROUND_LABEL_KEYS,
   EDGE_TYPE_LABEL_KEYS,
   GEAR_CATEGORY_LABEL_KEYS,
   HINDRANCE_TYPE_LABEL_KEYS,
@@ -156,10 +155,6 @@ const AREA_TEMPLATE_LABEL_KEYS = {
 const GEAR_CATEGORIES: GearCategory[] = ['Adventuring', 'Clothing', 'Food', 'Tools', 'Other']
 const MOUNT_CATEGORIES: MountCategory[] = ['animal', 'vehicle']
 const RACIAL_ABILITY_TYPES: RacialAbilityType[] = ['positive', 'negative']
-const ARCANE_BACKGROUNDS: ArcaneBackground[] = [
-  'Magic', 'Miracles', 'Psionics', 'SuperPowers', 'WeirdScience',
-]
-
 const ATTRIBUTES: AttributeKey[] = ['agility', 'smarts', 'spirit', 'strength', 'vigor']
 
 function SkillFields({ values, set }: { values: FormValues; set: (k: string, v: unknown) => void }) {
@@ -185,6 +180,28 @@ function SkillFields({ values, set }: { values: FormValues; set: (k: string, v: 
   )
 }
 
+function ArcaneBackgroundFields({
+  values,
+  set,
+  references,
+}: {
+  values: FormValues
+  set: (k: string, v: unknown) => void
+  references: EdgeRequirementReferences
+}) {
+  const { t } = useTranslation('handbooks')
+  const skillNames = new Map(references.skills.map(skill => [skill.id, skill.name]))
+  return (
+    <SelectField
+      label={t('fields.linkedSkill')}
+      value={(values.skillId as string) ?? ''}
+      options={references.skills.map(skill => skill.id)}
+      getLabel={skillId => skillNames.get(skillId) ?? skillId}
+      onChange={skillId => set('skillId', skillId)}
+    />
+  )
+}
+
 function EdgeFields({ values, set }: { values: FormValues; set: (k: string, v: unknown) => void }) {
   const { t } = useTranslation('handbooks')
   return (
@@ -204,6 +221,16 @@ function EdgeFields({ values, set }: { values: FormValues; set: (k: string, v: u
         />
         <Label htmlFor="wildCardOnly" className="text-xs cursor-pointer">
           {t('fields.wildCardOnly')}
+        </Label>
+      </div>
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="repeatable"
+          checked={!!(values.repeatable)}
+          onCheckedChange={checked => set('repeatable', checked === true || undefined)}
+        />
+        <Label htmlFor="repeatable" className="text-xs cursor-pointer">
+          {t('fields.repeatable')}
         </Label>
       </div>
     </>
@@ -334,7 +361,15 @@ function GearFields({ values, set }: { values: FormValues; set: (k: string, v: u
   )
 }
 
-function PowerFields({ values, set }: { values: FormValues; set: (k: string, v: unknown) => void }) {
+function PowerFields({
+  values,
+  set,
+  arcaneBackgrounds,
+}: {
+  values: FormValues
+  set: (k: string, v: unknown) => void
+  arcaneBackgrounds: EdgeRequirementReferences['arcaneBackgrounds']
+}) {
   const { t } = useTranslation('handbooks')
   const selected = (values.arcaneBackground as ArcaneBackground[]) ?? []
 
@@ -351,15 +386,15 @@ function PowerFields({ values, set }: { values: FormValues; set: (k: string, v: 
       <div className="flex flex-col gap-1.5">
         <Label className="text-xs">{t('fields.arcaneBackground')}</Label>
         <div className="flex flex-wrap gap-1.5">
-          {ARCANE_BACKGROUNDS.map(ab => (
+          {arcaneBackgrounds.map(background => (
             <Button
-              key={ab}
+              key={background.id}
               type="button"
               size="sm"
-              variant={selected.includes(ab) ? 'default' : 'outline'}
-              onClick={() => toggle(ab)}
+              variant={selected.includes(background.id) ? 'default' : 'outline'}
+              onClick={() => toggle(background.id)}
             >
-              {t(ARCANE_BACKGROUND_LABEL_KEYS[ab])}
+              {background.name}
             </Button>
           ))}
         </div>
@@ -591,9 +626,10 @@ export function HandbookEntryForm({
             {category === 'edge' && <EdgeFields values={values} set={set} />}
             {category === 'hindrance' && <HindranceFields values={values} set={set} />}
             {category === 'skill' && <SkillFields values={values} set={set} />}
+            {category === 'arcaneBackground' && <ArcaneBackgroundFields values={values} set={set} references={requirementReferences} />}
             {category === 'weapon' && <WeaponFields values={values} set={set} />}
             {category === 'gear' && <GearFields values={values} set={set} />}
-            {category === 'power' && <PowerFields values={values} set={set} />}
+            {category === 'power' && <PowerFields values={values} set={set} arcaneBackgrounds={requirementReferences.arcaneBackgrounds} />}
             {category === 'mount' && <MountFields values={values} set={set} />}
             {category === 'racialAbility' && <RacialAbilityFields values={values} set={set} />}
 

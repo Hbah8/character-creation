@@ -26,6 +26,7 @@ const edge = (edgeId: string, arcaneBackground?: ArcaneBackgroundRequirement): E
 
 const hindrance = (hindranceId: string): EdgeRequirementCondition => ({ type: 'hindrance', hindranceId })
 const wildCard = (): EdgeRequirementCondition => ({ type: 'wildCard' })
+const arcaneSkill = (minimum: Die): EdgeRequirementCondition => ({ type: 'arcaneSkill', minimum })
 const text = (value: string): EdgeRequirementCondition => ({ type: 'text', text: value })
 const anyOf = (...conditions: EdgeRequirementCondition[]): EdgeRequirement => ({ anyOf: conditions })
 
@@ -148,16 +149,16 @@ export const SWADE_EDGE_REQUIREMENTS: Readonly<Record<string, EdgeRequirements>>
   'voin-sveta-tmy': requirements('Seasoned', skill('faith', 'd6'), edge('misticheskiy-dar', 'miracles')),
   'vosstanovlenie-sily': requirements('Seasoned', attribute('spirit', 'd6'), edge('misticheskiy-dar', 'any')),
   'vosstanovlenie-sily-plus': requirements('Veteran', edge('vosstanovlenie-sily')),
-  'dopolnitelnoe-usilie': requirements('Seasoned', skill('talent', 'd6'), edge('misticheskiy-dar', 'gifted')),
-  izobretatel: requirements('Seasoned', skill('weird-science', 'd6'), edge('misticheskiy-dar', 'weirdScience')),
-  'issushenie-duha': requirements('Seasoned', text('Мистический навык d10+'), edge('misticheskiy-dar', 'any')),
+  'dopolnitelnoe-usilie': requirements('Seasoned', skill('talent', 'd6'), edge('misticheskiy-dar', 'SuperPowers')),
+  izobretatel: requirements('Seasoned', skill('weird-science', 'd6'), edge('misticheskiy-dar', 'WeirdScience')),
+  'issushenie-duha': requirements('Seasoned', arcaneSkill('d10'), edge('misticheskiy-dar', 'any')),
   kontsentratsiya: requirements('Seasoned', edge('misticheskiy-dar', 'any')),
-  mentalist: requirements('Seasoned', skill('psionics', 'd6'), edge('misticheskiy-dar', 'psionics')),
+  mentalist: requirements('Seasoned', skill('psionics', 'd6'), edge('misticheskiy-dar', 'Psionics')),
   'novye-sily': requirements('Novice', edge('misticheskiy-dar', 'any')),
-  'priliv-sily': requirements('Novice', text('Мистический навык d8+'), edge('misticheskiy-dar', 'any'), wildCard()),
+  'priliv-sily': requirements('Novice', arcaneSkill('d8'), edge('misticheskiy-dar', 'any'), wildCard()),
   'punkty-sily': requirements('Novice', edge('misticheskiy-dar', 'any')),
   'upravlenie-potokom': requirements('Seasoned', edge('misticheskiy-dar', 'any')),
-  charodey: requirements('Seasoned', skill('spellcasting', 'd6'), edge('misticheskiy-dar', 'magic')),
+  charodey: requirements('Seasoned', skill('spellcasting', 'd6'), edge('misticheskiy-dar', 'Magic')),
 
   // Social
   vdohnovitel: requirements('Novice', attribute('spirit', 'd8')),

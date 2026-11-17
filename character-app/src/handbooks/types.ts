@@ -1,9 +1,13 @@
-import type { Edge, Hindrance, Weapon, Gear, Power, Mount, RacialAbility, SkillDefinition } from '@/types/handbook'
+import type { ArcaneBackgroundDefinition, Edge, Hindrance, Weapon, Gear, Power, Mount, RacialAbility, SkillDefinition } from '@/types/handbook'
 
-export type AnyHandbookEntry = Edge | Hindrance | SkillDefinition | Weapon | Gear | Power | Mount | RacialAbility
+export type AnyHandbookEntry = Edge | Hindrance | SkillDefinition | Weapon | Gear | Power | Mount | RacialAbility | ArcaneBackgroundDefinition
 
 export function isSkill(e: AnyHandbookEntry): e is SkillDefinition {
   return 'linkedAttribute' in e && 'isCore' in e
+}
+
+export function isArcaneBackground(e: AnyHandbookEntry): e is ArcaneBackgroundDefinition {
+  return 'skillId' in e
 }
 
 export function isPower(e: AnyHandbookEntry): e is Power {
@@ -33,5 +37,5 @@ export function isEdge(e: AnyHandbookEntry): e is Edge {
 }
 
 export function isGear(e: AnyHandbookEntry): e is Gear {
-  return !isSkill(e) && !isPower(e) && !isWeapon(e) && !isMount(e) && !('type' in e)
+  return !isArcaneBackground(e) && !isSkill(e) && !isPower(e) && !isWeapon(e) && !isMount(e) && !('type' in e)
 }

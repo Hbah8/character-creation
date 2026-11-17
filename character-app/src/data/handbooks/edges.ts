@@ -648,6 +648,7 @@ const SWADE_EDGE_DATA: readonly Omit<Edge, 'requirements'>[] = [
     id: 'novye-sily',
     name: 'Новые силы',
     type: 'Power',
+    repeatable: true,
     description: 'Персонаж осваивает две новые силы, доступные его мистическому дару и рангу. Черту можно брать несколько раз.',
   },
   {
@@ -660,6 +661,7 @@ const SWADE_EDGE_DATA: readonly Omit<Edge, 'requirements'>[] = [
     id: 'punkty-sily',
     name: 'Пункты силы',
     type: 'Power',
+    repeatable: true,
     description: 'Черта дарит 5 дополнительных Пунктов силы. Можно брать несколько раз (не более одного раза за ранг). В ранге легенда даёт лишь 2 пункта.',
   },
   {

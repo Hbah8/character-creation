@@ -13,11 +13,13 @@ import {
 import { HandbookEntryDetail } from '@/handbooks/components/HandbookEntryDetail'
 import { getEdgeRequirementRank } from '@/handbooks/utils/edgeRequirements'
 import { localizeStandardWeapon } from '@/handbooks/utils/localizeStandardWeapon'
+import { getArcaneBackgroundLabel } from '@/handbooks/utils/arcaneBackgrounds'
 import { formatWeaponRange } from '@/handbooks/utils/weaponRange'
-import { WEAPON_CATEGORY_LABEL_KEYS } from '@/handbooks/utils/handbookTranslationKeys'
+import { ARCANE_BACKGROUND_LABEL_KEYS, WEAPON_CATEGORY_LABEL_KEYS } from '@/handbooks/utils/handbookTranslationKeys'
 import type { AnyHandbookEntry } from '@/handbooks/types'
 import { isWeaponCategory } from '@/types/handbook'
 import {
+  isArcaneBackground,
   isEdge,
   isGear,
   isHindrance,
@@ -31,6 +33,7 @@ import {
 interface Props {
   entry: AnyHandbookEntry
   skillReferences?: readonly { id: string; name: string }[]
+  arcaneBackgrounds?: readonly { id: string; name: string }[]
   source?: 'system' | 'world'
   activeWorldName?: string
   onOverride?: () => void
@@ -38,7 +41,7 @@ interface Props {
   onDeleteOverride?: () => void
 }
 
-function EntryTags({ entry }: Props) {
+function EntryTags({ entry, arcaneBackgrounds }: Props) {
   const { t } = useTranslation('handbooks')
 
   if (isEdge(entry)) {
@@ -105,7 +108,12 @@ function EntryTags({ entry }: Props) {
       <div className="flex flex-wrap gap-1">
         <Badge variant="secondary">{t('fields.ppCost')}: {entry.ppCost}</Badge>
         {entry.arcaneBackground.slice(0, 3).map(ab => (
-          <Badge key={ab} variant="outline">{t(`enums.arcaneBackground.${ab}`)}</Badge>
+          <Badge key={ab} variant="outline">
+            {arcaneBackgrounds?.find(background => background.id === ab)?.name
+              ?? (ARCANE_BACKGROUND_LABEL_KEYS[ab as keyof typeof ARCANE_BACKGROUND_LABEL_KEYS]
+                ? t(ARCANE_BACKGROUND_LABEL_KEYS[ab as keyof typeof ARCANE_BACKGROUND_LABEL_KEYS])
+                : ab)}
+          </Badge>
         ))}
         {entry.arcaneBackground.length > 3 && (
           <Badge variant="outline">+{entry.arcaneBackground.length - 3}</Badge>
@@ -139,12 +147,14 @@ function EntryTags({ entry }: Props) {
   return null
 }
 
-export function HandbookEntry({ entry, skillReferences, source, activeWorldName, onOverride, onEditOverride, onDeleteOverride }: Props) {
+export function HandbookEntry({ entry, skillReferences, arcaneBackgrounds, source, activeWorldName, onOverride, onEditOverride, onDeleteOverride }: Props) {
   const { t } = useTranslation('handbooks')
   const isWorld = source === 'world'
   const badgeLabel = isWorld && activeWorldName ? activeWorldName : t('badge.swade')
   const displayEntry = isWeapon(entry)
     ? localizeStandardWeapon(entry, source, key => t(key))
+    : isArcaneBackground(entry)
+      ? { ...entry, name: getArcaneBackgroundLabel({ ...entry, source }, key => t(key)) }
     : entry
 
   return (
@@ -165,7 +175,7 @@ export function HandbookEntry({ entry, skillReferences, source, activeWorldName,
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <EntryTags entry={entry} />
+            <EntryTags entry={entry} arcaneBackgrounds={arcaneBackgrounds} />
             <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
               {displayEntry.description}
             </p>
@@ -185,7 +195,7 @@ export function HandbookEntry({ entry, skillReferences, source, activeWorldName,
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto p-6">
-          <HandbookEntryDetail entry={entry} skillReferences={skillReferences} />
+          <HandbookEntryDetail entry={entry} skillReferences={skillReferences} arcaneBackgrounds={arcaneBackgrounds} />
         </div>
         {activeWorldName && (
           <div className="p-4 border-t flex flex-col gap-2">

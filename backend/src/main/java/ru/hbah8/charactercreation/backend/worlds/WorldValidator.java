@@ -13,7 +13,8 @@ import java.util.Set;
 @Component
 public class WorldValidator {
     private static final Set<String> HANDBOOK_CATEGORIES = Set.of(
-            "edge", "hindrance", "skill", "weapon", "gear", "power", "mount", "racialAbility");
+            "edge", "hindrance", "skill", "weapon", "gear", "power", "mount", "racialAbility",
+            "arcaneBackground");
     private static final Set<String> ENTITY_TYPES = Set.of("location", "faction", "npc", "event", "item", "note");
     private static final Set<String> RELATIONSHIP_TYPES = Set.of(
             "controls", "belongs_to", "located_in", "ally", "enemy", "knows", "caused", "mentions", "custom");
@@ -24,8 +25,6 @@ public class WorldValidator {
             "Background", "Combat", "Leadership", "Power", "Professional", "Social", "Weird", "WildCard");
     private static final Set<String> WEAPON_CATEGORIES = Set.of("Melee", "Ranged", "Thrown", "Unarmed");
     private static final Set<String> GEAR_CATEGORIES = Set.of("Adventuring", "Clothing", "Food", "Tools", "Other");
-    private static final Set<String> ARCANE_BACKGROUNDS = Set.of(
-            "Magic", "Miracles", "Psionics", "SuperPowers", "WeirdScience");
     private static final Set<String> MODIFIER_STATS = Set.of(
             "pace", "parry", "toughness", "armor", "runningDieSteps", "bennies", "maxWounds", "maxFatigue",
             "powerPoints");
@@ -103,6 +102,12 @@ public class WorldValidator {
         JsonNode raceId = character.get("raceId");
         if (raceId != null && !raceId.isNull()
                 && (!raceId.isTextual() || !containsId(world.path("races"), raceId.asText()))) {
+            throw invalidReference();
+        }
+        JsonNode arcaneBackground = character.get("arcaneBackground");
+        if (arcaneBackground != null && !arcaneBackground.isNull()
+                && (!arcaneBackground.isTextual()
+                || !hasResolvedEntry(world, "arcaneBackground", arcaneBackground.asText()))) {
             throw invalidReference();
         }
         for (JsonNode skill : character.path("skills")) {
@@ -258,6 +263,14 @@ public class WorldValidator {
                     throw invalidWorld();
                 }
             }
+            case "arcaneBackground" -> {
+                if (custom && !validId(entry.get("skillId"))) {
+                    throw invalidWorld();
+                }
+                if (entry.has("skillId") && !validId(entry.get("skillId"))) {
+                    throw invalidWorld();
+                }
+            }
             case "edge" -> {
                 if (custom && (!entry.path("type").isTextual()
                         || !EDGE_TYPES.contains(entry.path("type").asText()))) {
@@ -310,7 +323,7 @@ public class WorldValidator {
                         throw invalidWorld();
                     }
                     for (JsonNode background : entry.path("arcaneBackground")) {
-                        if (!background.isTextual() || !ARCANE_BACKGROUNDS.contains(background.asText())) {
+                        if (!validId(background)) {
                             throw invalidWorld();
                         }
                     }
@@ -383,6 +396,19 @@ public class WorldValidator {
             if ("edge".equals(category)) {
                 validateEdgeRequirements(entry.path("requirements"), world);
             }
+            if ("arcaneBackground".equals(category)) {
+                JsonNode skillId = entry.get("skillId");
+                if (skillId != null) {
+                    requireReference(world, "skill", skillId);
+                } else if (!"override".equals(entry.path("mode").asText())) {
+                    throw invalidReference();
+                }
+            }
+            if ("power".equals(category)) {
+                for (JsonNode background : entry.path("arcaneBackground")) {
+                    requireReference(world, "arcaneBackground", background);
+                }
+            }
             validateParameterReferences(entry.path("parameters"), world);
         }
     }
@@ -422,7 +448,13 @@ public class WorldValidator {
             }
             String type = requirement.path("type").asText();
             switch (type) {
-                case "edge" -> requireReference(world, "edge", requirement.get("edgeId"));
+                case "edge" -> {
+                    requireReference(world, "edge", requirement.get("edgeId"));
+                    JsonNode background = requirement.get("arcaneBackground");
+                    if (background != null && !("any".equals(background.asText()))) {
+                        requireReference(world, "arcaneBackground", background);
+                    }
+                }
                 case "hindrance" -> requireReference(world, "hindrance", requirement.get("hindranceId"));
                 case "race" -> {
                     JsonNode raceId = requirement.get("raceId");
@@ -432,7 +464,7 @@ public class WorldValidator {
                     }
                 }
                 case "skill" -> requireReference(world, "skill", requirement.get("skill"));
-                case "rank", "attribute", "wildCard", "text" -> {
+                case "rank", "attribute", "arcaneSkill", "wildCard", "text" -> {
                 }
                 default -> throw invalidWorld();
             }

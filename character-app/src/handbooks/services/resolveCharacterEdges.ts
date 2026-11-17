@@ -4,6 +4,7 @@ import type { Edge as CharacterEdge } from '@/types/character'
 import type { Edge, ResolvedEntry, StoredHandbookEntry } from '@/types/handbook'
 
 export type ResolvedCharacterEdge = CharacterEdge & ResolvedEntry<Edge>
+export type GroupedResolvedCharacterEdge = ResolvedCharacterEdge & { repeatCount: number }
 
 export function resolveEdgeDefinitions(
   worldHandbook: readonly StoredHandbookEntry[],
@@ -24,4 +25,25 @@ export function resolveCharacterEdges(
     if (!definition) throw new Error(`validation.edge.unknownEdge:${edge.edgeId}`)
     return { ...definition, ...edge }
   })
+}
+
+export function groupResolvedCharacterEdges(
+  edges: readonly ResolvedCharacterEdge[],
+): GroupedResolvedCharacterEdge[] {
+  const result: GroupedResolvedCharacterEdge[] = []
+  const indexByEdgeId = new Map<string, number>()
+
+  for (const edge of edges) {
+    const existingIndex = edge.repeatable ? indexByEdgeId.get(edge.edgeId) : undefined
+    if (existingIndex !== undefined) {
+      result[existingIndex].repeatCount += 1
+      continue
+    }
+
+    const grouped = { ...edge, repeatCount: 1 }
+    if (edge.repeatable) indexByEdgeId.set(edge.edgeId, result.length)
+    result.push(grouped)
+  }
+
+  return result
 }

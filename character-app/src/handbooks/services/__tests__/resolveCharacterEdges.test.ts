@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { resolveCharacterEdges, resolveEdgeDefinitions } from '@/handbooks/services/resolveCharacterEdges'
+import {
+  groupResolvedCharacterEdges,
+  resolveCharacterEdges,
+  resolveEdgeDefinitions,
+} from '@/handbooks/services/resolveCharacterEdges'
 
 describe('resolveCharacterEdges', () => {
   it('uses the system edge catalog for a character without a world', () => {
@@ -44,5 +48,26 @@ describe('resolveCharacterEdges', () => {
       expect.objectContaining({ edgeId: 'bditelnost', name: 'Campaign Vigilance', source: 'world' }),
       expect.objectContaining({ edgeId: 'house-edge', name: 'House Edge', source: 'world' }),
     ]))
+  })
+
+  it('groups repeated repeatable edges and preserves a repeat count', () => {
+    const resolved = resolveCharacterEdges([
+      { id: 'new-powers-1', edgeId: 'novye-sily' },
+      { id: 'new-powers-2', edgeId: 'novye-sily' },
+      { id: 'power-points-1', edgeId: 'punkty-sily' },
+    ], [])
+
+    expect(groupResolvedCharacterEdges(resolved)).toEqual([
+      expect.objectContaining({
+        edgeId: 'novye-sily',
+        id: 'new-powers-1',
+        repeatCount: 2,
+      }),
+      expect.objectContaining({
+        edgeId: 'punkty-sily',
+        id: 'power-points-1',
+        repeatCount: 1,
+      }),
+    ])
   })
 })

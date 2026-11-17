@@ -6,10 +6,13 @@ import { SWADE_SKILLS } from '@/data/handbooks/skills'
 import type { AnyHandbookEntry } from '@/handbooks/types'
 import type { EdgeRequirementCondition, HandbookModifier } from '@/types/handbook'
 import { isWeaponCategory } from '@/types/handbook'
+import { normalizeArcaneBackgroundId } from '@/handbooks/utils/arcaneBackgrounds'
 import { formatWeaponRange } from '@/handbooks/utils/weaponRange'
 import { WEAPON_CATEGORY_LABEL_KEYS } from '@/handbooks/utils/handbookTranslationKeys'
+import { ARCANE_BACKGROUND_LABEL_KEYS } from '@/handbooks/utils/handbookTranslationKeys'
 import {
   isEdge,
+  isArcaneBackground,
   isGear,
   isHindrance,
   isMount,
@@ -22,6 +25,7 @@ import {
 interface Props {
   entry: AnyHandbookEntry
   skillReferences?: readonly { id: string; name: string }[]
+  arcaneBackgrounds?: readonly { id: string; name: string }[]
 }
 
 const systemEdgeNames = new Map(SWADE_EDGES.map(edge => [edge.id, edge.name]))
@@ -68,7 +72,7 @@ function ModifierSummary({ modifiers }: { modifiers: HandbookModifier[] | undefi
   )
 }
 
-export function HandbookEntryDetail({ entry, skillReferences = [] }: Props) {
+export function HandbookEntryDetail({ entry, skillReferences = [], arcaneBackgrounds = [] }: Props) {
   const { t } = useTranslation('handbooks')
   const skillNames = new Map(systemSkillNames)
   for (const skill of skillReferences) skillNames.set(skill.id, skill.name)
@@ -98,18 +102,18 @@ export function HandbookEntryDetail({ entry, skillReferences = [] }: Props) {
       case 'skill': {
         return `${skillNames.get(condition.skill) ?? condition.skill} ${condition.minimum}`
       }
+      case 'arcaneSkill':
+        return `${t('fields.arcaneSkill')} ${condition.minimum}+`
       case 'edge': {
         const edgeName = systemEdgeNames.get(condition.edgeId) ?? condition.edgeId
         if (!condition.arcaneBackground) return edgeName
-        const backgrounds = {
-          any: t('requirements.arcaneBackground.any'),
-          weirdScience: t('requirements.arcaneBackground.weirdScience'),
-          magic: t('requirements.arcaneBackground.magic'),
-          psionics: t('requirements.arcaneBackground.psionics'),
-          gifted: t('requirements.arcaneBackground.gifted'),
-          miracles: t('requirements.arcaneBackground.miracles'),
+        if (condition.arcaneBackground === 'any') {
+          return `${edgeName} (${t('requirements.arcaneBackground.any')})`
         }
-        return `${edgeName} (${backgrounds[condition.arcaneBackground]})`
+        const background = arcaneBackgrounds.find(candidate =>
+          normalizeArcaneBackgroundId(candidate.id) === normalizeArcaneBackgroundId(condition.arcaneBackground!),
+        )
+        return `${edgeName} (${background?.name ?? condition.arcaneBackground})`
       }
       case 'hindrance':
         return systemHindranceNames.get(condition.hindranceId) ?? condition.hindranceId
@@ -173,6 +177,15 @@ export function HandbookEntryDetail({ entry, skillReferences = [] }: Props) {
         <span>{t(`modifiers.${entry.linkedAttribute}`)}</span>
         <span className="text-muted-foreground">{t('fields.coreSkill')}</span>
         <span>{entry.isCore ? t('fields.yes') : t('fields.no')}</span>
+      </div>
+    )
+  }
+
+  if (isArcaneBackground(entry)) {
+    return (
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+        <span className="text-muted-foreground">{t('fields.linkedSkill')}</span>
+        <span>{skillNames.get(entry.skillId) ?? entry.skillId}</span>
       </div>
     )
   }
@@ -271,7 +284,12 @@ export function HandbookEntryDetail({ entry, skillReferences = [] }: Props) {
           </p>
           <div className="flex flex-wrap gap-1">
             {entry.arcaneBackground.map(ab => (
-              <Badge key={ab} variant="outline">{t(`enums.arcaneBackground.${ab}`)}</Badge>
+              <Badge key={ab} variant="outline">
+                {arcaneBackgrounds.find(background => background.id === ab)?.name
+                  ?? (ARCANE_BACKGROUND_LABEL_KEYS[ab as keyof typeof ARCANE_BACKGROUND_LABEL_KEYS]
+                    ? t(ARCANE_BACKGROUND_LABEL_KEYS[ab as keyof typeof ARCANE_BACKGROUND_LABEL_KEYS])
+                    : ab)}
+              </Badge>
             ))}
           </div>
         </div>

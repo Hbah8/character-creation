@@ -8,7 +8,7 @@
       "required": ["mode", "id", "handbookCategory", "name", "description", "arcaneBackground", "ppCost", "range", "duration"],
       "properties": {
         "mode": { "const": "custom" }, "id": { "type": "string", "minLength": 1 }, "handbookCategory": { "const": "power" },
-        "name": { "type": "string" }, "description": { "type": "string" }, "arcaneBackground": { "type": "array", "items": { "enum": ["Magic", "Miracles", "Psionics", "SuperPowers", "WeirdScience"] } },
+        "name": { "type": "string" }, "description": { "type": "string" }, "arcaneBackground": { "type": "array", "items": { "type": "string", "minLength": 1 } },
         "ppCost": { "type": "string" }, "range": { "type": "string" }, "duration": { "type": "string" }
       }
     },
@@ -17,7 +17,7 @@
       "required": ["mode", "id", "handbookCategory"],
       "properties": {
         "mode": { "const": "override" }, "id": { "type": "string", "minLength": 1 }, "handbookCategory": { "const": "power" },
-        "name": { "type": "string" }, "description": { "type": "string" }, "arcaneBackground": { "type": "array", "items": { "enum": ["Magic", "Miracles", "Psionics", "SuperPowers", "WeirdScience"] } },
+        "name": { "type": "string" }, "description": { "type": "string" }, "arcaneBackground": { "type": "array", "items": { "type": "string", "minLength": 1 } },
         "ppCost": { "type": "string" }, "range": { "type": "string" }, "duration": { "type": "string" }
       }
     }

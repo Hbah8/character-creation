@@ -127,6 +127,7 @@ const form = {
       rank: 'Rank: {{rank}}',
       attribute: '{{attribute}} {{die}}+',
       skill: '{{skill}} {{die}}+',
+      arcaneSkill: 'Arcane skill {{die}}+',
       edge: 'Edge: {{edge}}',
       hindrance: 'Hindrance: {{hindrance}}',
       race: 'Race: {{race}}',

@@ -61,6 +61,15 @@ describe('characterEdgeService', () => {
     expect(addEdgeReference(edges, 'bditelnost', 'other-row')).toBe(edges)
   })
 
+  it('allows a repeatable handbook edge to be selected more than once', () => {
+    const first = addEdgeReference([], 'novye-sily', 'first-row', true)
+
+    expect(addEdgeReference(first, 'novye-sily', 'second-row', true)).toEqual([
+      { id: 'first-row', edgeId: 'novye-sily' },
+      { id: 'second-row', edgeId: 'novye-sily' },
+    ])
+  })
+
   it('clears Arcane Background when the final Mystic Gift reference is removed', () => {
     const result = removeEdgeReference([
       { id: 'gift-row', edgeId: 'misticheskiy-dar' },

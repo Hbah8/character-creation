@@ -38,12 +38,11 @@ export type MountCategory = 'animal' | 'vehicle'
 
 export type RacialAbilityType = 'positive' | 'negative'
 
-export type ArcaneBackground =
-  | 'Magic'
-  | 'Miracles'
-  | 'Psionics'
-  | 'SuperPowers'
-  | 'WeirdScience'
+export type ArcaneBackground = string
+
+export interface ArcaneBackgroundDefinition extends HandbookEntry {
+  skillId: string
+}
 
 export type RacialAbilityMaxRepeat = number | 'unlimited'
 
@@ -94,18 +93,13 @@ export interface SkillDefinition extends HandbookEntry {
 
 export type AttributeKey = 'agility' | 'smarts' | 'spirit' | 'strength' | 'vigor'
 
-export type ArcaneBackgroundRequirement =
-  | 'any'
-  | 'weirdScience'
-  | 'magic'
-  | 'psionics'
-  | 'gifted'
-  | 'miracles'
+export type ArcaneBackgroundRequirement = string
 
 export type EdgeRequirementCondition =
   | { type: 'rank'; minimum: Rank }
   | { type: 'attribute'; attribute: AttributeKey; minimum: Die }
   | { type: 'skill'; skill: string; minimum: Die }
+  | { type: 'arcaneSkill'; minimum: Die }
   | { type: 'edge'; edgeId: string; arcaneBackground?: ArcaneBackgroundRequirement }
   | { type: 'hindrance'; hindranceId: string }
   | { type: 'race'; raceId: string }
@@ -125,6 +119,7 @@ export interface EdgeRequirements {
 export interface Edge extends HandbookEntry {
   type: EdgeType
   wildCardOnly?: boolean
+  repeatable?: boolean
   requirements?: EdgeRequirements
   modifiers?: HandbookModifier[]
 }
@@ -191,6 +186,7 @@ export type HandbookCategory =
   | 'power'
   | 'mount'
   | 'racialAbility'
+  | 'arcaneBackground'
 
 export type HandbookCombatStat =
   | 'pace'
@@ -225,6 +221,7 @@ export type WorldHandbookEntry =
   | CustomHandbookEntry<Power, 'power'>
   | CustomHandbookEntry<Mount, 'mount'>
   | CustomHandbookEntry<RacialAbility, 'racialAbility'>
+  | CustomHandbookEntry<ArcaneBackgroundDefinition, 'arcaneBackground'>
   | HandbookEntryOverride<'edge', Edge>
   | HandbookEntryOverride<'hindrance', Hindrance>
   | HandbookEntryOverride<'skill', SkillDefinition>
@@ -233,6 +230,7 @@ export type WorldHandbookEntry =
   | HandbookEntryOverride<'power', Power>
   | HandbookEntryOverride<'mount', Mount>
   | HandbookEntryOverride<'racialAbility', RacialAbility>
+  | HandbookEntryOverride<'arcaneBackground', ArcaneBackgroundDefinition>
 
 export type EdgeOverride          = { id: string; category: 'edge' }          & Partial<Omit<Edge, 'id'>>
 export type HindranceOverride     = { id: string; category: 'hindrance' }     & Partial<Omit<Hindrance, 'id'>>

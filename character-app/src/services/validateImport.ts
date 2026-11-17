@@ -19,7 +19,6 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 const COMBAT_MODIFIER_SOURCES: CombatModifierSource[] = ['edge', 'hindrance', 'equipment', 'manual']
-const ARCANE_BACKGROUNDS = ['Magic', 'Miracles', 'Psionics', 'SuperPowers', 'WeirdScience'] as const
 const RANKS: Rank[] = ['Novice', 'Seasoned', 'Veteran', 'Heroic', 'Legendary']
 const LEGACY_SYSTEM_SKILL_KEYS_BY_NAME: Readonly<Record<string, string>> = {
   athletics: 'athletics',
@@ -255,8 +254,8 @@ export function validateCharacterImport(raw: unknown, worldHandbook: readonly St
   const edges = (raw.edges as unknown[]).map(edge => normalizeEdge(edge, worldHandbook))
   const arcaneBackground = raw.arcaneBackground === undefined
     ? undefined
-    : ARCANE_BACKGROUNDS.includes(raw.arcaneBackground as typeof ARCANE_BACKGROUNDS[number])
-      ? raw.arcaneBackground as Character['arcaneBackground']
+    : isString(raw.arcaneBackground) && raw.arcaneBackground.trim() !== ''
+      ? raw.arcaneBackground
       : (() => { throw new Error('validation.import.invalidArcaneBackground') })()
   if (arcaneBackground !== undefined && !edges.some(edge => edge.edgeId === 'misticheskiy-dar')) {
     throw new Error('validation.import.arcaneBackgroundWithoutMysticGift')

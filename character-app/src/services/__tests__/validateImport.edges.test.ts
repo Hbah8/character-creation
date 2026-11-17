@@ -44,4 +44,14 @@ describe('validateCharacterImport edge references', () => {
     expect(validateCharacterImport(raw, handbook).edges).toEqual(raw.edges)
     expect(() => validateCharacterImport(raw, [])).toThrow('validation.import.unknownEdge:house-edge')
   })
+
+  it('preserves a custom arcane background id on character import', () => {
+    const raw = {
+      ...enDefaultCharacter,
+      arcaneBackground: 'ancestral-magic',
+      edges: [{ id: 'gift-row', edgeId: 'misticheskiy-dar' }],
+    }
+
+    expect(validateCharacterImport(raw).arcaneBackground).toBe('ancestral-magic')
+  })
 })

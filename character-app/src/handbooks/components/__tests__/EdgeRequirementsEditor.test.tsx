@@ -35,6 +35,7 @@ describe('EdgeRequirementsEditor', () => {
           { id: 'athletics', name: 'Athletics' },
           { id: 'shooting', name: 'Shooting' },
         ],
+        arcaneBackgrounds: [],
       },
       onChange: vi.fn(),
     }))
@@ -57,6 +58,7 @@ describe('EdgeRequirementsEditor', () => {
         hindrances: [],
         races: [],
         skills: [{ id: 'athletics', name: 'Athletics' }],
+        arcaneBackgrounds: [],
       },
       onChange: vi.fn(),
     }))

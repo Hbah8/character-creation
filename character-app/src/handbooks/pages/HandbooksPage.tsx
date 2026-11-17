@@ -8,12 +8,14 @@ import { SWADE_GEAR } from '@/data/handbooks/gear'
 import { SWADE_POWERS } from '@/data/handbooks/powers'
 import { SWADE_MOUNTS } from '@/data/handbooks/mounts'
 import { SWADE_RACIAL_ABILITIES } from '@/data/handbooks/racialAbilities'
+import { SWADE_ARCANE_BACKGROUNDS } from '@/data/handbooks/arcaneBackgrounds'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { HandbookEntryForm } from '@/handbooks/components/HandbookEntryForm'
 import { HandbookFilterPanel } from '@/handbooks/components/HandbookFilterPanel'
 import { HandbookList } from '@/handbooks/components/HandbookList'
 import { HandbookStatList } from '@/handbooks/components/HandbookStatList'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
+import { getArcaneBackgroundLabel } from '@/handbooks/utils/arcaneBackgrounds'
 import { localizeStandardWeapon } from '@/handbooks/utils/localizeStandardWeapon'
 import type { EdgeRequirementReferences } from '@/handbooks/components/EdgeRequirementsEditor'
 import {
@@ -29,7 +31,7 @@ type TabLayout = 'cards' | 'stat'
 
 const TABS: Array<{
   key: string
-  labelKey: 'tabs.edges' | 'tabs.hindrances' | 'tabs.skills' | 'tabs.weapons' | 'tabs.gear' | 'tabs.powers' | 'tabs.transport' | 'tabs.racialAbilities'
+  labelKey: 'tabs.edges' | 'tabs.hindrances' | 'tabs.skills' | 'tabs.weapons' | 'tabs.gear' | 'tabs.powers' | 'tabs.transport' | 'tabs.racialAbilities' | 'tabs.arcaneBackgrounds'
   category: HandbookCategory
   entries: AnyHandbookEntry[]
   layout: TabLayout
@@ -42,6 +44,7 @@ const TABS: Array<{
   { key: 'powers',          labelKey: 'tabs.powers',          category: 'power',         entries: SWADE_POWERS as AnyHandbookEntry[],          layout: 'cards' },
   { key: 'transport',       labelKey: 'tabs.transport',       category: 'mount',         entries: SWADE_MOUNTS as AnyHandbookEntry[],          layout: 'stat' },
   { key: 'racialAbilities', labelKey: 'tabs.racialAbilities', category: 'racialAbility', entries: SWADE_RACIAL_ABILITIES as AnyHandbookEntry[], layout: 'cards' },
+  { key: 'arcaneBackgrounds', labelKey: 'tabs.arcaneBackgrounds', category: 'arcaneBackground', entries: SWADE_ARCANE_BACKGROUNDS as AnyHandbookEntry[], layout: 'cards' },
 ]
 
 interface FormState {
@@ -67,6 +70,8 @@ export function HandbooksPage() {
     hindrances: resolveHandbookEntries('hindrance', worldHandbook, [...SWADE_HINDRANCES]).map(entry => ({ id: entry.id, name: entry.name })),
     races: activeWorld?.races.map(race => ({ id: race.id, name: race.name })) ?? [],
     skills: resolveHandbookEntries('skill', worldHandbook, [...SWADE_SKILLS]).map(entry => ({ id: entry.id, name: entry.name })),
+    arcaneBackgrounds: resolveHandbookEntries('arcaneBackground', worldHandbook, [...SWADE_ARCANE_BACKGROUNDS])
+      .map(entry => ({ id: entry.id, name: getArcaneBackgroundLabel(entry, key => t(key)) })),
   }
 
   if (loading) {
@@ -168,6 +173,7 @@ export function HandbooksPage() {
                     <HandbookFilterPanel
                       category={tab.category}
                       entries={resolved as AnyHandbookEntry[]}
+                      arcaneBackgrounds={requirementReferences.arcaneBackgrounds}
                       filters={filters}
                       activeWorldName={activeWorld?.name}
                       onFiltersChange={setFilters}
@@ -189,6 +195,7 @@ export function HandbooksPage() {
                             <HandbookList
                               entries={filtered as AnyHandbookEntry[]}
                               skillReferences={requirementReferences.skills}
+                              arcaneBackgrounds={requirementReferences.arcaneBackgrounds}
                               hasActiveFilters={hasActiveFilters}
                               activeWorldName={activeWorld?.name}
                               onOverride={entry => openOverride(tab.category, entry)}

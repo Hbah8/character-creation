@@ -92,6 +92,35 @@ describe('validateHandbookEntry', () => {
     })).toMatchObject({ handbookCategory: 'skill', linkedAttribute: 'strength' })
   })
 
+  it('accepts a custom arcane background with a linked skill', () => {
+    expect(validateHandbookEntry({
+      mode: 'custom',
+      handbookCategory: 'arcaneBackground',
+      id: 'ancestral-magic',
+      name: 'Ancestral Magic',
+      description: 'A family tradition.',
+      skillId: 'ritualism',
+    })).toMatchObject({
+      handbookCategory: 'arcaneBackground',
+      id: 'ancestral-magic',
+      skillId: 'ritualism',
+    })
+  })
+
+  it('accepts power references to custom arcane background ids', () => {
+    expect(validateHandbookEntry({
+      mode: 'custom',
+      handbookCategory: 'power',
+      id: 'family-ward',
+      name: 'Family Ward',
+      description: 'A protective power.',
+      arcaneBackground: ['ancestral-magic'],
+      ppCost: '2',
+      range: 'Touch',
+      duration: '3 rounds',
+    })).toMatchObject({ arcaneBackground: ['ancestral-magic'] })
+  })
+
   it('rejects a custom skill with an invalid linked attribute', () => {
     expect(() => validateHandbookEntry({
       mode: 'custom',

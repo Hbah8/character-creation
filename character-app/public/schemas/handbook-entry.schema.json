@@ -10,6 +10,7 @@
     { "$ref": "/character-creation/schemas/gear.schema.json" },
     { "$ref": "/character-creation/schemas/power.schema.json" },
     { "$ref": "/character-creation/schemas/mount.schema.json" },
-    { "$ref": "/character-creation/schemas/racial-ability.schema.json" }
+    { "$ref": "/character-creation/schemas/racial-ability.schema.json" },
+    { "$ref": "/character-creation/schemas/arcane-background.schema.json" }
   ]
 }

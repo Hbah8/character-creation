@@ -287,6 +287,13 @@
     "wagon",
     "war-horse"
   ],
+  "arcaneBackground": [
+    "Magic",
+    "Miracles",
+    "Psionics",
+    "SuperPowers",
+    "WeirdScience"
+  ],
   "racialAbility": [
     "aquatic",
     "arcane-power",

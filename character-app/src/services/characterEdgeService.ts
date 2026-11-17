@@ -1,10 +1,16 @@
-import type { ArcaneBackground } from '@/types/handbook'
+import { SWADE_ARCANE_BACKGROUNDS } from '@/data/handbooks/arcaneBackgrounds'
+import type { ArcaneBackground, ArcaneBackgroundDefinition } from '@/types/handbook'
 import type { Character, Edge } from '@/types/character'
 import type { Edge as EdgeDefinition } from '@/types/handbook'
 import { getUnmetRequirements } from '@/services/edgeSelectionService'
 
-export function addEdgeReference(edges: readonly Edge[], edgeId: string, id: string): Edge[] {
-  if (edges.some(edge => edge.edgeId === edgeId)) return edges as Edge[]
+export function addEdgeReference(
+  edges: readonly Edge[],
+  edgeId: string,
+  id: string,
+  repeatable = false,
+): Edge[] {
+  if (!repeatable && edges.some(edge => edge.edgeId === edgeId)) return edges as Edge[]
   return [...edges, { id, edgeId }]
 }
 
@@ -24,6 +30,7 @@ export function getDependentEdges(
   currentCharacter: Character,
   proposedCharacter: Character,
   definitions: readonly EdgeDefinition[],
+  arcaneBackgrounds: readonly ArcaneBackgroundDefinition[] = SWADE_ARCANE_BACKGROUNDS,
 ): Edge[] {
   const definitionsById = new Map(definitions.map(edge => [edge.id, edge]))
   const dependents: Edge[] = []
@@ -35,8 +42,8 @@ export function getDependentEdges(
       if (dependentIds.has(edge.id) || !edge.edgeId) return false
       const definition = definitionsById.get(edge.edgeId)
       return definition !== undefined
-        && getUnmetRequirements(definition, currentCharacter).length === 0
-        && getUnmetRequirements(definition, candidate).length > 0
+        && getUnmetRequirements(definition, currentCharacter, arcaneBackgrounds).length === 0
+        && getUnmetRequirements(definition, candidate, arcaneBackgrounds).length > 0
     })
 
     if (newlyInvalid.length === 0) return dependents

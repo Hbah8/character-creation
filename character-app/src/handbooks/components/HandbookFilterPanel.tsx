@@ -26,7 +26,6 @@ import {
   WEAPON_CATEGORY_LABEL_KEYS,
 } from '@/handbooks/utils/handbookTranslationKeys'
 import type {
-  ArcaneBackground,
   AttributeKey,
   EdgeType,
   GearCategory,
@@ -55,7 +54,6 @@ const WEAPON_CATEGORIES = ['Melee', 'Ranged', 'Thrown', 'Unarmed'] as const
 const GEAR_CATEGORIES = ['Adventuring', 'Clothing', 'Food', 'Tools', 'Other'] as const
 const MOUNT_CATEGORIES = ['animal', 'vehicle'] as const
 const RACIAL_ABILITY_TYPES = ['positive', 'negative'] as const
-const ARCANE_BACKGROUNDS = ['Magic', 'Miracles', 'Psionics', 'SuperPowers', 'WeirdScience'] as const
 const ATTRIBUTES: AttributeKey[] = ['agility', 'smarts', 'spirit', 'strength', 'vigor']
 
 interface FilterOption {
@@ -73,6 +71,7 @@ interface FilterGroup {
 interface Props {
   category: HandbookCategory
   entries: AnyHandbookEntry[]
+  arcaneBackgrounds?: readonly { id: string; name: string }[]
   filters: HandbookFilterState
   activeWorldName?: string
   onFiltersChange: (filters: HandbookFilterState) => void
@@ -119,6 +118,7 @@ function getOptionLabel(
   key: HandbookFacetKey,
   value: string,
   activeWorldName: string | undefined,
+  arcaneBackgrounds: readonly { id: string; name: string }[],
   t: HandbooksT,
 ): string {
   if (key === 'source') {
@@ -142,7 +142,9 @@ function getOptionLabel(
   }
 
   if (key === 'arcaneBackground') {
-    return t(ARCANE_BACKGROUND_LABEL_KEYS[value as ArcaneBackground])
+    const backgroundName = arcaneBackgrounds.find(background => background.id === value)?.name
+    const systemLabelKey = ARCANE_BACKGROUND_LABEL_KEYS[value as keyof typeof ARCANE_BACKGROUND_LABEL_KEYS]
+    return backgroundName ?? (systemLabelKey ? t(systemLabelKey) : value)
   }
 
   if (key === 'category') {
@@ -167,12 +169,13 @@ function buildGroup(
   values: readonly string[],
   activeWorldName: string | undefined,
   t: HandbooksT,
+  arcaneBackgrounds: readonly { id: string; name: string }[] = [],
 ): FilterGroup | null {
   const counts = countFacetValues(entries, key)
   const options = values
     .map(value => ({
       value,
-      label: getOptionLabel(category, key, value, activeWorldName, t),
+      label: getOptionLabel(category, key, value, activeWorldName, arcaneBackgrounds, t),
       count: counts.get(value) ?? 0,
     }))
     .filter(option => option.count > 0)
@@ -190,6 +193,7 @@ function getFilterGroups(
   category: HandbookCategory,
   entries: AnyHandbookEntry[],
   activeWorldName: string | undefined,
+  arcaneBackgrounds: readonly { id: string; name: string }[],
   t: HandbooksT,
 ): FilterGroup[] {
   const groups: Array<FilterGroup | null> = []
@@ -225,7 +229,10 @@ function getFilterGroups(
   }
 
   if (category === 'power') {
-    groups.push(buildGroup(category, entries, 'arcaneBackground', ARCANE_BACKGROUNDS, activeWorldName, t))
+    const backgrounds = [...new Set(entries.flatMap(entry =>
+      'arcaneBackground' in entry ? entry.arcaneBackground : [],
+    ))]
+    groups.push(buildGroup(category, entries, 'arcaneBackground', backgrounds, activeWorldName, t, arcaneBackgrounds))
   }
 
   if (category === 'mount') {
@@ -268,13 +275,14 @@ function getNextFacetState(
 export function HandbookFilterPanel({
   category,
   entries,
+  arcaneBackgrounds = [],
   filters,
   activeWorldName,
   onFiltersChange,
   onAddCustom,
 }: Props) {
   const { t } = useTranslation('handbooks')
-  const groups = getFilterGroups(category, entries, activeWorldName, t)
+  const groups = getFilterGroups(category, entries, activeWorldName, arcaneBackgrounds, t)
   const isActive = hasActiveHandbookFilters(filters)
 
   return (

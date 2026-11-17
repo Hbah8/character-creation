@@ -1,5 +1,6 @@
 import type { Character } from '@/types/character'
 import type {
+  ArcaneBackgroundDefinition,
   ArcaneBackgroundRequirement,
   Edge,
   EdgeRequirement,
@@ -9,6 +10,8 @@ import type {
   Die,
   Rank,
 } from '@/types/handbook'
+import { SWADE_ARCANE_BACKGROUNDS } from '@/data/handbooks/arcaneBackgrounds'
+import { normalizeArcaneBackgroundId } from '@/handbooks/utils/arcaneBackgrounds'
 
 const RANK_INDEX: Record<Rank, number> = {
   Novice: 0,
@@ -38,6 +41,7 @@ export type UnmetEdgeRequirement =
   | { type: 'race'; raceId: string }
   | { type: 'wildCard' }
   | { type: 'arcaneBackground'; minimum: Exclude<ArcaneBackgroundRequirement, 'any'> }
+  | { type: 'arcaneSkill'; minimum: Die }
   | { type: 'text'; text: string }
   | { type: 'anyOf'; conditions: UnmetEdgeRequirement[] }
 
@@ -56,9 +60,10 @@ export interface EdgeSelectionFilters {
 export function getEdgeSelectionOptions(
   edges: readonly Edge[],
   character: Character,
+  arcaneBackgrounds: readonly ArcaneBackgroundDefinition[] = SWADE_ARCANE_BACKGROUNDS,
 ): EdgeSelectionOption[] {
   return edges.map(edge => {
-    const unmetRequirements = getUnmetRequirements(edge, character)
+    const unmetRequirements = getUnmetRequirements(edge, character, arcaneBackgrounds)
     return { edge, unmetRequirements, isAvailable: unmetRequirements.length === 0 }
   })
 }
@@ -75,9 +80,13 @@ export function filterEdgeSelectionOptions(
   )
 }
 
-export function getUnmetRequirements(edge: Edge, character: Character): UnmetEdgeRequirement[] {
+export function getUnmetRequirements(
+  edge: Edge,
+  character: Character,
+  arcaneBackgrounds: readonly ArcaneBackgroundDefinition[] = SWADE_ARCANE_BACKGROUNDS,
+): UnmetEdgeRequirement[] {
   const unmet = edge.requirements?.allOf.flatMap(requirement => {
-    const missing = getMissingRequirement(requirement, character)
+    const missing = getMissingRequirement(requirement, character, arcaneBackgrounds)
     return missing ? [missing] : []
   }) ?? []
 
@@ -91,20 +100,22 @@ export function getUnmetRequirements(edge: Edge, character: Character): UnmetEdg
 function getMissingRequirement(
   requirement: EdgeRequirement,
   character: Character,
+  arcaneBackgrounds: readonly ArcaneBackgroundDefinition[],
 ): UnmetEdgeRequirement | null {
   if ('anyOf' in requirement) {
     const unmet = requirement.anyOf.flatMap(condition => {
-      const missing = getMissingCondition(condition, character)
+      const missing = getMissingCondition(condition, character, arcaneBackgrounds)
       return missing ? [missing] : []
     })
     return unmet.length === requirement.anyOf.length ? { type: 'anyOf', conditions: unmet } : null
   }
-  return getMissingCondition(requirement, character)
+  return getMissingCondition(requirement, character, arcaneBackgrounds)
 }
 
 function getMissingCondition(
   condition: EdgeRequirementCondition,
   character: Character,
+  arcaneBackgrounds: readonly ArcaneBackgroundDefinition[],
 ): UnmetEdgeRequirement | null {
   switch (condition.type) {
     case 'rank':
@@ -113,6 +124,15 @@ function getMissingCondition(
       return dieIndex(character[condition.attribute]) >= dieIndex(condition.minimum) ? null : condition
     case 'skill': {
       const skill = character.skills.find(candidate => candidate.skillKey === condition.skill)
+      return dieIndex(skill?.die ?? '') >= dieIndex(condition.minimum) ? null : condition
+    }
+    case 'arcaneSkill': {
+      const selectedBackground = arcaneBackgrounds.find(background =>
+        background.id === normalizeArcaneBackgroundId(character.arcaneBackground ?? ''),
+      )
+      const skill = selectedBackground
+        ? character.skills.find(candidate => candidate.skillKey === selectedBackground.skillId)
+        : undefined
       return dieIndex(skill?.die ?? '') >= dieIndex(condition.minimum) ? null : condition
     }
     case 'edge':
@@ -146,12 +166,6 @@ function matchesArcaneBackground(
   character: Character,
   requirement: Exclude<ArcaneBackgroundRequirement, 'any'>,
 ): boolean {
-  const backgroundToRequirement: Record<NonNullable<Character['arcaneBackground']>, Exclude<ArcaneBackgroundRequirement, 'any'>> = {
-    Magic: 'magic',
-    Miracles: 'miracles',
-    Psionics: 'psionics',
-    SuperPowers: 'gifted',
-    WeirdScience: 'weirdScience',
-  }
-  return character.arcaneBackground !== undefined && backgroundToRequirement[character.arcaneBackground] === requirement
+  return character.arcaneBackground !== undefined
+    && normalizeArcaneBackgroundId(character.arcaneBackground) === normalizeArcaneBackgroundId(requirement)
 }

@@ -1,5 +1,4 @@
 import type {
-  ArcaneBackground,
   EdgeType,
   GearCategory,
   HindranceType,
@@ -64,4 +63,4 @@ export const ARCANE_BACKGROUND_LABEL_KEYS = {
   Psionics: 'enums.arcaneBackground.Psionics',
   SuperPowers: 'enums.arcaneBackground.SuperPowers',
   WeirdScience: 'enums.arcaneBackground.WeirdScience',
-} as const satisfies Record<ArcaneBackground, string>
+} as const

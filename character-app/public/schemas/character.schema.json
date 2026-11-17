@@ -69,7 +69,7 @@
     },
     "arcaneBackground": {
       "type": "string",
-      "enum": ["Magic", "Miracles", "Psionics", "SuperPowers", "WeirdScience"],
+      "minLength": 1,
       "description": "Selected Arcane Background. Allowed only when the character has the Mystic Gift edge."
     },
 

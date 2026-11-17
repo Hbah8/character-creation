@@ -8,26 +8,19 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { resolveCharacterEdges, resolveEdgeDefinitions } from '@/handbooks/services/resolveCharacterEdges'
-import { ARCANE_BACKGROUND_LABEL_KEYS, EDGE_TYPE_LABEL_KEYS, RANK_LABEL_KEYS } from '@/handbooks/utils/handbookTranslationKeys'
+import { groupResolvedCharacterEdges, resolveCharacterEdges, resolveEdgeDefinitions } from '@/handbooks/services/resolveCharacterEdges'
+import { resolveArcaneBackgrounds } from '@/handbooks/services/resolveArcaneBackgrounds'
+import { getArcaneBackgroundLabel, normalizeArcaneBackgroundId } from '@/handbooks/utils/arcaneBackgrounds'
+import { EDGE_TYPE_LABEL_KEYS, RANK_LABEL_KEYS } from '@/handbooks/utils/handbookTranslationKeys'
 import { filterEdgeSelectionOptions, getEdgeSelectionOptions, type UnmetEdgeRequirement } from '@/services/edgeSelectionService'
 import type { Character, ColumnSide } from '@/types/character'
-import type { ArcaneBackground, ArcaneBackgroundRequirement, Edge, EdgeRequirement, EdgeRequirementCondition, EdgeType, StoredHandbookEntry } from '@/types/handbook'
+import type { ArcaneBackground, Edge, EdgeRequirement, EdgeRequirementCondition, EdgeType, StoredHandbookEntry } from '@/types/handbook'
 
 const EDGE_TYPES: EdgeType[] = ['Background', 'Combat', 'Leadership', 'Power', 'Professional', 'Social', 'Weird', 'WildCard']
-const ARCANE_BACKGROUNDS: ArcaneBackground[] = ['Magic', 'Miracles', 'Psionics', 'SuperPowers', 'WeirdScience']
-const ARCANE_REQUIREMENT_BACKGROUND: Record<Exclude<ArcaneBackgroundRequirement, 'any'>, ArcaneBackground> = {
-  magic: 'Magic',
-  miracles: 'Miracles',
-  psionics: 'Psionics',
-  gifted: 'SuperPowers',
-  weirdScience: 'WeirdScience',
-}
-
 interface Props {
   character: Character
   worldHandbook: readonly StoredHandbookEntry[]
-  onAdd: (edgeId: string) => void
+  onAdd: (edgeId: string, repeatable?: boolean) => void
   onRemove: (id: string) => void
   onArcaneBackgroundChange: (arcaneBackground: ArcaneBackground | undefined) => void
   column: ColumnSide
@@ -37,10 +30,17 @@ interface Props {
 interface EdgeRequirementsListProps {
   requirements: Edge['requirements']
   definitions: readonly Edge[]
+  arcaneBackgrounds: ReturnType<typeof resolveArcaneBackgrounds>
   unmetRequirements?: readonly UnmetEdgeRequirement[]
 }
 
-function formatCondition(condition: EdgeRequirementCondition, definitions: readonly Edge[], formT: TFunction<'form'>, handbookT: TFunction<'handbooks'>): string {
+function formatCondition(
+  condition: EdgeRequirementCondition,
+  definitions: readonly Edge[],
+  arcaneBackgrounds: ReturnType<typeof resolveArcaneBackgrounds>,
+  formT: TFunction<'form'>,
+  handbookT: TFunction<'handbooks'>,
+): string {
   switch (condition.type) {
     case 'rank':
       return formT('edges.requirements.rank', { rank: handbookT(RANK_LABEL_KEYS[condition.minimum]) })
@@ -48,10 +48,18 @@ function formatCondition(condition: EdgeRequirementCondition, definitions: reado
       return formT('edges.requirements.attribute', { attribute: formT(`attributes.${condition.attribute}`), die: condition.minimum })
     case 'skill':
       return formT('edges.requirements.skill', { skill: condition.skill, die: condition.minimum })
+    case 'arcaneSkill':
+      return formT('edges.requirements.arcaneSkill', { die: condition.minimum })
     case 'edge': {
       const edgeName = definitions.find(definition => definition.id === condition.edgeId)?.name ?? condition.edgeId
-      const background = condition.arcaneBackground && condition.arcaneBackground !== 'any'
-        ? ` (${handbookT(ARCANE_BACKGROUND_LABEL_KEYS[ARCANE_REQUIREMENT_BACKGROUND[condition.arcaneBackground]])})`
+      const requiredBackgroundId = condition.arcaneBackground
+      const requiredBackground = requiredBackgroundId && requiredBackgroundId !== 'any'
+        ? arcaneBackgrounds.find(background =>
+          normalizeArcaneBackgroundId(background.id) === normalizeArcaneBackgroundId(requiredBackgroundId),
+        )
+        : undefined
+      const background = requiredBackground
+        ? ` (${getArcaneBackgroundLabel(requiredBackground, key => handbookT(key))})`
         : ''
       return formT('edges.requirements.edge', { edge: `${edgeName}${background}` })
     }
@@ -62,30 +70,47 @@ function formatCondition(condition: EdgeRequirementCondition, definitions: reado
   }
 }
 
-function formatRequirement(requirement: EdgeRequirement, definitions: readonly Edge[], formT: TFunction<'form'>, handbookT: TFunction<'handbooks'>): string {
+function formatRequirement(
+  requirement: EdgeRequirement,
+  definitions: readonly Edge[],
+  arcaneBackgrounds: ReturnType<typeof resolveArcaneBackgrounds>,
+  formT: TFunction<'form'>,
+  handbookT: TFunction<'handbooks'>,
+): string {
   if ('anyOf' in requirement) {
     return formT('edges.requirements.anyOf', {
-      conditions: requirement.anyOf.map(condition => formatCondition(condition, definitions, formT, handbookT)).join(` ${formT('edges.requirements.or')} `),
+      conditions: requirement.anyOf.map(condition => formatCondition(condition, definitions, arcaneBackgrounds, formT, handbookT)).join(` ${formT('edges.requirements.or')} `),
     })
   }
-  return formatCondition(requirement, definitions, formT, handbookT)
+  return formatCondition(requirement, definitions, arcaneBackgrounds, formT, handbookT)
 }
 
-function formatUnmetRequirement(requirement: UnmetEdgeRequirement, definitions: readonly Edge[], formT: TFunction<'form'>, handbookT: TFunction<'handbooks'>): string {
+function formatUnmetRequirement(
+  requirement: UnmetEdgeRequirement,
+  definitions: readonly Edge[],
+  arcaneBackgrounds: ReturnType<typeof resolveArcaneBackgrounds>,
+  formT: TFunction<'form'>,
+  handbookT: TFunction<'handbooks'>,
+): string {
   if (requirement.type === 'anyOf') {
     return formT('edges.requirements.anyOf', {
-      conditions: requirement.conditions.map(condition => formatUnmetRequirement(condition, definitions, formT, handbookT)).join(` ${formT('edges.requirements.or')} `),
+      conditions: requirement.conditions.map(condition => formatUnmetRequirement(condition, definitions, arcaneBackgrounds, formT, handbookT)).join(` ${formT('edges.requirements.or')} `),
     })
   }
   if (requirement.type === 'arcaneBackground') {
+    const background = arcaneBackgrounds.find(entry =>
+      normalizeArcaneBackgroundId(entry.id) === normalizeArcaneBackgroundId(requirement.minimum),
+    )
     return formT('edges.requirements.arcaneBackground', {
-      background: handbookT(ARCANE_BACKGROUND_LABEL_KEYS[ARCANE_REQUIREMENT_BACKGROUND[requirement.minimum]]),
+      background: background
+        ? getArcaneBackgroundLabel(background, key => handbookT(key))
+        : requirement.minimum,
     })
   }
-  return formatCondition(requirement, definitions, formT, handbookT)
+  return formatCondition(requirement, definitions, arcaneBackgrounds, formT, handbookT)
 }
 
-function EdgeRequirementsList({ requirements, definitions, unmetRequirements = [] }: EdgeRequirementsListProps) {
+function EdgeRequirementsList({ requirements, definitions, arcaneBackgrounds, unmetRequirements = [] }: EdgeRequirementsListProps) {
   const { t: formT } = useTranslation('form')
   const { t: handbookT } = useTranslation('handbooks')
   if (!requirements || requirements.allOf.length === 0) return null
@@ -96,14 +121,14 @@ function EdgeRequirementsList({ requirements, definitions, unmetRequirements = [
       <div className="flex flex-wrap gap-1">
         {requirements.allOf.map((requirement, index) => (
           <Badge key={`${index}-${JSON.stringify(requirement)}`} variant="outline" className="h-auto max-w-full whitespace-normal break-words">
-            {formatRequirement(requirement, definitions, formT, handbookT)}
+            {formatRequirement(requirement, definitions, arcaneBackgrounds, formT, handbookT)}
           </Badge>
         ))}
       </div>
       {unmetRequirements.length > 0 && (
         <p className="break-words text-xs text-destructive">
           {formT('edges.requirements.unmet', {
-            requirements: unmetRequirements.map(requirement => formatUnmetRequirement(requirement, definitions, formT, handbookT)).join(', '),
+            requirements: unmetRequirements.map(requirement => formatUnmetRequirement(requirement, definitions, arcaneBackgrounds, formT, handbookT)).join(', '),
           })}
         </p>
       )}
@@ -118,10 +143,13 @@ export function EdgesForm({ character, worldHandbook, onAdd, onRemove, onArcaneB
   const [type, setType] = useState<EdgeType | undefined>()
   const [showUnavailable, setShowUnavailable] = useState(false)
   const definitions = resolveEdgeDefinitions(worldHandbook)
-  const selectedEdges = resolveCharacterEdges(character.edges, worldHandbook)
+  const arcaneBackgrounds = resolveArcaneBackgrounds(worldHandbook)
+  const selectedEdges = groupResolvedCharacterEdges(resolveCharacterEdges(character.edges, worldHandbook))
   const selectedEdgeIds = new Set(character.edges.map(edge => edge.edgeId))
   const pickerOptions = filterEdgeSelectionOptions(
-    getEdgeSelectionOptions(definitions, character).filter(option => !selectedEdgeIds.has(option.edge.id)),
+    getEdgeSelectionOptions(definitions, character, arcaneBackgrounds).filter(option =>
+      !selectedEdgeIds.has(option.edge.id) || option.edge.repeatable === true
+    ),
     { query, type, showUnavailable },
   )
   const hasMysticGift = selectedEdgeIds.has('misticheskiy-dar')
@@ -160,7 +188,7 @@ export function EdgesForm({ character, worldHandbook, onAdd, onRemove, onArcaneB
 
       <div className="flex min-w-0 max-h-64 flex-col gap-2 overflow-y-auto pr-1">
         {pickerOptions.map(option => option.isAvailable ? (
-          <Button key={option.edge.id} type="button" variant="outline" className="h-auto min-h-10 justify-start px-3 py-2 text-left whitespace-normal" onClick={() => onAdd(option.edge.id)}>
+          <Button key={option.edge.id} type="button" variant="outline" className="h-auto min-h-10 justify-start px-3 py-2 text-left whitespace-normal" onClick={() => onAdd(option.edge.id, option.edge.repeatable === true)}>
             <Plus data-icon="inline-start" />
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="font-medium">{option.edge.name}</span>
@@ -174,7 +202,7 @@ export function EdgesForm({ character, worldHandbook, onAdd, onRemove, onArcaneB
               <span className="min-w-0 break-words font-medium">{option.edge.name}</span>
               <Badge variant="outline">{handbookT(EDGE_TYPE_LABEL_KEYS[option.edge.type])}</Badge>
             </div>
-            <EdgeRequirementsList requirements={option.edge.requirements} definitions={definitions} unmetRequirements={option.unmetRequirements} />
+            <EdgeRequirementsList requirements={option.edge.requirements} definitions={definitions} arcaneBackgrounds={arcaneBackgrounds} unmetRequirements={option.unmetRequirements} />
           </div>
         ))}
         {pickerOptions.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">{formT('edges.noAvailableEdges')}</p>}
@@ -187,7 +215,11 @@ export function EdgesForm({ character, worldHandbook, onAdd, onRemove, onArcaneB
             <SelectTrigger id="arcane-background"><SelectValue /></SelectTrigger>
             <SelectContent><SelectGroup>
               <SelectItem value="__none__">{formT('edges.noArcaneBackground')}</SelectItem>
-              {ARCANE_BACKGROUNDS.map(background => <SelectItem key={background} value={background}>{handbookT(ARCANE_BACKGROUND_LABEL_KEYS[background])}</SelectItem>)}
+              {arcaneBackgrounds.map(background => (
+                <SelectItem key={background.id} value={background.id}>
+                  {getArcaneBackgroundLabel(background, key => handbookT(key))}
+                </SelectItem>
+              ))}
             </SelectGroup></SelectContent>
           </Select>
         </div>
@@ -200,6 +232,7 @@ export function EdgesForm({ character, worldHandbook, onAdd, onRemove, onArcaneB
               <div className="flex min-w-0 flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <strong className="text-sm">{edge.name}</strong>
+                  {edge.repeatCount > 1 && <Badge variant="outline">x{edge.repeatCount}</Badge>}
                   <Badge variant="secondary">{handbookT(EDGE_TYPE_LABEL_KEYS[edge.type])}</Badge>
                 </div>
                 <p className="text-sm break-words text-muted-foreground">{edge.description}</p>
@@ -208,7 +241,7 @@ export function EdgesForm({ character, worldHandbook, onAdd, onRemove, onArcaneB
                 <Trash2 />
               </Button>
             </div>
-            <EdgeRequirementsList requirements={edge.requirements} definitions={definitions} />
+            <EdgeRequirementsList requirements={edge.requirements} definitions={definitions} arcaneBackgrounds={arcaneBackgrounds} />
           </section>
         ))}
         {selectedEdges.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">{formT('edges.noEdges')}</p>}

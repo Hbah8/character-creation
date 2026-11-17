@@ -54,6 +54,7 @@ import { exportToJson, exportToPdf } from '@/services/exportService'
 import { importFromJson } from '@/services/importService'
 import { getDependentEdges, removeEdgeReference } from '@/services/characterEdgeService'
 import { resolveEdgeDefinitions } from '@/handbooks/services/resolveCharacterEdges'
+import { resolveArcaneBackgrounds } from '@/handbooks/services/resolveArcaneBackgrounds'
 import { resolveHandbookEntries } from '@/handbooks/services/handbookResolver'
 import { localizeStandardWeapon } from '@/handbooks/utils/localizeStandardWeapon'
 import { SWADE_WEAPONS } from '@/data/handbooks/weapons'
@@ -330,6 +331,7 @@ export function CharacterCreatorPage() {
   const availableWeapons = resolveHandbookEntries('weapon', characterWorldHandbook, [...SWADE_WEAPONS])
     .map(weapon => localizeStandardWeapon(weapon, weapon.source, key => tHandbooks(key)))
   const edgeDefinitions = resolveEdgeDefinitions(characterWorldHandbook)
+  const arcaneBackgrounds = resolveArcaneBackgrounds(characterWorldHandbook)
 
   function handleAddWeaponFromHandbook(weaponId: string) {
     const weapon = availableWeapons.find(entry => entry.id === weaponId)
@@ -338,7 +340,7 @@ export function CharacterCreatorPage() {
   }
 
   function requestCharacterChange(nextCharacter: Character) {
-    const dependentEdges = getDependentEdges(character, nextCharacter, edgeDefinitions)
+    const dependentEdges = getDependentEdges(character, nextCharacter, edgeDefinitions, arcaneBackgrounds)
     if (dependentEdges.length === 0) {
       store.replaceCharacter(nextCharacter)
       return

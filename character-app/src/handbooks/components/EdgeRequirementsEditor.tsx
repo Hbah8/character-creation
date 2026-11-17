@@ -28,7 +28,6 @@ import {
   replaceRequirement,
 } from '@/handbooks/components/edgeRequirementEditorState'
 import type {
-  ArcaneBackgroundRequirement,
   AttributeKey,
   Die,
   EdgeRequirement,
@@ -40,9 +39,6 @@ import type {
 const RANKS: Rank[] = ['Novice', 'Seasoned', 'Veteran', 'Heroic', 'Legendary']
 const DICE: Die[] = ['d4', 'd6', 'd8', 'd10', 'd12']
 const ATTRIBUTES: AttributeKey[] = ['agility', 'smarts', 'spirit', 'strength', 'vigor']
-const ARCANE_BACKGROUNDS: ArcaneBackgroundRequirement[] = [
-  'any', 'weirdScience', 'magic', 'psionics', 'gifted', 'miracles',
-]
 const CONDITION_TYPES: EdgeRequirementCondition['type'][] = [
   'rank', 'attribute', 'skill', 'edge', 'hindrance', 'race', 'wildCard', 'text',
 ]
@@ -57,6 +53,7 @@ export interface EdgeRequirementReferences {
   hindrances: RequirementReference[]
   races: RequirementReference[]
   skills: RequirementReference[]
+  arcaneBackgrounds: RequirementReference[]
 }
 
 interface EdgeRequirementsEditorProps {
@@ -73,6 +70,7 @@ function createDefaultCondition(
     case 'rank': return { type, minimum: 'Novice' }
     case 'attribute': return { type, attribute: 'agility', minimum: 'd4' }
     case 'skill': return { type, skill: references.skills[0]?.id ?? '', minimum: 'd4' }
+    case 'arcaneSkill': return { type, minimum: 'd4' }
     case 'edge': return { type, edgeId: references.edges[0]?.id ?? '' }
     case 'hindrance': return { type, hindranceId: references.hindrances[0]?.id ?? '' }
     case 'race': return { type, raceId: references.races[0]?.id ?? '' }
@@ -220,6 +218,10 @@ function ConditionFields({
     )
   }
 
+  if (condition.type === 'arcaneSkill') {
+    return <DieSelect value={condition.minimum} onChange={minimum => onChange({ ...condition, minimum })} />
+  }
+
   if (condition.type === 'edge') {
     const edgeReferences = withMissingReference(references.edges, condition.edgeId)
     const isArcaneBackground = condition.edgeId === 'misticheskiy-dar'
@@ -235,9 +237,14 @@ function ConditionFields({
         {isArcaneBackground && (
           <label className="flex min-w-0 flex-col gap-1 text-xs">
             {t('requirementsEditor.arcaneBackground')}
-            <Select value={condition.arcaneBackground ?? 'any'} onValueChange={arcaneBackground => onChange({ ...condition, arcaneBackground: arcaneBackground as ArcaneBackgroundRequirement })}>
+            <Select value={condition.arcaneBackground ?? 'any'} onValueChange={arcaneBackground => onChange({ ...condition, arcaneBackground })}>
               <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectGroup>{ARCANE_BACKGROUNDS.map(background => <SelectItem key={background} value={background}>{t(`requirements.arcaneBackground.${background}`)}</SelectItem>)}</SelectGroup></SelectContent>
+              <SelectContent><SelectGroup>
+                <SelectItem value="any">{t('requirements.arcaneBackground.any')}</SelectItem>
+                {references.arcaneBackgrounds.map(background => (
+                  <SelectItem key={background.id} value={background.id}>{background.name}</SelectItem>
+                ))}
+              </SelectGroup></SelectContent>
             </Select>
           </label>
         )}

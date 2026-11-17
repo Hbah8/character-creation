@@ -31,10 +31,10 @@ export function useCharacterStore(initialCharacter?: Character) {
   }, [])
 
   // Edges
-  const addEdge = useCallback((edgeId: string) => {
+  const addEdge = useCallback((edgeId: string, repeatable = false) => {
     setCharacter(prev => ({
       ...prev,
-      edges: addEdgeReference(prev.edges, edgeId, crypto.randomUUID()),
+      edges: addEdgeReference(prev.edges, edgeId, crypto.randomUUID(), repeatable),
     }))
   }, [])
 

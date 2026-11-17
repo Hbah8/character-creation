@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { filterEdgeSelectionOptions, getEdgeSelectionOptions, getUnmetRequirements } from '@/services/edgeSelectionService'
 import type { Character } from '@/types/character'
-import type { Edge } from '@/types/handbook'
+import type { ArcaneBackgroundDefinition, Edge } from '@/types/handbook'
 
 const CHARACTER: Character = {
   sheetTitle: '',
@@ -144,5 +144,38 @@ describe('getEdgeSelectionOptions', () => {
     expect(availability.get('seasoned-edge')).toBe(true)
     expect(availability.get('veteran-edge')).toBe(true)
     expect(availability.get('heroic-edge')).toBe(false)
+  })
+
+  it('checks a custom arcane background and its linked skill', () => {
+    const background: ArcaneBackgroundDefinition = {
+      id: 'ancestral-magic',
+      name: 'Ancestral Magic',
+      description: '',
+      skillId: 'ritualism',
+    }
+    const edge: Edge = {
+      id: 'ancestral-power',
+      name: 'Ancestral Power',
+      description: '',
+      type: 'Power',
+      requirements: {
+        allOf: [
+          { type: 'edge', edgeId: 'misticheskiy-dar', arcaneBackground: 'ancestral-magic' },
+          { type: 'arcaneSkill', minimum: 'd8' },
+        ],
+      },
+    }
+    const character = {
+      ...CHARACTER,
+      arcaneBackground: 'ancestral-magic',
+      edges: [{ id: 'gift-row', edgeId: 'misticheskiy-dar' }],
+      skills: [{ id: 'ritualism-row', skillKey: 'ritualism', die: 'd8' as const }],
+    }
+
+    expect(getUnmetRequirements(edge, character, [background])).toEqual([])
+    expect(getUnmetRequirements(edge, {
+      ...character,
+      skills: [{ id: 'ritualism-row', skillKey: 'ritualism', die: 'd6' }],
+    }, [background])).toEqual([{ type: 'arcaneSkill', minimum: 'd8' }])
   })
 })
