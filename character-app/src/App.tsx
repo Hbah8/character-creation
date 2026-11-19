@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { Toaster } from '@/components/ui/sonner'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RouteErrorBoundary } from '@/routing/RouteErrorBoundary'
@@ -71,9 +72,11 @@ function AppRoutes() {
 }
 
 function App() {
+  const { t } = useTranslation('common')
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <TooltipProvider>
+        <Toaster position="bottom-right" closeButton toastOptions={{ closeButtonAriaLabel: t('close') }} />
         <SessionBoundary>
           <AppRoutes />
         </SessionBoundary>

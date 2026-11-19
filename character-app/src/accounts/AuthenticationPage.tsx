@@ -11,6 +11,7 @@ import { FieldGroup } from '@/components/ui/field'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { useOperationError } from '@/hooks/useOperationError'
 
 interface Props {
   error: AccountErrorCode | null
@@ -31,6 +32,7 @@ export function AuthenticationPage({ error: sessionError, onAuthenticated }: Pro
   const [email, setEmail] = useState('')
   const confirmation = useRef<Promise<void> | null>(null)
   const displayedError = error ?? sessionError
+  useOperationError(displayedError ? t(`errors.${displayedError}`) : null)
   const passwordChanged = location.state && typeof location.state === 'object'
     && 'passwordChanged' in location.state && location.state.passwordChanged === true
   const title = step === 'login' ? 'loginTitle' : step === 'register' ? 'registerTitle'
@@ -92,9 +94,6 @@ export function AuthenticationPage({ error: sessionError, onAuthenticated }: Pro
           {step === 'checkEmail' && <CardDescription>{t('checkEmailInstruction')}</CardDescription>}
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          {displayedError && <Alert variant="destructive">
-            <AlertDescription>{t(`errors.${displayedError}`)}</AlertDescription>
-          </Alert>}
           {message && <Alert role="status"><AlertDescription>{t(message)}</AlertDescription></Alert>}
           {step === 'login' && passwordChanged && <Alert role="status"><AlertDescription>{t('passwordUpdated')}</AlertDescription></Alert>}
           {step === 'confirming' && <p role="status">{t('confirming')}</p>}

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, FolderOpen, MoreHorizontal, Shield, Swords } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useOperationError } from '@/hooks/useOperationError'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,9 @@ export function DashboardCharacterGrid({ entries, onDelete }: Props) {
   const [pendingDelete, setPendingDelete] = useState<SavedCharacterRecord | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<SavedCharacterApiError | null>(null)
+  useOperationError(deleteError
+    ? deleteError.code === 'unavailable' ? t('deleteUnavailable') : t(`errors.${deleteError.code}`)
+    : null)
 
   if (entries.length === 0) {
     return (
@@ -152,11 +155,6 @@ export function DashboardCharacterGrid({ entries, onDelete }: Props) {
               {t('deleteConfirmDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {deleteError && (
-            <Alert variant="destructive">
-              <AlertDescription>{t(`errors.${deleteError.code}`)}</AlertDescription>
-            </Alert>
-          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting} onClick={() => setPendingDelete(null)}>
               {t('cancel')}

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { accountApi, AccountApiError } from '@/accounts/accountApi'
 import type { AccountErrorCode, AccountSession } from '@/accounts/accountApi'
 import { useSessionAccount } from '@/accounts/useSessionAccount'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useOperationError } from '@/hooks/useOperationError'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +17,7 @@ export function AccountPage() {
   const [sessions, setSessions] = useState<AccountSession[]>([])
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState<AccountErrorCode | null>(null)
+  useOperationError(error ? t(`errors.${error}`) : null)
 
   useEffect(() => {
     let active = true
@@ -46,7 +47,6 @@ export function AccountPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-5 p-4 md:p-6">
       <h1 className="type-page-title">{t('title')}</h1>
-      {error && <Alert variant="destructive"><AlertDescription>{t(`errors.${error}`)}</AlertDescription></Alert>}
       <Card>
         <CardHeader>
           <CardTitle>{account.email}</CardTitle>

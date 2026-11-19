@@ -51,11 +51,23 @@ public class WorldService implements WorldReferenceResolver {
 
     /** Creates a world and all of its graph, race, and handbook records atomically. */
     @Transactional
-    public SavedWorld create(UUID ownerId, JsonNode input) {
+    public SavedWorld create(UUID ownerId, UUID requestedId, JsonNode input) {
         access.requireApproved(ownerId);
         ObjectNode world = validator.validate(input);
+        quotas.lockAccount(ownerId);
+        UUID id = requestedId == null ? UUID.randomUUID() : requestedId;
+        var existing = worlds.find(ownerId, id);
+        if (existing.isPresent()) {
+            if (existing.get().world().equals(world)) {
+                return existing.get();
+            }
+            throw new WorldException(409, "conflict");
+        }
         quotas.requireWorldCapacity(ownerId);
-        return worlds.insert(ownerId, UUID.randomUUID(), world);
+        return worlds.insert(ownerId, id, world)
+                .orElseGet(() -> worlds.find(ownerId, id)
+                        .filter(record -> record.world().equals(world))
+                        .orElseThrow(() -> new WorldException(409, "conflict")));
     }
 
     /** Replaces a world only at its current version and preserves all linked character references. */

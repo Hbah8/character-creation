@@ -64,14 +64,15 @@ public class CharacterRepository implements WorldCharacterReferences {
                 """).param("owner", ownerId).param("id", id).query(rowMapper).optional();
     }
 
-    SavedCharacter insert(UUID ownerId, UUID id, JsonNode character) {
+    Optional<SavedCharacter> insert(UUID ownerId, UUID id, JsonNode character) {
         return jdbc.sql("""
                 INSERT INTO app.characters (id, owner_account_id, world_id, character_data)
                 VALUES (:id, :owner, :world, CAST(:character AS jsonb))
+                ON CONFLICT (id) DO NOTHING
                 RETURNING id, version, created_at, updated_at, character_data
                 """).param("id", id).param("owner", ownerId).param("world", worldId(character))
                 .param("character", character.toString())
-                .query(rowMapper).single();
+                .query(rowMapper).optional();
     }
 
     Optional<SavedCharacter> update(UUID ownerId, UUID id, long expectedVersion, JsonNode character) {

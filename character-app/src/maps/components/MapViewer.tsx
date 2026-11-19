@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Expand, Grid2X2, MoreHorizontal, Pencil, RotateCcw, RotateCw, Trash2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useRef, useState } from 'react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useOperationError } from '@/hooks/useOperationError'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -240,7 +240,8 @@ export function MapViewer({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [fullscreenContainer, setFullscreenContainer] = useState<HTMLElement | null>(null)
   const [pan, setPan] = useState<MapPanOffset>({ x: 0, y: 0 })
-  const [fullscreenFailed, setFullscreenFailed] = useState(false)
+  const [fullscreenFailed, setFullscreenFailed] = useState<object | null>(null)
+  useOperationError(fullscreenFailed ? t('fullscreenFailed') : null, undefined, fullscreenFailed)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false)
   const [mapNameDraft, setMapNameDraft] = useState('')
@@ -273,9 +274,9 @@ export function MapViewer({
     try {
       if (isFullscreen) await exitMapFullscreen()
       else if (fullscreenRef.current) await enterMapFullscreen(fullscreenRef.current)
-      setFullscreenFailed(false)
+      setFullscreenFailed(null)
     } catch {
-      setFullscreenFailed(true)
+      setFullscreenFailed({})
     }
   }
 
@@ -460,11 +461,6 @@ export function MapViewer({
           </Button>
         </div>
       </div>
-      {fullscreenFailed && (
-        <Alert variant="destructive">
-          <AlertDescription>{t('fullscreenFailed')}</AlertDescription>
-        </Alert>
-      )}
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/20">
         <MapImage
           selectedMap={selectedMap}

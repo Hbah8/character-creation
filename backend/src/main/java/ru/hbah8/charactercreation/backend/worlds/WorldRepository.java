@@ -83,8 +83,8 @@ public class WorldRepository {
         return toSavedWorld(root, readWorld(root));
     }
 
-    SavedWorld insert(UUID ownerId, UUID id, JsonNode world) {
-        jdbc.sql("""
+    Optional<SavedWorld> insert(UUID ownerId, UUID id, JsonNode world) {
+        int inserted = jdbc.sql("""
                 INSERT INTO app.worlds (
                     id, owner_account_id, name, summary, skill_points_budget,
                     attribute_points_budget, race_points_budget, audio_data
@@ -93,6 +93,7 @@ public class WorldRepository {
                     :id, :owner, :name, :summary, :skillBudget,
                     :attributeBudget, :raceBudget, CAST(:audio AS jsonb)
                 )
+                ON CONFLICT (id) DO NOTHING
                 """)
                 .param("id", id)
                 .param("owner", ownerId)
@@ -103,8 +104,9 @@ public class WorldRepository {
                 .param("raceBudget", budget(world, "racePointsBudget"))
                 .param("audio", world.has("audio") ? world.path("audio").toString() : null)
                 .update();
+        if (inserted == 0) return Optional.empty();
         replaceContents(id, world);
-        return find(ownerId, id).orElseThrow();
+        return find(ownerId, id);
     }
 
     Optional<SavedWorld> updateRoot(UUID ownerId, UUID id, long expectedVersion, JsonNode world) {

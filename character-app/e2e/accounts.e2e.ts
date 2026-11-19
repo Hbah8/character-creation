@@ -226,11 +226,26 @@ test('saved standalone characters persist across browser contexts and stay priva
 
   await page.goto('/creator')
   await page.getByLabel('Callsign', { exact: true }).fill('Cross-device scout')
+  const unloadWasPrevented = await page.evaluate(() => {
+    const event = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(event)
+    return event.defaultPrevented
+  })
+  expect(unloadWasPrevented).toBe(true)
+  await page.route('**/api/characters', async route => {
+    if (route.request().method() === 'POST') {
+      await new Promise(resolve => setTimeout(resolve, 300))
+    }
+    await route.continue()
+  })
   const createResponse = page.waitForResponse(response => response.request().method() === 'POST'
     && response.url().endsWith('/api/characters'))
   await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByLabel('Callsign', { exact: true }).fill('Edited while save is pending')
   expect((await createResponse).status()).toBe(201)
-  await expect(page.getByRole('status')).toContainText('Saved')
+  await expect(page.getByLabel('Callsign', { exact: true })).toHaveValue('Edited while save is pending')
+  await expect(page.getByText('Unsaved changes')).toBeVisible()
+  await page.unroute('**/api/characters')
   const characterId = new URL(page.url()).pathname.split('/').pop()!
 
   const secondContext = await browser.newContext()
@@ -267,20 +282,51 @@ test('saved standalone characters persist across browser contexts and stay priva
     await expect(secondPage.getByRole('status')).toContainText('Saved')
 
     await page.getByLabel('Callsign', { exact: true }).fill('Draft after version conflict')
+    await page.route(`**/api/characters/${characterId}`, async route => {
+      if (route.request().method() === 'PUT') {
+        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+      await route.continue()
+    })
     const conflictResponse = page.waitForResponse(response => response.request().method() === 'PUT'
       && response.url().endsWith(`/api/characters/${characterId}`))
     await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await page.getByLabel('Callsign', { exact: true }).fill('Edited during conflict request')
     expect((await conflictResponse).status()).toBe(409)
     await expect(page.getByRole('alert')).toContainText('changed in another browser')
     await expect(page.getByLabel('Callsign', { exact: true }))
-      .toHaveValue('Draft after version conflict')
+      .toHaveValue('Edited during conflict request')
+    await page.unroute(`**/api/characters/${characterId}`)
 
     await page.reload()
+    await expect(page.getByRole('status')).toContainText('local draft')
+    await expect(page.getByRole('status')).toContainText('server version changed')
+    await page.getByRole('button', { name: 'Restore draft', exact: true }).click()
     await expect(page.getByLabel('Callsign', { exact: true }))
-      .toHaveValue('Updated from another browser')
-
+      .toHaveValue('Edited during conflict request')
+    const unchangedServer = await secondPage.evaluate(async id =>
+      (await fetch(`/api/characters/${id}`, { cache: 'no-store' })).json(), characterId)
+    expect(unchangedServer.character.callsign).toBe('Updated from another browser')
+    const restoredSave = page.waitForResponse(response => response.request().method() === 'PUT'
+      && response.url().endsWith(`/api/characters/${characterId}`))
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    expect((await restoredSave).status()).toBe(200)
+    await expect(page.getByText('Unsaved changes')).toHaveCount(0)
+    await secondPage.reload()
+    await expect(secondPage.getByLabel('Callsign', { exact: true }))
+      .toHaveValue('Edited during conflict request')
     const saved = await secondPage.evaluate(async id =>
       (await fetch(`/api/characters/${id}`, { cache: 'no-store' })).json(), characterId)
+    await page.getByRole('button', { name: 'Library', exact: true }).click()
+    const newCharacterDialog = page.getByRole('dialog', { name: 'Character Library' })
+    await newCharacterDialog.getByRole('button', { name: 'New Character', exact: true }).click()
+    await page.getByLabel('Callsign', { exact: true }).fill('A distinct new character')
+    const secondCreate = page.waitForResponse(response => response.request().method() === 'POST'
+      && response.url().endsWith('/api/characters'))
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    const secondCreated = await secondCreate
+    expect(secondCreated.status()).toBe(201)
+    expect((await secondCreated.json() as { id: string }).id).not.toBe(characterId)
     const otherAccountPage = await otherAccountContext.newPage()
     await otherAccountPage.goto('/login')
     await otherAccountPage.evaluate(() => {

@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { useOperationError } from '@/hooks/useOperationError'
 import {
   addAudioAssets,
   getAudioSceneTrack,
@@ -68,7 +68,9 @@ export function AudioSoundboardPage() {
   const navigate = useNavigate()
   const { t } = useTranslation('audio')
   const { entries, activeWorldId, saveById, setActiveWorldId } = useWorldLibrary()
-  const [errorKey, setErrorKey] = useState<AudioErrorKey | null>(null)
+  const [error, setError] = useState<{ key: AudioErrorKey } | null>(null)
+  const setErrorKey = useCallback((key: AudioErrorKey | null) => setError(key ? { key } : null), [])
+  useOperationError(error ? t(error.key) : null, undefined, error)
   const [availability, setAvailability] = useState<Record<string, AudioAssetAvailability>>({})
   const [activeTrackIds, setActiveTrackIds] = useState<string[]>([])
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null)
@@ -321,7 +323,7 @@ export function AudioSoundboardPage() {
     return () => {
       cancelled = true
     }
-  }, [assets])
+  }, [assets, setErrorKey])
 
   async function addFiles(): Promise<void> {
     const picker = window as AudioFilePickerWindow
@@ -384,13 +386,6 @@ export function AudioSoundboardPage() {
             worlds={entries.map(entry => ({ id: entry.id, name: entry.world.name }))}
             onSelectWorld={setActiveWorldId}
           />
-
-          {errorKey && (
-            <Alert variant="destructive">
-              <AlertTitle>{t('title')}</AlertTitle>
-              <AlertDescription>{t(errorKey)}</AlertDescription>
-            </Alert>
-          )}
 
           <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] grid-cols-[minmax(15rem,1.2fr)_minmax(22rem,1.25fr)_minmax(15rem,0.85fr)] items-stretch gap-3 max-[1180px]:flex-none max-[1180px]:grid-rows-[auto] max-[1180px]:grid-cols-2 max-md:grid-cols-1">
             <AudioLibraryPanel

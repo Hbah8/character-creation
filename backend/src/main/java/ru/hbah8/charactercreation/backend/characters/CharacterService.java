@@ -51,13 +51,24 @@ public class CharacterService {
 
     /** Creates a character owned by the authenticated account. */
     @Transactional
-    public SavedCharacter create(UUID ownerId, JsonNode character) {
+    public SavedCharacter create(UUID ownerId, UUID requestedId, JsonNode character) {
         access.requireApproved(ownerId);
         validator.validate(character);
         quotas.lockAccount(ownerId);
         worldReferences.validateCharacter(ownerId, character);
+        UUID id = requestedId == null ? UUID.randomUUID() : requestedId;
+        var existing = characters.find(ownerId, id);
+        if (existing.isPresent()) {
+            if (existing.get().character().equals(character)) {
+                return existing.get();
+            }
+            throw new CharacterException(409, "conflict");
+        }
         quotas.requireCharacterCapacity(ownerId, CharacterRepository.worldId(character));
-        return characters.insert(ownerId, UUID.randomUUID(), character);
+        return characters.insert(ownerId, id, character)
+                .orElseGet(() -> characters.find(ownerId, id)
+                        .filter(record -> record.character().equals(character))
+                        .orElseThrow(() -> new CharacterException(409, "conflict")));
     }
 
     /** Updates a character only if the supplied version is still current. */

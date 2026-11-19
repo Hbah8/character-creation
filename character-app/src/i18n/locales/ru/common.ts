@@ -3,6 +3,8 @@ const common = {
   add: 'Добавить',
   ok: 'ОК',
   cancel: 'Отмена',
+  close: 'Закрыть',
+  error: 'Ошибка',
   noItems: 'Пусто.',
 } as const
 

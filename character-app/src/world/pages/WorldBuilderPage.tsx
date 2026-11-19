@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useSessionAccount } from '@/accounts/useSessionAccount'
 import { WorldSyncNotice } from '@/world/components/WorldSyncNotice'
+import { DraftRecoveryNotice } from '@/components/DraftRecoveryNotice'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ImportErrorDialog } from '@/components/ImportErrorDialog'
 import { detectInitialLocale } from '@/i18n'
@@ -17,6 +19,7 @@ import { validateWorldImport } from '@/world/services/validateWorldImport'
 import { exportWorldToJson, importWorldFromJson } from '@/world/services/worldImportExportService'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import { useWorldStore } from '@/world/store/useWorldStore'
+import { useEntityDraft } from '@/hooks/useEntityDraft'
 import type { WorldEntityType } from '@/world/types'
 import { WORLD_ENTITY_LABEL_KEYS } from '@/world/i18nKeys'
 
@@ -47,6 +50,7 @@ export function WorldBuilderPage() {
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [treatMissingAsNew, setTreatMissingAsNew] = useState(false)
   const [loadingWorld, setLoadingWorld] = useState(Boolean(id))
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(
     () => world.entities[0]?.id ?? null,
@@ -92,21 +96,80 @@ export function WorldBuilderPage() {
     () => JSON.stringify(world) !== cleanSnapshot,
     [world, cleanSnapshot],
   )
+  const savedEntry = id ? library.entries.find(entry => entry.id === id) : undefined
+  const draft = useEntityDraft({
+    accountId: account.id,
+    entityType: 'world',
+    entityId: id ?? null,
+    baseVersion: savedEntry?.version ?? null,
+    baseUpdatedAt: savedEntry?.savedAt ?? null,
+    data: world,
+    isDirty,
+    onRecover: recovered => {
+      try {
+        store.replaceWorld(validateWorldImport(recovered))
+        if (id && library.error?.code === 'notFound' && library.error.operation === 'load') {
+          library.markNew()
+          setTreatMissingAsNew(true)
+        }
+      } catch (error) {
+        setImportError(error instanceof Error ? error.message : 'validation.world.invalidJson')
+      }
+    },
+  })
+  const editorIdRef = useRef(draft.entityId)
+  const currentWorldRef = useRef(world)
+  useEffect(() => {
+    editorIdRef.current = id ?? draft.entityId
+    currentWorldRef.current = world
+  }, [draft.entityId, id, world])
 
   async function handleSave() {
     setSaving(true)
     try {
-      const savedId = await library.save(world)
-      setCleanSnapshot(JSON.stringify(world))
-      setSavedAt(new Date())
-      if (!id) {
-        navigate(`/worlds/${savedId}`, { replace: true })
+      const requestWorld = structuredClone(world)
+      const sentDraft = draft.persistCurrent()
+      const requestEntityId = draft.entityId
+      const saved = await library.save(
+        requestWorld,
+        id && !treatMissingAsNew ? id : null,
+        draft.entityId,
+      )
+      draft.confirmSaved(sentDraft, saved)
+      if (editorIdRef.current === requestEntityId) {
+        if (JSON.stringify(currentWorldRef.current) === JSON.stringify(requestWorld)) {
+          store.replaceWorld(saved.world)
+        }
+        setCleanSnapshot(JSON.stringify(saved.world))
+        setSavedAt(new Date(saved.updatedAt))
+        setTreatMissingAsNew(false)
+      }
+      if ((!id || treatMissingAsNew) && editorIdRef.current === requestEntityId) {
+        navigate(`/worlds/${saved.id}`, { replace: true })
       }
     } catch {
       // The library retains the failed draft and exposes its error for retry.
     } finally {
       setSaving(false)
     }
+  }
+
+  async function handleOverwrite(version: number) {
+    if (!id) return null
+    const requestWorld = structuredClone(currentWorldRef.current)
+    const sentDraft = draft.persistCurrent(requestWorld)
+    const saved = await library.retrySave(id, version, requestWorld)
+    if (saved) {
+      draft.confirmSaved(sentDraft, saved)
+      if (editorIdRef.current === id) {
+        if (JSON.stringify(currentWorldRef.current) === JSON.stringify(requestWorld)) {
+          store.replaceWorld(saved.world)
+        }
+        setCleanSnapshot(JSON.stringify(saved.world))
+        setSavedAt(new Date(saved.updatedAt))
+      }
+    }
+    return saved
   }
 
   function handleAddEntity(type: WorldEntityType) {
@@ -257,7 +320,9 @@ export function WorldBuilderPage() {
           )}
           <Button size="sm" onClick={() => void handleSave()} disabled={saving}>
             <Save className="size-4 mr-1.5" />
-            {tLibrary('save')}
+            {saving ? tLibrary('saving') : treatMissingAsNew
+              ? tLibrary('drafts.saveWorldAsNew')
+              : tLibrary('save')}
           </Button>
           <WorldExportDropdown
             onExportJson={() => exportWorldToJson(world)}
@@ -266,7 +331,20 @@ export function WorldBuilderPage() {
         </div>
       </header>
 
-      <WorldSyncNotice onReloadWorld={loaded => {
+      <DraftRecoveryNotice
+        drafts={draft.drafts}
+        storageError={draft.storageError}
+        serverChecked={!id || !loadingWorld}
+        currentVersion={savedEntry?.version ?? null}
+        onRestore={draft.restoreDraft}
+        onDelete={draft.removeDraft}
+      />
+      {treatMissingAsNew && (
+        <Alert className="mx-4 mt-2 w-auto">
+          <AlertDescription>{tLibrary('drafts.missingWorldRestoredAsNew')}</AlertDescription>
+        </Alert>
+      )}
+      <WorldSyncNotice onOverwrite={handleOverwrite} onReloadWorld={loaded => {
         store.replaceWorld(loaded)
         setCleanSnapshot(JSON.stringify(loaded))
         setSelectedEntityId(loaded.entities[0]?.id ?? null)

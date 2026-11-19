@@ -4,7 +4,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 import { useSessionAccount } from '@/accounts/useSessionAccount'
 import { adminApi, AdminApiError } from '@/admin/adminApi'
 import type { AccountStatus, AdminAccount, AuditEntry, Page } from '@/admin/adminApi'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useOperationError } from '@/hooks/useOperationError'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +46,9 @@ export function AdminPage() {
   const [error, setError] = useState<AdminApiError | null>(null)
   const [loading, setLoading] = useState(true)
   const [target, setTarget] = useState<AdminAccount | null>(null)
+  useOperationError(error && error.code !== 'forbidden' && error.code !== 'notFound'
+    ? t('unavailable')
+    : null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -90,7 +93,6 @@ export function AdminPage() {
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('description')}</p>
       </header>
-      {error && <Alert variant="destructive"><AlertDescription>{t('unavailable')}</AlertDescription></Alert>}
       <Card>
         <CardHeader>
           <CardTitle>{t('accounts')}</CardTitle>

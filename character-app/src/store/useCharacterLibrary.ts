@@ -78,17 +78,34 @@ export function useCharacterLibrary(accountId: string) {
     }
   }, [accountId])
 
-  const save = useCallback(async (character: Character): Promise<SavedCharacterRecord> => {
+  const save = useCallback(async (
+    character: Character,
+    entityId: string | null,
+    createId: string,
+  ): Promise<SavedCharacterRecord> => {
     const scope = accountId
-    const currentRecord = current?.accountId === scope ? current : null
-    ++requestSequence.current
+    const currentRecord = entityId !== null
+      && current?.accountId === scope
+      && current.id === entityId
+      ? current
+      : null
+    if (entityId !== null && currentRecord === null) {
+      throw new SavedCharacterApiError('preconditionRequired')
+    }
     try {
       const saved = currentRecord
         ? await savedCharacterApi.update(currentRecord.id, currentRecord.version, character)
-        : await savedCharacterApi.create(character)
+        : await savedCharacterApi.create(character, createId)
       if (accountScope.current === scope) {
-        ++requestSequence.current
-        setCurrent({ accountId: scope, id: saved.id, version: saved.version, updatedAt: saved.updatedAt })
+        setCurrent(previous => currentRecord
+          ? previous?.accountId === scope
+            && previous.id === currentRecord.id
+            && previous.version === currentRecord.version
+            ? { accountId: scope, id: saved.id, version: saved.version, updatedAt: saved.updatedAt }
+            : previous
+          : previous?.accountId === scope
+            ? previous
+            : { accountId: scope, id: saved.id, version: saved.version, updatedAt: saved.updatedAt })
         setState(previous => {
           if (previous.accountId !== scope) return previous
           const entries = previous.entries.filter(entry => entry.id !== saved.id)
@@ -138,23 +155,13 @@ export function useCharacterLibrary(accountId: string) {
   const remove = useCallback(async (id: string, version: number): Promise<void> => {
     const scope = accountId
     ++requestSequence.current
-    try {
-      await savedCharacterApi.delete(id, version)
-      if (accountScope.current === scope) {
-        ++requestSequence.current
-        setState(previous => previous.accountId === scope
-          ? { ...previous, entries: previous.entries.filter(entry => entry.id !== id), error: null }
-          : previous)
-        setCurrent(previous => previous?.accountId === scope && previous.id === id ? null : previous)
-      }
-    } catch (error) {
-      if (accountScope.current === scope) {
-        const apiError = toApiError(error)
-        setState(previous => previous.accountId === scope
-          ? { ...previous, error: apiError }
-          : previous)
-      }
-      throw error
+    await savedCharacterApi.delete(id, version)
+    if (accountScope.current === scope) {
+      ++requestSequence.current
+      setState(previous => previous.accountId === scope
+        ? { ...previous, entries: previous.entries.filter(entry => entry.id !== id), error: null }
+        : previous)
+      setCurrent(previous => previous?.accountId === scope && previous.id === id ? null : previous)
     }
   }, [accountId])
 

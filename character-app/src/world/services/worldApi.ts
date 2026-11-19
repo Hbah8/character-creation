@@ -149,8 +149,8 @@ export const worldApi = {
     return readRecord(await readJson(response), response)
   },
 
-  async create(world: World): Promise<SavedWorldRecord> {
-    const response = await request('', 'POST', { world })
+  async create(world: World, id?: string): Promise<SavedWorldRecord> {
+    const response = await request('', 'POST', id ? { id, world } : { world })
     return readRecord(await readJson(response), response)
   },
 

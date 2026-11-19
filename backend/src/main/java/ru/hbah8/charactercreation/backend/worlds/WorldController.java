@@ -51,7 +51,7 @@ public class WorldController {
     @PostMapping
     public ResponseEntity<WorldResponse> create(Authentication authentication,
                                                 @Valid @RequestBody WorldWrite input) {
-        SavedWorld created = worlds.create(accountId(authentication), input.world());
+        SavedWorld created = worlds.create(accountId(authentication), input.id(), input.world());
         return ResponseEntity.created(URI.create("/api/worlds/" + created.id()))
                 .header(HttpHeaders.ETAG, etag(created.version()))
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
@@ -107,7 +107,7 @@ public class WorldController {
         return "\"" + version + "\"";
     }
 
-    record WorldWrite(@NotNull JsonNode world) {
+    record WorldWrite(UUID id, @NotNull JsonNode world) {
     }
 
     public record WorldResponse(UUID id, long version, Instant createdAt, Instant updatedAt, JsonNode world) {

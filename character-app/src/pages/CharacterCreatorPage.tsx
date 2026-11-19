@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Eye, User, Zap, Shield, Target, Star, AlertTriangle, Crosshair, Package, Settings, FileText, Sparkles } from 'lucide-react'
 import { useCharacterStore } from '@/store/useCharacterStore'
 import { useCharacterLibrary } from '@/store/useCharacterLibrary'
+import { useEntityDraft } from '@/hooks/useEntityDraft'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import { useSessionAccount } from '@/accounts/useSessionAccount'
 import { SavedCharacterApiError } from '@/services/savedCharacterApi'
@@ -27,6 +28,8 @@ import { RacialAbilitiesSection } from '@/components/form/RacialAbilitiesSection
 import { useEffectiveCharacter } from '@/hooks/useEffectiveCharacter'
 import { ExportDropdown } from '@/components/ExportDropdown'
 import { CharacterLibrary } from '@/components/CharacterLibrary'
+import { DraftRecoveryNotice } from '@/components/DraftRecoveryNotice'
+import { useOperationError } from '@/hooks/useOperationError'
 import { ImportErrorDialog } from '@/components/ImportErrorDialog'
 import { ImportWarningsDialog } from '@/components/ImportWarningsDialog'
 import { ShareConfirmDialog } from '@/components/ShareConfirmDialog'
@@ -52,6 +55,7 @@ import {
 import { cn } from '@/lib/utils'
 import { exportToJson, exportToPdf, materializeResolvedPowers } from '@/services/exportService'
 import { importFromJson } from '@/services/importService'
+import { validateCharacterImport } from '@/services/validateImport'
 import { getDependentEdges, removeEdgeReference } from '@/services/characterEdgeService'
 import { resolveEdgeDefinitions } from '@/handbooks/services/resolveCharacterEdges'
 import { resolveArcaneBackgrounds } from '@/handbooks/services/resolveArcaneBackgrounds'
@@ -142,7 +146,9 @@ export function CharacterCreatorPage() {
   const [saveError, setSaveError] = useState<SavedCharacterApiError | null>(null)
   const [loadingSavedCharacter, setLoadingSavedCharacter] = useState(Boolean(id))
   const [loadError, setLoadError] = useState<SavedCharacterApiError | null>(null)
+  useOperationError(saveError ? tLibrary(`errors.${saveError.code}`) : null)
   const [loadAttempt, setLoadAttempt] = useState(0)
+  const [treatMissingAsNew, setTreatMissingAsNew] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('identity')
   const [scaleMode, setScaleMode] = useState<ScaleMode>('fit-width')
   const [templatePreferences, setTemplatePreferences] = useState(loadSheetTemplatePreferences)
@@ -212,17 +218,62 @@ export function CharacterCreatorPage() {
     () => JSON.stringify(character) !== cleanSnapshot,
     [character, cleanSnapshot]
   )
+  const draft = useEntityDraft({
+    accountId: account.id,
+    entityType: 'character',
+    entityId: id ?? null,
+    baseVersion: library.currentId === id ? library.currentVersion : null,
+    baseUpdatedAt: library.currentId === id ? library.currentUpdatedAt : null,
+    data: character,
+    isDirty,
+    onRecover: raw => {
+      try {
+        const rawWorldId = raw !== null && typeof raw === 'object'
+          && 'worldId' in raw && typeof raw.worldId === 'string'
+          ? raw.worldId
+          : undefined
+        const handbook = worldEntries.find(entry => entry.id === rawWorldId)?.world.worldHandbook ?? []
+        store.replaceCharacter(validateCharacterImport(raw, handbook))
+        if (!id || loadError?.code === 'notFound') {
+          library.markNew()
+          setTreatMissingAsNew(Boolean(id))
+          setLoadError(null)
+        }
+      } catch {
+        setImportError('validation.import.notAnObject')
+      }
+    },
+  })
+  const editorIdentityRef = useRef(id ?? draft.entityId)
+  const currentCharacterRef = useRef(character)
+  useEffect(() => {
+    editorIdentityRef.current = treatMissingAsNew ? draft.entityId : id ?? draft.entityId
+    currentCharacterRef.current = character
+  }, [character, draft.entityId, id, treatMissingAsNew])
 
   async function handleSave() {
     setSaving(true)
     setSaveError(null)
     try {
-      const persistedCharacter = materializeResolvedPowers(character, resolvedCharacter.powers)
-      const saved = await library.save(persistedCharacter)
-      store.replaceCharacter(persistedCharacter)
-      setCleanSnapshot(JSON.stringify(persistedCharacter))
-      setSavedAt(new Date(saved.updatedAt))
-      if (!id) navigate(`/creator/${saved.id}`, { replace: true })
+      const submittedCharacter = structuredClone(character)
+      const requestIdentity = editorIdentityRef.current
+      const persistedCharacter = materializeResolvedPowers(submittedCharacter, resolvedCharacter.powers)
+      const sentDraft = draft.persistCurrent()
+      const saved = await library.save(
+        persistedCharacter,
+        id && !treatMissingAsNew ? id : null,
+        draft.entityId,
+      )
+      draft.confirmSaved(sentDraft, saved)
+      if (editorIdentityRef.current === requestIdentity) {
+        if (JSON.stringify(currentCharacterRef.current) === JSON.stringify(submittedCharacter)) {
+          store.replaceCharacter(saved.character)
+        }
+        setCleanSnapshot(JSON.stringify(saved.character))
+        setSavedAt(new Date(saved.updatedAt))
+        setTreatMissingAsNew(false)
+        if (!id || treatMissingAsNew) navigate(`/creator/${saved.id}`, { replace: true })
+      }
     } catch (error) {
       setSaveError(error instanceof SavedCharacterApiError
         ? error
@@ -241,6 +292,7 @@ export function CharacterCreatorPage() {
   }
 
   function handleNewCharacter() {
+    draft.startNewEntity()
     const fresh = attachActiveWorldToNewCharacter(
       getDefaultCharacter(locale),
       worldsLoading ? null : activeWorldId,
@@ -536,6 +588,14 @@ export function CharacterCreatorPage() {
     return (
       <main className="p-6" role="status">
         {tLibrary('loadingCharacters')}
+        <DraftRecoveryNotice
+          drafts={draft.drafts}
+          storageError={draft.storageError}
+          serverChecked={false}
+          currentVersion={null}
+          onRestore={draft.restoreDraft}
+          onDelete={draft.removeDraft}
+        />
       </main>
     )
   }
@@ -546,6 +606,14 @@ export function CharacterCreatorPage() {
         <Alert variant="destructive">
           <AlertDescription>{tLibrary(`errors.${loadError.code}`)}</AlertDescription>
         </Alert>
+        <DraftRecoveryNotice
+          drafts={draft.drafts}
+          storageError={draft.storageError}
+          serverChecked
+          currentVersion={null}
+          onRestore={draft.restoreDraft}
+          onDelete={draft.removeDraft}
+        />
         <div className="flex gap-2">
           <Button onClick={() => setLoadAttempt(value => value + 1)}>
             {tLibrary('retry')}
@@ -673,7 +741,9 @@ export function CharacterCreatorPage() {
             onNewCharacter={handleNewCharacter}
           />
           <Button variant="default" size="sm" disabled={saving} onClick={handleSave}>
-            {saving ? tLibrary('saving') : tLibrary('save')}
+            {saving ? tLibrary('saving') : treatMissingAsNew
+              ? tLibrary('drafts.saveAsNew')
+              : tLibrary('save')}
           </Button>
           <ExportDropdown
             onExportPdf={handleExportPdf}
@@ -685,11 +755,19 @@ export function CharacterCreatorPage() {
         </div>
       </header>
 
-      {saveError && (
-        <Alert variant="destructive" className="mx-4 mt-2 w-auto print:hidden">
-          <AlertDescription>{tLibrary(`errors.${saveError.code}`)}</AlertDescription>
+      {treatMissingAsNew && (
+        <Alert className="mx-4 mt-2 w-auto print:hidden">
+          <AlertDescription>{tLibrary('drafts.missingRestoredAsNew')}</AlertDescription>
         </Alert>
       )}
+      <DraftRecoveryNotice
+        drafts={draft.drafts}
+        storageError={draft.storageError}
+        serverChecked={!id || library.currentId === id}
+        currentVersion={library.currentId === id ? library.currentVersion : null}
+        onRestore={draft.restoreDraft}
+        onDelete={draft.removeDraft}
+      />
 
       {/* Desktop: three-panel layout */}
       <div className="hidden md:flex flex-1 min-h-0 print:flex print:h-auto">

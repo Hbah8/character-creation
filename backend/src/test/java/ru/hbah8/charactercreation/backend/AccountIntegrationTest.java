@@ -652,6 +652,8 @@ class AccountIntegrationTest {
         String otherId = other.get("/me").path("id").asText();
 
         ObjectNode create = json.createObjectNode();
+        String clientGeneratedId = UUID.randomUUID().toString();
+        create.put("id", clientGeneratedId);
         create.set("character", characterFixture.deepCopy());
         create.put("ownerAccountId", otherId);
         var created = owner.characterRequest("POST", "", create, null, true);
@@ -659,6 +661,7 @@ class AccountIntegrationTest {
         assertEquals(201, created.statusCode(), created.body());
         JsonNode saved = json.readTree(created.body());
         String characterId = saved.path("id").asText();
+        assertEquals(clientGeneratedId, characterId);
         assertEquals("\"1\"", created.headers().firstValue("ETag").orElseThrow());
         assertEquals(ownerId, jdbc.queryForObject(
                 "SELECT owner_account_id::text FROM app.characters WHERE id = ?::uuid", String.class, characterId));
@@ -670,6 +673,17 @@ class AccountIntegrationTest {
         assertEquals(1, json.readTree(ownerList.body()).size());
         assertEquals(200, otherList.statusCode());
         assertEquals(0, json.readTree(otherList.body()).size());
+
+        var retriedCreate = owner.characterRequest("POST", "",
+                Map.of("id", clientGeneratedId, "character", characterFixture), null, true);
+        assertEquals(201, retriedCreate.statusCode(), retriedCreate.body());
+        assertEquals(characterId, json.readTree(retriedCreate.body()).path("id").asText());
+        assertEquals("\"1\"", retriedCreate.headers().firstValue("ETag").orElseThrow());
+        ObjectNode conflictingRetry = (ObjectNode) characterFixture.deepCopy();
+        conflictingRetry.put("callsign", "Different client payload");
+        assertEquals(409, owner.characterRequest("POST", "",
+                Map.of("id", clientGeneratedId, "character", conflictingRetry), null, true).statusCode());
+        assertEquals(1, json.readTree(owner.characterRequest("GET", "", null, null, false).body()).size());
 
         var foreignRead = other.characterRequest("GET", "/" + characterId, null, null, false);
         var foreignUpdate = other.characterRequest("PUT", "/" + characterId,
@@ -824,12 +838,24 @@ class AccountIntegrationTest {
                 .put("label", "protected by")
                 .put("description", "The guard watches the village.")));
 
-        var created = owner.worldRequest("POST", "", Map.of("world", world), null, true);
+        String clientGeneratedWorldId = UUID.randomUUID().toString();
+        var created = owner.worldRequest("POST", "", Map.of("id", clientGeneratedWorldId, "world", world), null, true);
         assertEquals(201, created.statusCode(), created.body());
         JsonNode saved = json.readTree(created.body());
         String worldId = saved.path("id").asText();
+        assertEquals(clientGeneratedWorldId, worldId);
         assertEquals("\"1\"", created.headers().firstValue("ETag").orElseThrow());
         assertEquals(world, saved.path("world"));
+        var retriedCreate = owner.worldRequest("POST", "",
+                Map.of("id", clientGeneratedWorldId, "world", world), null, true);
+        assertEquals(201, retriedCreate.statusCode(), retriedCreate.body());
+        assertEquals(worldId, json.readTree(retriedCreate.body()).path("id").asText());
+        assertEquals("\"1\"", retriedCreate.headers().firstValue("ETag").orElseThrow());
+        ObjectNode conflictingWorldRetry = world.deepCopy();
+        conflictingWorldRetry.put("summary", "A different draft");
+        assertEquals(409, owner.worldRequest("POST", "",
+                Map.of("id", clientGeneratedWorldId, "world", conflictingWorldRetry), null, true).statusCode());
+        assertEquals(1, json.readTree(owner.worldRequest("GET", "", null, null, false).body()).size());
 
         var ownerList = owner.worldRequest("GET", "", null, null, false);
         var otherList = other.worldRequest("GET", "", null, null, false);
@@ -871,8 +897,16 @@ class AccountIntegrationTest {
                 Map.of("world", changed), "\"1\"", true);
         assertEquals(200, updated.statusCode(), updated.body());
         assertEquals("\"2\"", updated.headers().firstValue("ETag").orElseThrow());
-        assertEquals(409, owner.worldRequest("PUT", "/" + worldId,
-                Map.of("world", world), "\"1\"", true).statusCode());
+        ObjectNode staleWorld = world.deepCopy();
+        ((ObjectNode) staleWorld.path("entities").get(0)).put("title", "Stale entity title");
+        var staleUpdate = owner.worldRequest("PUT", "/" + worldId,
+                Map.of("world", staleWorld), "\"1\"", true);
+        assertEquals(409, staleUpdate.statusCode());
+        JsonNode afterStaleUpdate = json.readTree(owner.worldRequest(
+                "GET", "/" + worldId, null, null, false).body());
+        assertEquals(2, afterStaleUpdate.path("version").asInt());
+        assertEquals("Grey March", afterStaleUpdate.path("world").path("name").asText());
+        assertEquals("Greyhaven", afterStaleUpdate.path("world").path("entities").get(0).path("title").asText());
 
         assertEquals(409, owner.worldRequest("DELETE", "/" + worldId, null, "\"2\"", true).statusCode());
         ObjectNode missingSkill = changed.deepCopy();

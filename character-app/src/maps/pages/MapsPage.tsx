@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { useOperationError } from '@/hooks/useOperationError'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -58,6 +58,10 @@ export function MapsPage() {
   const errorKey = loadFailed
     ? 'loadFailed'
     : pageError && pageError.worldId === activeWorldKey ? pageError.key : null
+  const retryLoad = useCallback(() => setReloadToken(token => token + 1), [])
+  const retryAction = useMemo(() => loadFailed ? { label: t('retry'), onClick: retryLoad } : undefined,
+    [loadFailed, retryLoad, t])
+  useOperationError(errorKey ? t(errorKey) : null, retryAction, loadFailed ? loadState : pageError)
 
   useEffect(() => {
     let cancelled = false
@@ -287,19 +291,6 @@ export function MapsPage() {
           onChange={event => void addSelectedFiles(event.currentTarget.files)}
         />
       </header>
-      {errorKey && (
-        <Alert variant="destructive" className="mx-3 mt-3 w-auto">
-          <AlertTitle>{t('errorTitle')}</AlertTitle>
-          <AlertDescription className="flex items-center justify-between gap-3">
-            <span>{t(errorKey)}</span>
-            {loadFailed && (
-              <Button variant="outline" size="sm" onClick={() => setReloadToken(token => token + 1)}>
-                {t('retry')}
-              </Button>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
       <div className="flex min-h-0 flex-1 max-md:flex-col">
         <MapLibraryPanel
           maps={visibleMaps}

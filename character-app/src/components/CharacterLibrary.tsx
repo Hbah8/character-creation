@@ -4,7 +4,7 @@ import type { useCharacterLibrary } from '@/store/useCharacterLibrary'
 import type { Character } from '@/types/character'
 import { SavedCharacterApiError } from '@/services/savedCharacterApi'
 import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useOperationError } from '@/hooks/useOperationError'
 import {
   Dialog,
   DialogContent,
@@ -44,7 +44,10 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [operationError, setOperationError] = useState<SavedCharacterApiError | null>(null)
+  const [operationError, setOperationError] = useState<{
+    operation: 'load' | 'delete'
+    error: SavedCharacterApiError
+  } | null>(null)
   const { activeWorldId, loading: worldsLoading } = useWorldLibrary()
   const visibleEntries = filterCharactersByWorld(library.entries, activeWorldId)
 
@@ -65,9 +68,9 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
       onLoad(record.character, record.updatedAt, record.id)
       setOpen(false)
     } catch (error) {
-      setOperationError(error instanceof SavedCharacterApiError
+      setOperationError({ operation: 'load', error: error instanceof SavedCharacterApiError
         ? error
-        : new SavedCharacterApiError('unavailable'))
+        : new SavedCharacterApiError('unavailable') })
     } finally {
       setLoadingId(null)
     }
@@ -91,7 +94,7 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
   async function handleDeleteConfirm() {
     const target = library.entries.find(entry => entry.id === deleteTargetId)
     if (!target) {
-      setOperationError(new SavedCharacterApiError('notFound'))
+      setOperationError({ operation: 'delete', error: new SavedCharacterApiError('notFound') })
       return
     }
     setDeleting(true)
@@ -100,15 +103,20 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
       await library.remove(target.id, target.version)
       setDeleteTargetId(null)
     } catch (error) {
-      setOperationError(error instanceof SavedCharacterApiError
+      setOperationError({ operation: 'delete', error: error instanceof SavedCharacterApiError
         ? error
-        : new SavedCharacterApiError('unavailable'))
+        : new SavedCharacterApiError('unavailable') })
     } finally {
       setDeleting(false)
     }
   }
 
-  const visibleError = operationError ?? library.error
+  const visibleError = operationError?.error ?? library.error
+  useOperationError(visibleError
+    ? operationError && visibleError.code === 'unavailable'
+      ? t(operationError.operation === 'delete' ? 'deleteUnavailable' : 'loadUnavailable')
+      : t(`errors.${visibleError.code}`)
+    : null, undefined, operationError)
 
   return (
     <>
@@ -128,13 +136,10 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
             <p className="py-4 text-center text-sm text-muted-foreground" role="status">
               {t('loadingCharacters')}
             </p>
-          ) : visibleError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{t(`errors.${visibleError.code}`)}</AlertDescription>
-              <Button size="sm" variant="outline" onClick={() => void library.reload()}>
-                {t('retry')}
-              </Button>
-            </Alert>
+          ) : library.error && !operationError ? (
+            <Button size="sm" variant="outline" onClick={() => void library.reload()}>
+              {t('retry')}
+            </Button>
           ) : visibleEntries.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
               {t('noCharacters')}
@@ -209,11 +214,6 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
             <AlertDialogTitle>{t('deleteConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>{t('deleteConfirmDescription')}</AlertDialogDescription>
           </AlertDialogHeader>
-          {visibleError && (
-            <Alert variant="destructive">
-              <AlertDescription>{t(`errors.${visibleError.code}`)}</AlertDescription>
-            </Alert>
-          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting} onClick={() => setDeleteTargetId(null)}>
               {t('cancel')}

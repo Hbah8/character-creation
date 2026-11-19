@@ -68,6 +68,23 @@ describe('world API', () => {
     })
   })
 
+  it('sends a stable client-generated ID when creating for safe retries', async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json({ token: 'csrf-create' }))
+      .mockResolvedValueOnce(Response.json(record, {
+        status: 201,
+        headers: { ETag: '"3"' },
+      }))
+    vi.stubGlobal('fetch', fetch)
+
+    await worldApi.create(world, record.id)
+
+    expect(fetch.mock.calls[1][1]).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({ id: record.id, world }),
+    })
+  })
+
   it('lists and deletes only after the caller supplies the current version', async () => {
     const fetch = vi.fn()
       .mockResolvedValueOnce(Response.json([record]))

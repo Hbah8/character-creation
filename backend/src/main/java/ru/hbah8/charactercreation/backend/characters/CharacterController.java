@@ -50,7 +50,7 @@ public class CharacterController {
     @PostMapping
     public ResponseEntity<CharacterResponse> create(Authentication authentication,
                                                      @Valid @RequestBody CharacterWrite input) {
-        SavedCharacter created = characters.create(accountId(authentication), input.character());
+        SavedCharacter created = characters.create(accountId(authentication), input.id(), input.character());
         return ResponseEntity.created(URI.create("/api/characters/" + created.id()))
                 .header(HttpHeaders.ETAG, etag(created.version()))
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
@@ -106,7 +106,7 @@ public class CharacterController {
         return "\"" + version + "\"";
     }
 
-    record CharacterWrite(@NotNull JsonNode character) {
+    record CharacterWrite(UUID id, @NotNull JsonNode character) {
     }
 
     public record CharacterResponse(UUID id, long version, Instant createdAt, Instant updatedAt, JsonNode character) {

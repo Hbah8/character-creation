@@ -58,6 +58,23 @@ describe('saved character API', () => {
     })
   })
 
+  it('sends a stable client-generated ID when creating for safe retries', async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json({ token: 'csrf-token' }))
+      .mockResolvedValueOnce(Response.json(savedCharacter, {
+        status: 201,
+        headers: { ETag: '"3"' },
+      }))
+    vi.stubGlobal('fetch', fetch)
+
+    await savedCharacterApi.create(richCharacter, savedCharacter.id)
+
+    expect(fetch.mock.calls[1][1]).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({ id: savedCharacter.id, character: richCharacter }),
+    })
+  })
+
   it('sends the exact loaded version on updates and deletions', async () => {
     const updated = { ...savedCharacter, version: 4, updatedAt: '2026-11-07T18:01:00Z' }
     const fetch = vi.fn()

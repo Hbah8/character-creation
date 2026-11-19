@@ -162,8 +162,8 @@ export const savedCharacterApi = {
     return readRecord(await readJson(response), response)
   },
 
-  async create(character: Character): Promise<SavedCharacterRecord> {
-    const response = await request('', 'POST', { character })
+  async create(character: Character, id?: string): Promise<SavedCharacterRecord> {
+    const response = await request('', 'POST', id ? { id, character } : { character })
     return readRecord(await readJson(response), response)
   },
 

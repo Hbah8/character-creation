@@ -51,10 +51,11 @@ function toSyncError(
 export class WorldLibraryStore {
   private snapshot: WorldLibrarySnapshot = EMPTY_SNAPSHOT
   private sequence = 0
+  private selectionSequence = 0
   private readonly listeners = new Set<() => void>()
   private readonly drafts = new Map<string, World>()
   private readonly saves = new Map<string, Promise<void>>()
-  private createDraft: { accountId: string; world: World } | null = null
+  private createDraft: { accountId: string; id: string; world: World } | null = null
 
   readonly subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener)
@@ -68,6 +69,7 @@ export class WorldLibraryStore {
   async load(accountId: string, force = false): Promise<void> {
     if (this.snapshot.accountId !== accountId) {
       this.sequence += 1
+      this.selectionSequence += 1
       this.drafts.clear()
       this.saves.clear()
       this.createDraft = null
@@ -107,30 +109,42 @@ export class WorldLibraryStore {
     }
   }
 
-  async save(accountId: string, world: World): Promise<string> {
-    const currentId = this.getSnapshot(accountId).currentId
-    if (currentId) {
-      await this.saveById(accountId, currentId, world)
+  async save(
+    accountId: string,
+    id: string | null,
+    createId: string,
+    world: World,
+  ): Promise<SavedWorldRecord> {
+    if (id) {
+      await this.saveById(accountId, id, world)
       const error = this.getSnapshot(accountId).error
-      if (error?.worldId === currentId) throw new WorldApiError(error.code)
-      return currentId
+      if (error?.worldId === id) throw new WorldApiError(error.code)
+      const entry = this.getSnapshot(accountId).entries.find(item => item.id === id)
+      if (!entry || entry.version === undefined) throw new WorldApiError('notFound')
+      return {
+        id: entry.id,
+        version: entry.version,
+        createdAt: entry.savedAt,
+        updatedAt: entry.savedAt,
+        world: entry.world,
+      }
     }
-    this.createDraft = { accountId, world }
-    return this.createNew(accountId, world)
+    this.createDraft = { accountId, id: createId, world }
+    return this.createNew(accountId, createId, world)
   }
 
   async retryCreate(accountId: string): Promise<void> {
     if (this.createDraft?.accountId !== accountId) return
     try {
-      await this.createNew(accountId, this.createDraft.world)
+      await this.createNew(accountId, this.createDraft.id, this.createDraft.world)
     } catch {
-      // The failed draft and the API error remain available for another retry.
+      // The stable create ID and draft remain available for another retry.
     }
   }
 
-  private async createNew(accountId: string, world: World): Promise<string> {
+  private async createNew(accountId: string, id: string, world: World): Promise<SavedWorldRecord> {
     try {
-      const record = await worldApi.create(world)
+      const record = await worldApi.create(world, id)
       if (this.snapshot.accountId === accountId) {
         this.createDraft = null
         this.setSnapshot({
@@ -140,7 +154,7 @@ export class WorldLibraryStore {
           error: null,
         })
       }
-      return record.id
+      return record
     } catch (error) {
       if (this.snapshot.accountId === accountId) {
         this.setSnapshot({ ...this.snapshot, error: toSyncError(error, undefined, 'save') })
@@ -159,13 +173,7 @@ export class WorldLibraryStore {
       return
     }
     this.drafts.set(id, world)
-    this.setSnapshot({
-      ...this.snapshot,
-      entries: this.snapshot.entries.map(entry => entry.id === id
-        ? { ...entry, savedAt: new Date().toISOString(), world }
-        : entry),
-      error: null,
-    })
+    this.setSnapshot({ ...this.snapshot, error: null })
     await this.flush(accountId, id)
   }
 
@@ -194,6 +202,7 @@ export class WorldLibraryStore {
     if (this.snapshot.accountId !== accountId || this.snapshot.loading) {
       await this.load(accountId)
     }
+    const selection = ++this.selectionSequence
     let entry = this.getSnapshot(accountId).entries.find(item => item.id === id)
     if (!entry) {
       try {
@@ -212,7 +221,9 @@ export class WorldLibraryStore {
         throw error
       }
     }
-    this.setSnapshot({ ...this.snapshot, currentId: id })
+    if (this.snapshot.accountId === accountId && selection === this.selectionSequence) {
+      this.setSnapshot({ ...this.snapshot, currentId: id })
+    }
     return entry.world
   }
 
@@ -220,7 +231,6 @@ export class WorldLibraryStore {
     try {
       const record = await worldApi.get(id)
       if (this.snapshot.accountId === accountId) {
-        this.drafts.delete(id)
         this.setSnapshot({
           ...this.snapshot,
           entries: [toEntry(record), ...this.snapshot.entries.filter(entry => entry.id !== id)],
@@ -234,26 +244,46 @@ export class WorldLibraryStore {
     }
   }
 
-  async retrySave(accountId: string, id: string, overwrite: boolean): Promise<void> {
+  async getOverwriteTarget(accountId: string, id: string): Promise<{ version: number; updatedAt: string }> {
+    try {
+      const latest = await worldApi.get(id)
+      if (this.snapshot.accountId !== accountId) throw new WorldApiError('unauthenticated')
+      return { version: latest.version, updatedAt: latest.updatedAt }
+    } catch (error) {
+      this.setError(accountId, error, id, 'save')
+      throw error
+    }
+  }
+
+  async retrySave(
+    accountId: string,
+    id: string,
+    overwriteVersion?: number,
+    submittedWorld?: World,
+  ): Promise<SavedWorldRecord | null> {
     const entry = this.getSnapshot(accountId).entries.find(item => item.id === id)
     if (!entry) {
       this.setError(accountId, 'notFound', id, 'save')
-      return
+      return null
     }
-    let version = entry.version
+    const world = submittedWorld ?? this.drafts.get(id) ?? entry.world
+    this.drafts.set(id, world)
+    const version = overwriteVersion ?? entry.version
     try {
-      if (overwrite) version = (await worldApi.get(id)).version
       if (version === undefined) throw new WorldApiError('invalidResponse')
-      const saved = await worldApi.update(id, version, entry.world)
+      const saved = await worldApi.update(id, version, world)
       if (this.snapshot.accountId === accountId) {
+        if (this.drafts.get(id) === world) this.drafts.delete(id)
         this.setSnapshot({
           ...this.snapshot,
           entries: [toEntry(saved), ...this.snapshot.entries.filter(item => item.id !== id)],
           error: null,
         })
       }
+      return saved
     } catch (error) {
       this.setError(accountId, error, id, 'save')
+      return null
     }
   }
 
@@ -307,27 +337,25 @@ export class WorldLibraryStore {
   }
 
   private async flushDrafts(accountId: string, id: string): Promise<void> {
+    let inFlightWorld: World | null = null
     try {
       while (this.drafts.has(id) && this.snapshot.accountId === accountId) {
         const world = this.drafts.get(id)!
         this.drafts.delete(id)
+        inFlightWorld = world
         const entry = this.snapshot.entries.find(item => item.id === id)
         if (!entry || entry.version === undefined) throw new WorldApiError('notFound')
         const saved = await worldApi.update(id, entry.version, world)
         if (this.snapshot.accountId !== accountId) return
-        const latestDraft = this.drafts.get(id)
         this.setSnapshot({
           ...this.snapshot,
-          entries: [latestDraft
-            ? { ...toEntry(saved), world: latestDraft }
-            : toEntry(saved), ...this.snapshot.entries.filter(item => item.id !== id)],
+          entries: [toEntry(saved), ...this.snapshot.entries.filter(item => item.id !== id)],
           error: null,
         })
       }
     } catch (error) {
       if (this.snapshot.accountId === accountId) {
-        const latest = this.snapshot.entries.find(item => item.id === id)?.world
-        if (latest) this.drafts.set(id, latest)
+        if (inFlightWorld && !this.drafts.has(id)) this.drafts.set(id, inFlightWorld)
         this.setSnapshot({ ...this.snapshot, error: toSyncError(error, id, 'save') })
       }
     }

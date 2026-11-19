@@ -17,8 +17,8 @@ export function useWorldLibrary() {
     void worldLibraryStore.load(accountId)
   }, [accountId])
 
-  const save = useCallback((world: World): Promise<string> => {
-    return worldLibraryStore.save(accountId, world)
+  const save = useCallback((world: World, id: string | null, createId: string) => {
+    return worldLibraryStore.save(accountId, id, createId, world)
   }, [accountId])
 
   const loadById = useCallback((id: string): Promise<World> => {
@@ -41,8 +41,12 @@ export function useWorldLibrary() {
     return worldLibraryStore.reloadWorld(accountId, id)
   }, [accountId])
 
-  const retrySave = useCallback((id: string, overwrite = false): Promise<void> => {
-    return worldLibraryStore.retrySave(accountId, id, overwrite)
+  const retrySave = useCallback((id: string, overwriteVersion?: number, world?: World) => {
+    return worldLibraryStore.retrySave(accountId, id, overwriteVersion, world)
+  }, [accountId])
+
+  const getOverwriteTarget = useCallback((id: string) => {
+    return worldLibraryStore.getOverwriteTarget(accountId, id)
   }, [accountId])
 
   const retryDelete = useCallback((id: string): Promise<void> => {
@@ -72,6 +76,7 @@ export function useWorldLibrary() {
     reload,
     reloadWorld,
     retrySave,
+    getOverwriteTarget,
     retryDelete,
     retryCreate,
   }

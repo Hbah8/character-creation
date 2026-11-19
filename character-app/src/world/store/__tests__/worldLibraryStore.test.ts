@@ -49,7 +49,7 @@ describe('world library store', () => {
   it.each([
     'worldEntitiesLimitReached', 'worldRelationshipsLimitReached',
     'worldRacesLimitReached', 'worldHandbookLimitReached',
-  ])('retains optimistic edits after %s', async code => {
+  ])('keeps the server entry unchanged after %s', async code => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(response('world-1'))
       .mockResolvedValueOnce(Response.json({ token: 'csrf' }))
@@ -61,12 +61,12 @@ describe('world library store', () => {
     await store.saveById('account-a', 'world-1', draft)
 
     expect(store.getSnapshot('account-a')).toMatchObject({
-      entries: [{ id: 'world-1', world: draft }],
+      entries: [{ id: 'world-1', version: 1, world: getDefaultWorld('en') }],
       error: { code, operation: 'save', worldId: 'world-1' },
     })
   })
 
-  it('keeps failed edits and requires an explicit rebase before resolving a version conflict', async () => {
+  it('requires an explicit, version-specific confirmation to overwrite a conflict', async () => {
     const id = 'world-1'
     const latest = {
       id,
@@ -88,15 +88,51 @@ describe('world library store', () => {
     await store.load('account-a')
 
     await store.saveById('account-a', id, saved.world)
-    expect(store.getSnapshot('account-a').entries[0].world.summary).toBe('My draft')
+    expect(store.getSnapshot('account-a').entries[0]).toMatchObject({
+      version: 1,
+      world: { summary: 'Remote edit' },
+    })
     expect(store.getSnapshot('account-a').error?.code).toBe('conflict')
 
-    await store.retrySave('account-a', id, true)
+    const target = await store.getOverwriteTarget('account-a', id)
+    expect(target).toEqual({ version: 2, updatedAt: latest.updatedAt })
+    await store.retrySave('account-a', id, target.version)
 
     expect(store.getSnapshot('account-a').entries[0]).toMatchObject({
       version: 3,
       world: { summary: 'My draft' },
     })
+    expect(fetch.mock.calls[5][1]).toMatchObject({
+      method: 'PUT',
+      headers: { 'If-Match': '"2"' },
+    })
+  })
+
+  it('does not fetch a newer version or bypass a second conflict after confirmation', async () => {
+    const latest = {
+      id: 'world-1',
+      version: 2,
+      createdAt: '2026-11-07T18:00:00Z',
+      updatedAt: '2026-11-07T18:01:00Z',
+      world: { ...getDefaultWorld('en'), summary: 'Remote edit' },
+    }
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json([{ ...latest, version: 1 }]))
+      .mockResolvedValueOnce(Response.json({ token: 'csrf-first' }))
+      .mockResolvedValueOnce(Response.json({ code: 'conflict' }, { status: 409 }))
+      .mockResolvedValueOnce(Response.json(latest, { headers: { ETag: '"2"' } }))
+      .mockResolvedValueOnce(Response.json({ token: 'csrf-confirmed' }))
+      .mockResolvedValueOnce(Response.json({ code: 'conflict' }, { status: 409 }))
+    vi.stubGlobal('fetch', fetch)
+    const store = new WorldLibraryStore()
+    await store.load('account-a')
+    await store.saveById('account-a', 'world-1', { ...getDefaultWorld('en'), summary: 'My draft' })
+
+    const target = await store.getOverwriteTarget('account-a', 'world-1')
+    await store.retrySave('account-a', 'world-1', target.version)
+
+    expect(store.getSnapshot('account-a').error?.code).toBe('conflict')
+    expect(fetch).toHaveBeenCalledTimes(6)
     expect(fetch.mock.calls[5][1]).toMatchObject({
       method: 'PUT',
       headers: { 'If-Match': '"2"' },
@@ -120,7 +156,8 @@ describe('world library store', () => {
     vi.stubGlobal('fetch', fetch)
     const store = new WorldLibraryStore()
     await store.load('account-a')
-    await expect(store.save('account-a', saved.world)).rejects.toMatchObject({ code: 'worldLimitReached' })
+    await expect(store.save('account-a', null, saved.id, saved.world))
+      .rejects.toMatchObject({ code: 'worldLimitReached' })
 
     await store.retryCreate('account-a')
 

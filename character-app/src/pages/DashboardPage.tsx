@@ -4,7 +4,7 @@ import { Plus, Users, Clock, UserCircle, Globe2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useOperationError } from '@/hooks/useOperationError'
 import { DashboardCharacterGrid } from '@/components/DashboardCharacterGrid'
 import { useCharacterLibrary } from '@/store/useCharacterLibrary'
 import { useSessionAccount } from '@/accounts/useSessionAccount'
@@ -22,6 +22,7 @@ export function DashboardPage() {
   const { t, i18n } = useTranslation('library')
   const account = useSessionAccount()
   const library = useCharacterLibrary(account.id)
+  useOperationError(library.error ? t(`errors.${library.error.code}`) : null)
   const { activeWorldId, entries: worlds, loading: worldsLoading } = useWorldLibrary()
   const loading = library.loading || worldsLoading
   const entries = filterCharactersByWorld(library.entries, activeWorldId)
@@ -115,12 +116,9 @@ export function DashboardPage() {
               {t('loadingCharacters')}
             </p>
           ) : library.error ? (
-            <Alert variant="destructive">
-              <AlertDescription>{t(`errors.${library.error.code}`)}</AlertDescription>
-              <Button size="sm" variant="outline" onClick={() => void library.reload()}>
-                {t('retry')}
-              </Button>
-            </Alert>
+            <Button size="sm" variant="outline" onClick={() => void library.reload()}>
+              {t('retry')}
+            </Button>
           ) : (
             <DashboardCharacterGrid
               entries={entries}
