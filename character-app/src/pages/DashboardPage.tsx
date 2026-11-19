@@ -10,6 +10,8 @@ import { useCharacterLibrary } from '@/store/useCharacterLibrary'
 import { useSessionAccount } from '@/accounts/useSessionAccount'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import { filterCharactersByWorld } from '@/services/filterCharactersByWorld'
+import { useCharacterDrafts } from '@/hooks/useCharacterDrafts'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 function formatDate(iso: string | undefined, locale: string | undefined): string {
   if (!iso) return '—'
@@ -22,10 +24,13 @@ export function DashboardPage() {
   const { t, i18n } = useTranslation('library')
   const account = useSessionAccount()
   const library = useCharacterLibrary(account.id)
+  const draftLibrary = useCharacterDrafts(account.id)
   useOperationError(library.error ? t(`errors.${library.error.code}`) : null)
   const { activeWorldId, entries: worlds, loading: worldsLoading } = useWorldLibrary()
-  const loading = library.loading || worldsLoading
+  const loading = library.loading || worldsLoading || draftLibrary.loading
   const entries = filterCharactersByWorld(library.entries, activeWorldId)
+  const drafts = filterCharactersByWorld(draftLibrary.drafts, activeWorldId)
+  const characterIds = new Set([...entries.map(entry => entry.id), ...drafts.map(draft => draft.entityId)])
   const lastEntry = loading ? undefined : entries[0]
   const activeWorld = worlds.find(entry => entry.id === activeWorldId)
 
@@ -60,7 +65,7 @@ export function DashboardPage() {
               <div>
                 <p className="text-xs text-muted-foreground leading-none mb-1">{t('characterCount')}</p>
                 <p className="text-xl font-bold leading-none">
-                  {loading ? '…' : entries.length}
+                  {loading ? '…' : characterIds.size}
                 </p>
               </div>
             </CardContent>
@@ -94,16 +99,21 @@ export function DashboardPage() {
         </div>
 
         <div className="flex flex-col gap-4">
+          {draftLibrary.error && (
+            <Alert variant="destructive">
+              <AlertDescription>{t(`drafts.storageErrors.${draftLibrary.error}`)}</AlertDescription>
+            </Alert>
+          )}
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold">
               {t('charactersSection')}
-              {!loading && entries.length > 0 && (
+              {!loading && characterIds.size > 0 && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
-                  ({entries.length})
+                  ({characterIds.size})
                 </span>
               )}
             </h2>
-            {!loading && entries.length > 0 && (
+            {!loading && characterIds.size > 0 && (
               <Button size="sm" variant="outline" onClick={() => navigate('/creator')}>
                 <Plus className="size-3.5 mr-1" />
                 {t('addCharacter')}
@@ -115,15 +125,22 @@ export function DashboardPage() {
             <p className="py-8 text-center text-sm text-muted-foreground" role="status">
               {t('loadingCharacters')}
             </p>
-          ) : library.error ? (
-            <Button size="sm" variant="outline" onClick={() => void library.reload()}>
-              {t('retry')}
-            </Button>
           ) : (
-            <DashboardCharacterGrid
-              entries={entries}
-              onDelete={library.remove}
-            />
+            <>
+              {library.error && (
+                <Button size="sm" variant="outline" onClick={() => void library.reload()}>
+                  {t('retry')}
+                </Button>
+              )}
+              {(!library.error || drafts.length > 0) && (
+                <DashboardCharacterGrid
+                  entries={entries}
+                  onDelete={library.remove}
+                  drafts={drafts}
+                  onDeleteDraft={draftLibrary.remove}
+                />
+              )}
+            </>
           )}
         </div>
 

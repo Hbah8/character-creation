@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Eye, User, Zap, Shield, Target, Star, AlertTriangle, Crosshair, Package, Settings, FileText, Sparkles } from 'lucide-react'
 import { useCharacterStore } from '@/store/useCharacterStore'
 import { useCharacterLibrary } from '@/store/useCharacterLibrary'
-import { useEntityDraft } from '@/hooks/useEntityDraft'
+import { useCharacterDraft } from '@/hooks/useCharacterDraft'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
 import { useSessionAccount } from '@/accounts/useSessionAccount'
 import { SavedCharacterApiError } from '@/services/savedCharacterApi'
@@ -28,7 +28,6 @@ import { RacialAbilitiesSection } from '@/components/form/RacialAbilitiesSection
 import { useEffectiveCharacter } from '@/hooks/useEffectiveCharacter'
 import { ExportDropdown } from '@/components/ExportDropdown'
 import { CharacterLibrary } from '@/components/CharacterLibrary'
-import { DraftRecoveryNotice } from '@/components/DraftRecoveryNotice'
 import { useOperationError } from '@/hooks/useOperationError'
 import { ImportErrorDialog } from '@/components/ImportErrorDialog'
 import { ImportWarningsDialog } from '@/components/ImportWarningsDialog'
@@ -108,6 +107,7 @@ function formatTime(date: Date): string {
 export function CharacterCreatorPage() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
+  const selectedDraftId = new URLSearchParams(useLocation().search).get('draft')
 
   const account = useSessionAccount()
   const library = useCharacterLibrary(account.id)
@@ -146,6 +146,7 @@ export function CharacterCreatorPage() {
   const [saveError, setSaveError] = useState<SavedCharacterApiError | null>(null)
   const [loadingSavedCharacter, setLoadingSavedCharacter] = useState(Boolean(id))
   const [loadError, setLoadError] = useState<SavedCharacterApiError | null>(null)
+  const [localOnlyError, setLocalOnlyError] = useState<SavedCharacterApiError | null>(null)
   useOperationError(saveError ? tLibrary(`errors.${saveError.code}`) : null)
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [treatMissingAsNew, setTreatMissingAsNew] = useState(false)
@@ -161,8 +162,11 @@ export function CharacterCreatorPage() {
   useEffect(() => {
     if (id || !autoLinkToActiveWorld || worldsLoading || !activeWorldId || character.worldId) return
     const linked = attachActiveWorldToNewCharacter(character, activeWorldId)
+    // Keep automatic world selection out of the user's dirty state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (JSON.stringify(character) === cleanSnapshot) setCleanSnapshot(JSON.stringify(linked))
     replaceCharacter(linked)
-  }, [activeWorldId, autoLinkToActiveWorld, character, id, replaceCharacter, worldsLoading])
+  }, [activeWorldId, autoLinkToActiveWorld, character, cleanSnapshot, id, replaceCharacter, worldsLoading])
 
   const templateId = templatePreferences.templateId
 
@@ -218,16 +222,18 @@ export function CharacterCreatorPage() {
     () => JSON.stringify(character) !== cleanSnapshot,
     [character, cleanSnapshot]
   )
-  const draft = useEntityDraft({
+  const draft = useCharacterDraft({
     accountId: account.id,
-    entityType: 'character',
     entityId: id ?? null,
+    selectedDraftId,
     baseVersion: library.currentId === id ? library.currentVersion : null,
     baseUpdatedAt: library.currentId === id ? library.currentUpdatedAt : null,
-    data: character,
+    character,
     isDirty,
-    onRecover: raw => {
+    canRecover: !loadingSavedCharacter && !worldsLoading,
+    onRecover: recovered => {
       try {
+        const raw = recovered.character
         const rawWorldId = raw !== null && typeof raw === 'object'
           && 'worldId' in raw && typeof raw.worldId === 'string'
           ? raw.worldId
@@ -236,16 +242,28 @@ export function CharacterCreatorPage() {
         store.replaceCharacter(validateCharacterImport(raw, handbook))
         if (!id || loadError?.code === 'notFound') {
           library.markNew()
-          setTreatMissingAsNew(Boolean(id))
+          if (id) {
+            setTreatMissingAsNew(true)
+            setLoadError(null)
+          }
+        } else if (loadError) {
+          setLocalOnlyError(loadError)
           setLoadError(null)
         }
+        return true
       } catch {
         setImportError('validation.import.notAnObject')
+        return false
       }
     },
   })
   const editorIdentityRef = useRef(id ?? draft.entityId)
   const currentCharacterRef = useRef(character)
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
   useEffect(() => {
     editorIdentityRef.current = treatMissingAsNew ? draft.entityId : id ?? draft.entityId
     currentCharacterRef.current = character
@@ -256,30 +274,42 @@ export function CharacterCreatorPage() {
     setSaveError(null)
     try {
       const submittedCharacter = structuredClone(character)
-      const requestIdentity = editorIdentityRef.current
       const persistedCharacter = materializeResolvedPowers(submittedCharacter, resolvedCharacter.powers)
-      const sentDraft = draft.persistCurrent()
+      if (id && !treatMissingAsNew && draft.recovered
+        && (draft.recovered.isNew || draft.getBaseVersion() === null)) {
+        throw new SavedCharacterApiError('conflict')
+      }
+      const createId = treatMissingAsNew ? await draft.beginSaveAsNew() : draft.entityId
+      const requestIdentity = treatMissingAsNew ? createId : editorIdentityRef.current
+      const sentDraft = await draft.persist(submittedCharacter)
       const saved = await library.save(
         persistedCharacter,
         id && !treatMissingAsNew ? id : null,
-        draft.entityId,
+        sentDraft?.entityId ?? createId,
+        draft.recovered && !draft.recovered.isNew ? draft.getBaseVersion() ?? undefined : undefined,
       )
-      draft.confirmSaved(sentDraft, saved)
-      if (editorIdentityRef.current === requestIdentity) {
+      if (JSON.stringify(currentCharacterRef.current) !== JSON.stringify(submittedCharacter)) {
+        await draft.persist(currentCharacterRef.current)
+      }
+      const remainingDraft = await draft.confirmSaved(sentDraft, saved)
+      if (mountedRef.current && editorIdentityRef.current === requestIdentity) {
         if (JSON.stringify(currentCharacterRef.current) === JSON.stringify(submittedCharacter)) {
           store.replaceCharacter(saved.character)
         }
         setCleanSnapshot(JSON.stringify(saved.character))
         setSavedAt(new Date(saved.updatedAt))
         setTreatMissingAsNew(false)
-        if (!id || treatMissingAsNew) navigate(`/creator/${saved.id}`, { replace: true })
+        if (!id || treatMissingAsNew) {
+          const query = remainingDraft ? `?draft=${encodeURIComponent(remainingDraft.draftId)}` : ''
+          navigate(`/creator/${saved.id}${query}`, { replace: true })
+        }
       }
     } catch (error) {
-      setSaveError(error instanceof SavedCharacterApiError
+      if (mountedRef.current) setSaveError(error instanceof SavedCharacterApiError
         ? error
         : new SavedCharacterApiError('unavailable'))
     } finally {
-      setSaving(false)
+      if (mountedRef.current) setSaving(false)
     }
   }
 
@@ -292,18 +322,7 @@ export function CharacterCreatorPage() {
   }
 
   function handleNewCharacter() {
-    draft.startNewEntity()
-    const fresh = attachActiveWorldToNewCharacter(
-      getDefaultCharacter(locale),
-      worldsLoading ? null : activeWorldId,
-    )
-    setAutoLinkToActiveWorld(true)
-    store.replaceCharacter(fresh)
-    setCleanSnapshot(JSON.stringify(fresh))
-    setSavedAt(null)
-    setSaveError(null)
-    library.markNew()
-    navigate('/creator', { replace: true })
+    navigate(`/creator?new=${encodeURIComponent(crypto.randomUUID())}`, { replace: true })
   }
 
   async function handleImportJson(file: File) {
@@ -588,16 +607,22 @@ export function CharacterCreatorPage() {
     return (
       <main className="p-6" role="status">
         {tLibrary('loadingCharacters')}
-        <DraftRecoveryNotice
-          drafts={draft.drafts}
-          storageError={draft.storageError}
-          serverChecked={false}
-          currentVersion={null}
-          onRestore={draft.restoreDraft}
-          onDelete={draft.removeDraft}
-        />
       </main>
     )
+  }
+
+  if (selectedDraftId && (draft.missing || draft.error && !draft.ready)) {
+    return (
+      <main className="mx-auto flex max-w-lg flex-col gap-4 p-6">
+        <Alert variant="destructive"><AlertDescription>
+          {draft.missing ? tLibrary('drafts.missing') : tLibrary(`drafts.storageErrors.${draft.error ?? 'unavailable'}`)}
+        </AlertDescription></Alert>
+        <Button onClick={() => navigate('/')}>{tLibrary('backToDashboard')}</Button>
+      </main>
+    )
+  }
+  if (selectedDraftId && !draft.ready && !loadError) {
+    return <main className="p-6" role="status">{tLibrary('loadingCharacters')}</main>
   }
 
   if (id && loadError) {
@@ -606,14 +631,12 @@ export function CharacterCreatorPage() {
         <Alert variant="destructive">
           <AlertDescription>{tLibrary(`errors.${loadError.code}`)}</AlertDescription>
         </Alert>
-        <DraftRecoveryNotice
-          drafts={draft.drafts}
-          storageError={draft.storageError}
-          serverChecked
-          currentVersion={null}
-          onRestore={draft.restoreDraft}
-          onDelete={draft.removeDraft}
-        />
+        {draft.error && <Alert variant="destructive"><AlertDescription>
+          {tLibrary(`drafts.storageErrors.${draft.error}`)}
+        </AlertDescription></Alert>}
+        {localOnlyError && <Alert variant="destructive"><AlertDescription>
+          {tLibrary(`errors.${localOnlyError.code}`)}
+        </AlertDescription></Alert>}
         <div className="flex gap-2">
           <Button onClick={() => setLoadAttempt(value => value + 1)}>
             {tLibrary('retry')}
@@ -760,14 +783,16 @@ export function CharacterCreatorPage() {
           <AlertDescription>{tLibrary('drafts.missingRestoredAsNew')}</AlertDescription>
         </Alert>
       )}
-      <DraftRecoveryNotice
-        drafts={draft.drafts}
-        storageError={draft.storageError}
-        serverChecked={!id || library.currentId === id}
-        currentVersion={library.currentId === id ? library.currentVersion : null}
-        onRestore={draft.restoreDraft}
-        onDelete={draft.removeDraft}
-      />
+      {draft.error && <Alert variant="destructive"><AlertDescription>
+        {tLibrary(`drafts.storageErrors.${draft.error}`)}
+      </AlertDescription></Alert>}
+      {draft.recovered && id && library.currentVersion !== null
+        && draft.recovered.baseVersion !== library.currentVersion && (
+        <Alert><AlertDescription>{tLibrary('drafts.serverChanged', {
+          baseVersion: String(draft.recovered.baseVersion),
+          currentVersion: library.currentVersion,
+        })}</AlertDescription></Alert>
+      )}
 
       {/* Desktop: three-panel layout */}
       <div className="hidden md:flex flex-1 min-h-0 print:flex print:h-auto">

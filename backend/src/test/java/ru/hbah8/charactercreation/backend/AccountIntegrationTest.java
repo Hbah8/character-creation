@@ -855,6 +855,10 @@ class AccountIntegrationTest {
         conflictingWorldRetry.put("summary", "A different draft");
         assertEquals(409, owner.worldRequest("POST", "",
                 Map.of("id", clientGeneratedWorldId, "world", conflictingWorldRetry), null, true).statusCode());
+        ObjectNode conflictingBudgetRetry = world.deepCopy();
+        ((ObjectNode) conflictingBudgetRetry.path("settingRules")).put("skillPointsBudget", 9);
+        assertEquals(409, owner.worldRequest("POST", "",
+                Map.of("id", clientGeneratedWorldId, "world", conflictingBudgetRetry), null, true).statusCode());
         assertEquals(1, json.readTree(owner.worldRequest("GET", "", null, null, false).body()).size());
 
         var ownerList = owner.worldRequest("GET", "", null, null, false);

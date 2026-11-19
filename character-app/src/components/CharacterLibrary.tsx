@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { useCharacterLibrary } from '@/store/useCharacterLibrary'
 import type { Character } from '@/types/character'
@@ -27,6 +28,11 @@ import { Library, Link } from 'lucide-react'
 import { encodeCharacterToHash, buildShareUrl } from '@/services/shareService'
 import { filterCharactersByWorld } from '@/services/filterCharactersByWorld'
 import { useWorldLibrary } from '@/world/store/useWorldLibrary'
+import { useSessionAccount } from '@/accounts/useSessionAccount'
+import { useCharacterDrafts } from '@/hooks/useCharacterDrafts'
+import { CharacterDraftItem } from '@/components/CharacterDraftItem'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import type { CharacterDraft } from '@/services/characterDraftRepository'
 
 interface Props {
   library: ReturnType<typeof useCharacterLibrary>
@@ -37,12 +43,18 @@ interface Props {
 
 export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: Props) {
   const { t } = useTranslation('library')
+  const navigate = useNavigate()
+  const account = useSessionAccount()
+  const draftLibrary = useCharacterDrafts(account.id)
   const { t: tShare } = useTranslation('share')
   const [open, setOpen] = useState(false)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [confirmNewOpen, setConfirmNewOpen] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [pendingSelection, setPendingSelection] = useState<
+    { type: 'draft'; draft: CharacterDraft } | { type: 'saved'; id: string } | null
+  >(null)
   const [deleting, setDeleting] = useState(false)
   const [operationError, setOperationError] = useState<{
     operation: 'load' | 'delete'
@@ -50,6 +62,26 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
   } | null>(null)
   const { activeWorldId, loading: worldsLoading } = useWorldLibrary()
   const visibleEntries = filterCharactersByWorld(library.entries, activeWorldId)
+  const visibleDrafts = filterCharactersByWorld(draftLibrary.drafts, activeWorldId)
+  const savedIds = new Set(visibleEntries.map(entry => entry.id))
+
+  function openDraft(draft: CharacterDraft) {
+    const path = savedIds.has(draft.entityId) || !draft.isNew
+      ? `/creator/${encodeURIComponent(draft.entityId)}`
+      : '/creator'
+    setOpen(false)
+    navigate(`${path}?draft=${encodeURIComponent(draft.draftId)}`)
+  }
+
+  function requestDraft(draft: CharacterDraft) {
+    if (isDirty) setPendingSelection({ type: 'draft', draft })
+    else openDraft(draft)
+  }
+
+  function requestLoad(id: string) {
+    if (isDirty) setPendingSelection({ type: 'saved', id })
+    else void handleLoad(id)
+  }
 
   function handleShare(id: string, character: Character) {
     const { hash } = encodeCharacterToHash(character)
@@ -132,15 +164,20 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
             <DialogTitle>{t('title')}</DialogTitle>
           </DialogHeader>
 
-          {library.loading || worldsLoading ? (
+          {draftLibrary.error && (
+            <Alert variant="destructive">
+              <AlertDescription>{t(`drafts.storageErrors.${draftLibrary.error}`)}</AlertDescription>
+            </Alert>
+          )}
+          {library.loading || worldsLoading || draftLibrary.loading ? (
             <p className="py-4 text-center text-sm text-muted-foreground" role="status">
               {t('loadingCharacters')}
             </p>
-          ) : library.error && !operationError ? (
+          ) : library.error && !operationError && visibleDrafts.length === 0 ? (
             <Button size="sm" variant="outline" onClick={() => void library.reload()}>
               {t('retry')}
             </Button>
-          ) : visibleEntries.length === 0 ? (
+          ) : visibleEntries.length === 0 && visibleDrafts.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
               {t('noCharacters')}
             </p>
@@ -162,13 +199,16 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
                     <span className="text-xs text-muted-foreground">
                       {t('lastSaved')}: {new Date(entry.updatedAt).toLocaleString()}
                     </span>
+                    {visibleDrafts.filter(draft => draft.entityId === entry.id).map(draft => (
+                      <CharacterDraftItem key={draft.draftId} draft={draft} onOpen={requestDraft} onDelete={draftLibrary.remove} />
+                    ))}
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button
                       size="sm"
                       variant="outline"
                       disabled={loadingId !== null}
-                      onClick={() => handleLoad(entry.id)}
+                      onClick={() => requestLoad(entry.id)}
                     >
                       {loadingId === entry.id ? t('loadingCharacters') : t('load')}
                     </Button>
@@ -189,6 +229,11 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
                       {t('delete')}
                     </Button>
                   </div>
+                </div>
+              ))}
+              {visibleDrafts.filter(draft => !savedIds.has(draft.entityId)).map(draft => (
+                <div key={draft.draftId} className="py-3">
+                  <CharacterDraftItem draft={draft} onOpen={requestDraft} onDelete={draftLibrary.remove} />
                 </div>
               ))}
             </div>
@@ -221,6 +266,26 @@ export function CharacterLibrary({ library, isDirty, onLoad, onNewCharacter }: P
             <AlertDialogAction disabled={deleting} onClick={handleDeleteConfirm}>
               {deleting ? t('saving') : t('confirm')}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={pendingSelection !== null} onOpenChange={open => {
+        if (!open) setPendingSelection(null)
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('switchTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('switchWarning')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              const selection = pendingSelection
+              setPendingSelection(null)
+              if (selection?.type === 'draft') openDraft(selection.draft)
+              else if (selection?.type === 'saved') void handleLoad(selection.id)
+            }}>{t('continue')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

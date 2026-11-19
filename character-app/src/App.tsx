@@ -25,8 +25,12 @@ const AdminPage = lazy(() => import('@/admin/AdminPage').then(module => ({ defau
 
 function CharacterCreatorRoute() {
   const { id } = useParams<{ id?: string }>()
+  const location = useLocation()
   const account = useSessionAccount()
-  return <CharacterCreatorPage key={`${account.id}:${entityEditorKey(id)}`} />
+  const search = new URLSearchParams(location.search)
+  const draft = search.get('draft')
+  const newEditor = search.get('new')
+  return <CharacterCreatorPage key={`${account.id}:${entityEditorKey(id)}:${draft ?? ''}:${newEditor ?? ''}`} />
 }
 
 function WorldBuilderRoute() {

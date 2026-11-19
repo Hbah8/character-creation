@@ -58,7 +58,7 @@ public class WorldService implements WorldReferenceResolver {
         UUID id = requestedId == null ? UUID.randomUUID() : requestedId;
         var existing = worlds.find(ownerId, id);
         if (existing.isPresent()) {
-            if (existing.get().world().equals(world)) {
+            if (sameWorld(existing.get().world(), world)) {
                 return existing.get();
             }
             throw new WorldException(409, "conflict");
@@ -66,8 +66,17 @@ public class WorldService implements WorldReferenceResolver {
         quotas.requireWorldCapacity(ownerId);
         return worlds.insert(ownerId, id, world)
                 .orElseGet(() -> worlds.find(ownerId, id)
-                        .filter(record -> record.world().equals(world))
+                        .filter(record -> sameWorld(record.world(), world))
                         .orElseThrow(() -> new WorldException(409, "conflict")));
+    }
+
+    private static boolean sameWorld(JsonNode left, JsonNode right) {
+        return left.equals((first, second) -> {
+            if (first.isNumber() && second.isNumber()) {
+                return first.decimalValue().compareTo(second.decimalValue());
+            }
+            return first.equals(second) ? 0 : 1;
+        }, right);
     }
 
     /** Replaces a world only at its current version and preserves all linked character references. */

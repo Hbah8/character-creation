@@ -82,6 +82,7 @@ export function useCharacterLibrary(accountId: string) {
     character: Character,
     entityId: string | null,
     createId: string,
+    expectedVersion?: number,
   ): Promise<SavedCharacterRecord> => {
     const scope = accountId
     const currentRecord = entityId !== null
@@ -94,7 +95,7 @@ export function useCharacterLibrary(accountId: string) {
     }
     try {
       const saved = currentRecord
-        ? await savedCharacterApi.update(currentRecord.id, currentRecord.version, character)
+        ? await savedCharacterApi.update(currentRecord.id, expectedVersion ?? currentRecord.version, character)
         : await savedCharacterApi.create(character, createId)
       if (accountScope.current === scope) {
         setCurrent(previous => currentRecord

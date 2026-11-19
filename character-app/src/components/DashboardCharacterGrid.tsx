@@ -5,6 +5,8 @@ import { Plus, Trash2, FolderOpen, MoreHorizontal, Shield, Swords } from 'lucide
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useOperationError } from '@/hooks/useOperationError'
+import { CharacterDraftItem } from '@/components/CharacterDraftItem'
+import type { CharacterDraft } from '@/services/characterDraftRepository'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,9 +32,11 @@ import type { SavedCharacterRecord } from '@/services/savedCharacterApi'
 interface Props {
   entries: SavedCharacterRecord[]
   onDelete: (id: string, version: number) => Promise<void>
+  drafts: CharacterDraft[]
+  onDeleteDraft: (draft: CharacterDraft) => Promise<void>
 }
 
-export function DashboardCharacterGrid({ entries, onDelete }: Props) {
+export function DashboardCharacterGrid({ entries, onDelete, drafts, onDeleteDraft }: Props) {
   const navigate = useNavigate()
   const { t } = useTranslation('library')
   const { i18n } = useTranslation()
@@ -43,7 +47,16 @@ export function DashboardCharacterGrid({ entries, onDelete }: Props) {
     ? deleteError.code === 'unavailable' ? t('deleteUnavailable') : t(`errors.${deleteError.code}`)
     : null)
 
-  if (entries.length === 0) {
+  const savedIds = new Set(entries.map(entry => entry.id))
+  const unlinkedDrafts = drafts.filter(draft => !savedIds.has(draft.entityId))
+  function openDraft(draft: CharacterDraft) {
+    const path = savedIds.has(draft.entityId) || !draft.isNew
+      ? `/creator/${encodeURIComponent(draft.entityId)}`
+      : '/creator'
+    navigate(`${path}?draft=${encodeURIComponent(draft.draftId)}`)
+  }
+
+  if (entries.length === 0 && drafts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 px-4 text-center">
         <p className="text-base font-medium text-foreground mb-1">{t('noCharacters')}</p>
@@ -138,10 +151,22 @@ export function DashboardCharacterGrid({ entries, onDelete }: Props) {
                 <p className="text-xs text-muted-foreground/60 mt-auto pt-1">
                   {new Date(entry.updatedAt).toLocaleDateString(i18n.resolvedLanguage)}
                 </p>
+                <div className="flex flex-col gap-3" onClick={event => event.stopPropagation()}>
+                  {drafts.filter(draft => draft.entityId === entry.id).map(draft => (
+                    <CharacterDraftItem key={draft.draftId} draft={draft} onOpen={openDraft} onDelete={onDeleteDraft} />
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )
         })}
+        {unlinkedDrafts.map(draft => (
+          <Card key={draft.draftId}>
+            <CardContent>
+              <CharacterDraftItem draft={draft} onOpen={openDraft} onDelete={onDeleteDraft} />
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <AlertDialog
