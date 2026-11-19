@@ -12,6 +12,7 @@ const preview = {
     racialAbilities: 'Racial Abilities',
     notes: 'Notes',
     notesAndAmmo: 'Notes · Ammunition',
+    notesContinuation: 'Notes (continued)',
   },
   header: {
     fileNoPrefix: 'File: ',

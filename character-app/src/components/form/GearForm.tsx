@@ -17,9 +17,9 @@ export function GearForm({ gear, onAdd, onUpdate, onRemove, column, onColumnChan
   const { t } = useTranslation('form')
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.gear')}</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <div className="flex items-center rounded-md border overflow-hidden">
             <Button size="sm" variant={column === 'left' ? 'default' : 'ghost'} className="rounded-none h-7 px-2 text-xs" onClick={() => onColumnChange('left')}>←</Button>
             <Button size="sm" variant={column === 'right' ? 'default' : 'ghost'} className="rounded-none h-7 px-2 text-xs" onClick={() => onColumnChange('right')}>→</Button>

@@ -1,16 +1,15 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode, Ref } from 'react'
 import { useTranslation } from 'react-i18next'
-import ReactMarkdown from 'react-markdown'
-import remarkBreaks from 'remark-breaks'
-import remarkGfm from 'remark-gfm'
 import type { Character } from '@/types/character'
 import { getMagazineCapacity } from './ammunition'
 
 interface Props {
   character: Character
+  writingAreaRef: Ref<HTMLDivElement>
+  children: ReactNode
 }
 
-export function SheetNotesAmmo({ character }: Props) {
+export function SheetNotesAmmo({ character, writingAreaRef, children }: Props) {
   const { t } = useTranslation('preview')
   const ammunition = character.weapons.flatMap(weapon => {
     const capacity = getMagazineCapacity(weapon.magazine)
@@ -41,12 +40,8 @@ export function SheetNotesAmmo({ character }: Props) {
             ))}
           </div>
         )}
-        <div className="compact-notes-writing-area">
-          {character.notes && (
-            <div className="compact-notes-text">
-              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{character.notes}</ReactMarkdown>
-            </div>
-          )}
+        <div ref={writingAreaRef} className="compact-notes-writing-area">
+          {children}
         </div>
       </div>
     </section>

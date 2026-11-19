@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Character, CombatModifier } from '@/types/character'
 import { Plus, Trash2 } from 'lucide-react'
 
@@ -87,7 +87,7 @@ export function CombatForm({ character, onChange }: Props) {
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('sections.combat')}</h2>
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-medium">{t('combat.modifiers')}</h3>
           <Button type="button" variant="outline" size="sm" onClick={addModifier}>
             <Plus data-icon="inline-start" />
@@ -96,8 +96,8 @@ export function CombatForm({ character, onChange }: Props) {
         </div>
         {modifiers.map(modifier => (
           <div key={modifier.id} className="flex flex-col gap-3 border p-3">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]">
-              <div className="flex flex-col gap-1">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
+              <div className="col-span-full flex min-w-0 flex-col gap-1">
                 <Label htmlFor={`modifier-${modifier.id}-name`}>{t('combat.modifierName')}</Label>
                 <Input
                   id={`modifier-${modifier.id}-name`}
@@ -105,16 +105,18 @@ export function CombatForm({ character, onChange }: Props) {
                   onChange={event => updateModifierText(modifier.id, 'name', event.target.value)}
                 />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex min-w-0 flex-col gap-1">
                 <Label htmlFor={`modifier-${modifier.id}-source`}>{t('combat.modifierSource')}</Label>
                 <Select value={modifier.source} onValueChange={value => updateModifierText(modifier.id, 'source', value)}>
-                  <SelectTrigger id={`modifier-${modifier.id}-source`}>
+                  <SelectTrigger id={`modifier-${modifier.id}-source`} className="w-full min-w-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {MODIFIER_SOURCES.map(source => (
-                      <SelectItem key={source} value={source}>{t(`combat.sources.${source}`)}</SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {MODIFIER_SOURCES.map(source => (
+                        <SelectItem key={source} value={source}>{t(`combat.sources.${source}`)}</SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -131,7 +133,7 @@ export function CombatForm({ character, onChange }: Props) {
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium text-muted-foreground">{t('combat.combatModifiers')}</span>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,5.5rem),1fr))] items-end gap-3">
                 {COMBAT_MODIFIER_KEYS.map(key => (
                   <div key={key} className="flex flex-col gap-1">
                     <Label htmlFor={`modifier-${modifier.id}-${key}`}>

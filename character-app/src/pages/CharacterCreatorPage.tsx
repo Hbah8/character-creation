@@ -40,7 +40,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { WorldSyncNotice } from '@/world/components/WorldSyncNotice'
 import { attachActiveWorldToNewCharacter } from '@/services/characterWorldContext'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -392,7 +392,7 @@ export function CharacterCreatorPage() {
   }
 
   function handleExportPdf() {
-    const sheet = printSheetRef.current?.querySelector<HTMLElement>('.sheet')
+    const sheet = printSheetRef.current?.querySelector<HTMLElement>('[data-sheet-document], .sheet')
     if (!sheet) throw new Error('Print sheet is not mounted')
     exportToPdf(sheet)
   }
@@ -491,7 +491,7 @@ export function CharacterCreatorPage() {
     notes: tForm('sections.notes'),
   }), [tForm])
 
-  function renderFormSection(section: string) {
+  function renderFormSection(section: string, showNotesPreview = false) {
     switch (section) {
       case 'identity':
         return (
@@ -594,6 +594,7 @@ export function CharacterCreatorPage() {
       case 'notes':
         return (
           <NotesForm
+            showPreview={showNotesPreview}
             notes={character.notes}
             onChange={val => store.updateField('notes', val)}
           />
@@ -674,13 +675,15 @@ export function CharacterCreatorPage() {
   const mobileSectionNav = (
     <div className="shrink-0 border-b px-3 py-2 print:hidden">
       <Select value={activeSection} onValueChange={setActiveSection}>
-        <SelectTrigger className="h-8 text-xs">
+        <SelectTrigger className="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {SECTIONS.map(s => (
-            <SelectItem key={s} value={s} className="text-xs">{sectionLabels[s]}</SelectItem>
-          ))}
+          <SelectGroup>
+            {SECTIONS.map(s => (
+              <SelectItem key={s} value={s}>{sectionLabels[s]}</SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
     </div>
@@ -710,19 +713,18 @@ export function CharacterCreatorPage() {
         </AlertDialogContent>
       </AlertDialog>
       {/* Top bar */}
-      <header className="flex items-center justify-between px-4 py-2 border-b shrink-0 print:hidden gap-4">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-2 shrink-0 print:hidden">
         <div className="flex items-center gap-2 min-w-0">
           <Button
             variant="ghost"
-            size="sm"
-            className="size-7 p-0 shrink-0 text-muted-foreground hover:text-foreground"
+            size="icon"
             title="Назад к обзору"
             onClick={() => navigate('/')}
           >
             <ArrowLeft className="size-4" />
           </Button>
           <div className="flex flex-col leading-tight min-w-0">
-            <span className="font-semibold text-sm truncate">
+            <span className="font-semibold type-body truncate">
               {character.callsign || tHeader('newCharacterPlaceholder')}
             </span>
             {subtitle && (
@@ -731,7 +733,7 @@ export function CharacterCreatorPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
           {isDirty && (
             <span className="text-amber-500 text-xs">{tHeader('unsaved')}</span>
           )}
@@ -742,8 +744,7 @@ export function CharacterCreatorPage() {
           )}
           <Button
             variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            size="icon"
             title={tHeader('helpButton')}
             onClick={() => setWelcomeOpen(true)}
           >
@@ -751,8 +752,6 @@ export function CharacterCreatorPage() {
           </Button>
           <Button
             variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs font-medium"
             onClick={() => handleLocaleChange(locale === 'en' ? 'ru' : 'en')}
           >
             {locale.toUpperCase()}
@@ -763,7 +762,7 @@ export function CharacterCreatorPage() {
             onLoad={handleLoad}
             onNewCharacter={handleNewCharacter}
           />
-          <Button variant="default" size="sm" disabled={saving} onClick={handleSave}>
+          <Button disabled={saving} onClick={handleSave}>
             {saving ? tLibrary('saving') : treatMissingAsNew
               ? tLibrary('drafts.saveAsNew')
               : tLibrary('save')}
@@ -795,11 +794,11 @@ export function CharacterCreatorPage() {
       )}
 
       {/* Desktop: three-panel layout */}
-      <div className="hidden md:flex flex-1 min-h-0 print:flex print:h-auto">
+      <div className="hidden lg:flex flex-1 min-h-0 print:flex print:h-auto">
         {/* Left sidebar: section nav */}
         <div className="w-44 shrink-0 border-r flex flex-col min-h-0 print:hidden">
           <div className="px-3 pt-3 pb-1.5 shrink-0">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="type-secondary font-semibold uppercase tracking-wider text-muted-foreground">
               {tHeader('sectionsHeading')}
             </span>
           </div>
@@ -812,7 +811,7 @@ export function CharacterCreatorPage() {
                     key={s}
                     onClick={() => setActiveSection(s)}
                     className={cn(
-                      'flex items-center gap-2 w-full rounded-md px-2.5 py-2 text-xs font-medium text-left transition-colors',
+                      'flex items-center gap-2 w-full rounded-md px-2.5 py-2 type-control font-medium text-left transition-colors',
                       activeSection === s
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -828,12 +827,18 @@ export function CharacterCreatorPage() {
         </div>
 
         {/* Form panel */}
-        <div className="w-[400px] shrink-0 border-r flex flex-col min-h-0 print:hidden">
-          <ScrollArea className="flex-1 overflow-hidden">
-            <div className="p-4">
+        <div className="w-[min(25rem,34vw)] shrink-0 border-r flex flex-col min-h-0 print:hidden">
+          {activeSection === 'notes' ? (
+            <div className="flex min-h-0 flex-1 flex-col p-4">
               {renderFormSection(activeSection)}
             </div>
-          </ScrollArea>
+          ) : (
+            <ScrollArea className="flex-1 overflow-hidden">
+              <div className="p-4">
+                {renderFormSection(activeSection)}
+              </div>
+            </ScrollArea>
+          )}
         </div>
 
         {/* Preview panel */}
@@ -849,13 +854,12 @@ export function CharacterCreatorPage() {
             />
             <ToggleGroup
               type="single"
-              size="sm"
               value={scaleMode}
               onValueChange={val => { if (val) setScaleMode(val as ScaleMode) }}
             >
-              <ToggleGroupItem value="fit-width" className="h-6 px-2 text-xs">{tHeader('scalesFitWidth')}</ToggleGroupItem>
-              <ToggleGroupItem value="full-page" className="h-6 px-2 text-xs">{tHeader('scalesFullPage')}</ToggleGroupItem>
-              <ToggleGroupItem value="100%" className="h-6 px-2 text-xs">{tHeader('scalesActual')}</ToggleGroupItem>
+              <ToggleGroupItem value="fit-width">{tHeader('scalesFitWidth')}</ToggleGroupItem>
+              <ToggleGroupItem value="full-page">{tHeader('scalesFullPage')}</ToggleGroupItem>
+              <ToggleGroupItem value="100%">{tHeader('scalesActual')}</ToggleGroupItem>
             </ToggleGroup>
           </div>
           <div className="flex-1 min-h-0 bg-[#d0d0d0] overflow-hidden print:overflow-visible">
@@ -869,7 +873,7 @@ export function CharacterCreatorPage() {
       </div>
 
       {/* Mobile: tab layout */}
-      <Tabs defaultValue="form" className="flex md:hidden flex-col flex-1 min-h-0 w-full min-w-0 overflow-x-hidden">
+      <Tabs defaultValue="form" className="flex lg:hidden flex-col flex-1 min-h-0 w-full min-w-0 overflow-x-hidden">
         <div className="shrink-0 border-b px-3 py-1.5">
           <TabsList className="w-full">
             <TabsTrigger value="form" className="flex-1">{tNav('editForm')}</TabsTrigger>
@@ -881,34 +885,32 @@ export function CharacterCreatorPage() {
           {mobileSectionNav}
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
             <div className="p-4">
-              {renderFormSection(activeSection)}
+              {renderFormSection(activeSection, true)}
             </div>
           </div>
         </TabsContent>
 
         <TabsContent value="preview" className="flex-1 min-h-0 flex flex-col mt-0">
-          <div className="relative flex-1 bg-[#d0d0d0] overflow-y-auto overflow-x-hidden">
-            <div className="sticky top-2 right-2 z-10 flex justify-end px-2 mb-[-32px] pointer-events-none print:hidden">
-              <div className="bg-background/90 backdrop-blur-sm border rounded-md p-1.5 shadow-sm pointer-events-auto flex flex-col gap-1.5">
-                <SheetTemplateControls
-                  templateId={templateId}
-                  onTemplateChange={handleTemplatePreferenceChange}
-                />
-                <ToggleGroup
-                  type="single"
-                  size="sm"
-                  value={scaleMode}
-                  onValueChange={val => { if (val) setScaleMode(val as ScaleMode) }}
-                >
-                  <ToggleGroupItem value="fit-width" className="h-6 px-2 text-xs">{tHeader('scalesFitWidth')}</ToggleGroupItem>
-                  <ToggleGroupItem value="full-page" className="h-6 px-2 text-xs">{tHeader('scalesFullPage')}</ToggleGroupItem>
-                  <ToggleGroupItem value="100%" className="h-6 px-2 text-xs">{tHeader('scalesActual')}</ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-            </div>
+          <div className="shrink-0 border-b bg-background flex flex-wrap items-center gap-2 px-3 py-2 print:hidden">
+            <SheetTemplateControls
+              templateId={templateId}
+              onTemplateChange={handleTemplatePreferenceChange}
+            />
+            <ToggleGroup
+              type="single"
+              value={scaleMode}
+              onValueChange={val => { if (val) setScaleMode(val as ScaleMode) }}
+            >
+              <ToggleGroupItem value="fit-width">{tHeader('scalesFitWidth')}</ToggleGroupItem>
+              <ToggleGroupItem value="full-page">{tHeader('scalesFullPage')}</ToggleGroupItem>
+              <ToggleGroupItem value="100%">{tHeader('scalesActual')}</ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          <div className="flex-1 min-h-0 bg-[#d0d0d0]">
             <CharacterSheet
               resolvedCharacter={resolvedCharacter}
-              fitToContainer
+              mobile
+              scaleMode={scaleMode}
               templateId={templateId}
             />
           </div>

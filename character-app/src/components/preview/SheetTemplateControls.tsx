@@ -32,7 +32,7 @@ export function SheetTemplateControls({
           if (next === 'classic' || next === 'compact') onTemplateChange(next)
         }}
       >
-        <SelectTrigger aria-label={t('sheetTemplate')} className="h-7 w-full min-w-0 text-xs">
+        <SelectTrigger aria-label={t('sheetTemplate')} className="w-full min-w-0">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
