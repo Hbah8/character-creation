@@ -300,7 +300,8 @@ test('saved standalone characters persist across browser contexts and stay priva
 
     await page.reload()
     await page.locator('button[title="Назад к обзору"]').click()
-    await page.getByRole('button', { name: 'Continue editing', exact: true }).click()
+    await page.getByRole('button', { name: 'Actions for Updated from another browser', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Continue editing', exact: true }).click()
     await expect(page.getByLabel('Callsign', { exact: true }))
       .toHaveValue('Edited during conflict request')
     await expect(page.getByText('The server version changed', { exact: false })).toBeVisible()
