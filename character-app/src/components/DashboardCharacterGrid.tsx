@@ -1,16 +1,19 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus, Trash2, FolderOpen, MoreHorizontal, Shield, Swords } from 'lucide-react'
+import { Plus, Trash2, FolderOpen, MoreHorizontal, Shield, Swords, FilePenLine } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useOperationError } from '@/hooks/useOperationError'
-import { CharacterDraftItem } from '@/components/CharacterDraftItem'
+import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { CharacterDraft } from '@/services/characterDraftRepository'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -38,22 +41,46 @@ interface Props {
 
 export function DashboardCharacterGrid({ entries, onDelete, drafts, onDeleteDraft }: Props) {
   const navigate = useNavigate()
-  const { t } = useTranslation('library')
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation('library')
   const [pendingDelete, setPendingDelete] = useState<SavedCharacterRecord | null>(null)
+  const [pendingDraftDelete, setPendingDraftDelete] = useState<CharacterDraft | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<SavedCharacterApiError | null>(null)
   useOperationError(deleteError
     ? deleteError.code === 'unavailable' ? t('deleteUnavailable') : t(`errors.${deleteError.code}`)
     : null)
 
+  const draftsByEntity = new Map<string, CharacterDraft[]>()
+  for (const draft of drafts) {
+    const group = draftsByEntity.get(draft.entityId)
+    if (group) group.push(draft)
+    else draftsByEntity.set(draft.entityId, [draft])
+  }
   const savedIds = new Set(entries.map(entry => entry.id))
-  const unlinkedDrafts = drafts.filter(draft => !savedIds.has(draft.entityId))
-  function openDraft(draft: CharacterDraft) {
+  const cards = [
+    ...entries.map(entry => ({
+      key: `saved:${entry.id}`,
+      entry,
+      character: entry.character,
+      updatedAt: entry.updatedAt,
+      drafts: draftsByEntity.get(entry.id) ?? [],
+      href: `/creator/${encodeURIComponent(entry.id)}`,
+    })),
+    ...drafts.filter(draft => !savedIds.has(draft.entityId)).map(draft => ({
+      key: `draft:${draft.draftId}`,
+      entry: null,
+      character: draft.character,
+      updatedAt: draft.modifiedAt,
+      drafts: [draft],
+      href: draftHref(draft),
+    })),
+  ]
+
+  function draftHref(draft: CharacterDraft) {
     const path = savedIds.has(draft.entityId) || !draft.isNew
       ? `/creator/${encodeURIComponent(draft.entityId)}`
       : '/creator'
-    navigate(`${path}?draft=${encodeURIComponent(draft.draftId)}`)
+    return `${path}?draft=${encodeURIComponent(draft.draftId)}`
   }
 
   if (entries.length === 0 && drafts.length === 0) {
@@ -72,102 +99,152 @@ export function DashboardCharacterGrid({ entries, onDelete, drafts, onDeleteDraf
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {entries.map(entry => {
-          const char = entry.character
-          const subtitle = [char.role, char.rank].filter(Boolean).join(' · ')
+        {cards.map(({ key, entry, character, updatedAt, drafts: cardDrafts, href }) => {
+          const name = character.callsign || (entry ? '—' : character.name || t('unnamed'))
+          const subtitle = [character.role, character.rank].filter(Boolean).join(' · ')
+          const hasMultipleDrafts = cardDrafts.length > 1
 
           return (
-            <Card
-              key={entry.id}
-              className="flex flex-col overflow-hidden cursor-pointer transition-colors hover:bg-accent/40"
-              onClick={() => navigate(`/creator/${entry.id}`)}
-            >
-              <div className="h-32 bg-muted overflow-hidden shrink-0">
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-4xl font-bold text-muted-foreground/40 select-none">
-                    {(char.callsign || '?')[0].toUpperCase()}
-                  </span>
-                </div>
+            <Card key={key} className="relative min-w-0 transition-colors hover:bg-accent/40">
+              <div className="flex h-32 shrink-0 items-center justify-center bg-muted" aria-hidden="true">
+                <span className="select-none text-4xl font-bold text-muted-foreground/40">
+                  {Array.from(name)[0].toUpperCase()}
+                </span>
               </div>
 
-              {/* Info */}
-              <CardContent className="flex flex-col gap-1.5 p-3 flex-1">
-                {/* Name row + menu */}
-                <div className="flex items-start justify-between gap-1">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm leading-tight truncate">
-                      {char.callsign || '—'}
-                    </p>
-                    {subtitle && (
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
-                    )}
-                  </div>
+              <CardContent className="flex flex-1 flex-col gap-1.5 p-3">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <Link
+                    to={href}
+                    title={name}
+                    className="min-w-0 truncate text-sm font-semibold leading-tight outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
+                  >
+                    {name}
+                  </Link>
+                  {!entry ? (
+                    <Badge variant="secondary">{t('drafts.label')}</Badge>
+                  ) : cardDrafts.length > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          tabIndex={0}
+                          role="img"
+                          aria-label={t('drafts.changesAvailable')}
+                          className="relative z-10 inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <FilePenLine aria-hidden="true" className="size-3.5" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent sideOffset={4}>{t('drafts.changesAvailable')}</TooltipContent>
+                    </Tooltip>
+                  )}
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
+                    <DropdownMenuTrigger asChild>
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="size-6 shrink-0 -mr-1 -mt-0.5 text-muted-foreground hover:text-foreground"
+                        aria-label={t('cardActions', { name })}
+                        className="relative z-10 -mr-1 ml-auto size-6 shrink-0 text-muted-foreground"
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreHorizontal />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
-                      <DropdownMenuItem onClick={() => navigate(`/creator/${entry.id}`)}>
-                        <FolderOpen className="size-4 mr-2" />
-                        {t('open')}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => setPendingDelete(entry)}
-                      >
-                        <Trash2 className="size-4 mr-2" />
-                        {t('delete')}
-                      </DropdownMenuItem>
+                    <DropdownMenuContent align="end" className="w-max max-w-[min(20rem,calc(100vw-2rem))]">
+                      {entry && (
+                        <>
+                          <DropdownMenuGroup>
+                            <DropdownMenuItem asChild>
+                              <Link to={href}>
+                                <FolderOpen />
+                                {t('open')}
+                              </Link>
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
+                      {cardDrafts.map((draft, index) => (
+                        <DropdownMenuGroup key={draft.draftId}>
+                          {index > 0 && <DropdownMenuSeparator />}
+                          {hasMultipleDrafts && (
+                            <DropdownMenuLabel className="min-w-0 text-muted-foreground">
+                              <span className="block truncate" title={draft.character.callsign || draft.character.name}>
+                                {draft.character.callsign || draft.character.name || t('unnamed')}
+                              </span>
+                              {new Date(draft.modifiedAt).toLocaleString(i18n.resolvedLanguage)}
+                            </DropdownMenuLabel>
+                          )}
+                          <DropdownMenuItem asChild>
+                            <Link to={draftHref(draft)}>
+                              <FilePenLine />
+                              {t('drafts.continue')}
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem variant="destructive" onSelect={() => setPendingDraftDelete(draft)}>
+                            <Trash2 />
+                            {t(entry ? 'drafts.deleteChanges' : 'drafts.delete')}
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      ))}
+                      {entry && (
+                        <>
+                          {cardDrafts.length > 0 && <DropdownMenuSeparator />}
+                          <DropdownMenuGroup>
+                            <DropdownMenuItem variant="destructive" onSelect={() => setPendingDelete(entry)}>
+                              <Trash2 />
+                              {t('delete')}
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
 
-                {/* Quick combat stats */}
-                {(char.parry || char.toughness) && (
+                {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
+                {(character.parry || character.toughness) && (
                   <div className="flex gap-3 text-xs text-muted-foreground">
-                    {char.parry && (
+                    {character.parry && (
                       <span className="flex items-center gap-0.5">
                         <Swords className="size-3 shrink-0" />
-                        {char.parry}
+                        {character.parry}
                       </span>
                     )}
-                    {char.toughness && (
+                    {character.toughness && (
                       <span className="flex items-center gap-0.5">
                         <Shield className="size-3 shrink-0" />
-                        {char.toughness}
+                        {character.toughness}
                       </span>
                     )}
                   </div>
                 )}
 
-                {/* Date */}
-                <p className="text-xs text-muted-foreground/60 mt-auto pt-1">
-                  {new Date(entry.updatedAt).toLocaleDateString(i18n.resolvedLanguage)}
+                <p className="mt-auto pt-1 text-xs text-muted-foreground/60">
+                  {new Date(updatedAt).toLocaleDateString(i18n.resolvedLanguage)}
                 </p>
-                <div className="flex flex-col gap-3" onClick={event => event.stopPropagation()}>
-                  {drafts.filter(draft => draft.entityId === entry.id).map(draft => (
-                    <CharacterDraftItem key={draft.draftId} draft={draft} onOpen={openDraft} onDelete={onDeleteDraft} />
-                  ))}
-                </div>
               </CardContent>
             </Card>
           )
         })}
-        {unlinkedDrafts.map(draft => (
-          <Card key={draft.draftId}>
-            <CardContent>
-              <CharacterDraftItem draft={draft} onOpen={openDraft} onDelete={onDeleteDraft} />
-            </CardContent>
-          </Card>
-        ))}
       </div>
+
+      <AlertDialog open={pendingDraftDelete !== null} onOpenChange={open => { if (!open) setPendingDraftDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('drafts.deleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('drafts.deleteDescription')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => { if (pendingDraftDelete) void onDeleteDraft(pendingDraftDelete) }}
+            >
+              {t('confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={pendingDelete !== null}

@@ -1,5 +1,5 @@
-import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { MemoryRouter } from 'react-router-dom'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enDefaultCharacter } from '@/i18n/locales/en/defaults'
 import { getDefaultWorld } from '@/world/data/defaultWorld'
@@ -15,12 +15,18 @@ vi.mock('@/store/useCharacterLibrary', () => ({ useCharacterLibrary: characterLi
 vi.mock('@/world/store/useWorldLibrary', () => ({ useWorldLibrary: worldLibrary }))
 vi.mock('@/accounts/useSessionAccount', () => ({ useSessionAccount: () => ({ id: 'owner' }) }))
 vi.mock('@/hooks/useCharacterDrafts', () => ({ useCharacterDrafts: draftLibrary }))
-vi.mock('react-router-dom', async importOriginal => ({
-  ...await importOriginal<typeof import('react-router-dom')>(),
-  useNavigate: () => vi.fn(),
-}))
 
 import { DashboardPage } from '@/pages/DashboardPage'
+
+function renderDashboard() {
+  return renderToStaticMarkup(
+    <MemoryRouter>
+      <TooltipProvider>
+        <DashboardPage />
+      </TooltipProvider>
+    </MemoryRouter>,
+  )
+}
 
 describe('DashboardPage world context', () => {
   beforeAll(() => {
@@ -49,7 +55,7 @@ describe('DashboardPage world context', () => {
   })
 
   it('limits the grid, count and last-edited summary to standalone characters', () => {
-    const html = renderToStaticMarkup(createElement(DashboardPage))
+    const html = renderDashboard()
     expect(html).toContain('Solo scout')
     expect(html).not.toContain('Alpha scout')
     expect(html).not.toContain('Beta scout')
@@ -62,7 +68,7 @@ describe('DashboardPage world context', () => {
     worldLibrary.mockReturnValue({
       ...worldLibrary(), activeWorldId: 'a',
     })
-    const html = renderToStaticMarkup(createElement(DashboardPage))
+    const html = renderDashboard()
     expect(html).toContain('Alpha scout')
     expect(html).not.toContain('Beta scout')
     expect(html).not.toContain('Solo scout')
@@ -74,7 +80,7 @@ describe('DashboardPage world context', () => {
 
   it('shows an empty state with zero count for a world without characters', () => {
     worldLibrary.mockReturnValue({ ...worldLibrary(), activeWorldId: 'empty' })
-    const html = renderToStaticMarkup(createElement(DashboardPage))
+    const html = renderDashboard()
     expect(html).toContain('No saved characters yet.')
     expect(html).toContain('>0</p>')
     for (const name of ['Solo scout', 'Alpha scout', 'Beta scout']) {
@@ -84,7 +90,7 @@ describe('DashboardPage world context', () => {
 
   it('does not show account-wide records or final counts while the world context is loading', () => {
     worldLibrary.mockReturnValue({ ...worldLibrary(), loading: true })
-    const html = renderToStaticMarkup(createElement(DashboardPage))
+    const html = renderDashboard()
     expect(html).toContain('Loading saved characters')
     expect(html).not.toContain('Solo scout')
     expect(html).not.toContain('>3</p>')
@@ -93,7 +99,7 @@ describe('DashboardPage world context', () => {
   it('does not claim the library is empty while local drafts are still loading', () => {
     characterLibrary.mockReturnValue({ ...characterLibrary(), entries: [] })
     draftLibrary.mockReturnValue({ ...draftLibrary(), loading: true })
-    const html = renderToStaticMarkup(createElement(DashboardPage))
+    const html = renderDashboard()
     expect(html).toContain('Loading saved characters')
     expect(html).not.toContain('No saved characters yet.')
   })
@@ -109,7 +115,7 @@ describe('DashboardPage world context', () => {
           character: { ...enDefaultCharacter, callsign: 'Draft B' } },
       ],
     })
-    const html = renderToStaticMarkup(createElement(TooltipProvider, null, createElement(DashboardPage)))
+    const html = renderDashboard()
     expect(html).toContain('>1</p>')
     expect(html).toContain('(1)')
   })

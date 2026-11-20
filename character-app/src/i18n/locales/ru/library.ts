@@ -33,7 +33,10 @@ const library = {
   lastSaved: 'Сохранено',
   unnamed: 'Без позывного',
   open: 'Открыть',
+  cardActions: 'Действия: {{name}}',
   drafts: {
+    changesAvailable: 'Есть черновик изменений',
+    deleteChanges: 'Удалить черновик изменений',
     label: 'Черновик',
     localOnly: 'Черновик хранится только в этом браузере и не сохранён на сервере.',
     continue: 'Продолжить редактирование',

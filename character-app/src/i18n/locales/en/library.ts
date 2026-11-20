@@ -33,7 +33,10 @@ const library = {
   lastSaved: 'Saved',
   unnamed: 'Unnamed',
   open: 'Open',
+  cardActions: 'Actions for {{name}}',
   drafts: {
+    changesAvailable: 'There is a draft with changes',
+    deleteChanges: 'Delete draft changes',
     label: 'Draft',
     localOnly: 'This draft is stored only in this browser and is not saved to the server.',
     continue: 'Continue editing',
