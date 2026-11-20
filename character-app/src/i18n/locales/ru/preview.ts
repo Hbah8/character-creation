@@ -12,6 +12,7 @@ const preview = {
     racialAbilities: 'Расовые особенности',
     notes: 'Отметки',
     notesAndAmmo: 'Заметки · боеприпасы',
+    notesContinuation: 'Заметки (продолжение)',
   },
   header: {
     fileNoPrefix: 'Файл: ',

@@ -54,11 +54,19 @@ export function exportToPdf(sheet: HTMLElement): void {
   // (sidebar, header, form, dialogs) can bleed into the printed output.
   const printRoot = document.createElement('div')
   printRoot.id = '__pdf-print-root__'
-  printRoot.appendChild(sheet.cloneNode(true))
+  const copy = sheet.cloneNode(true) as HTMLElement
+  copy.querySelector('[data-notes-measurement]')?.remove()
+  printRoot.appendChild(copy)
   document.body.appendChild(printRoot)
 
   const style = document.createElement('style')
-  style.textContent = `@media print { body > *:not(#__pdf-print-root__) { display: none !important; } }`
+  style.textContent = `
+    @page { size: A4; margin: 0; }
+    @media print {
+      body { background: transparent; }
+      body > *:not(#__pdf-print-root__) { display: none !important; }
+    }
+  `
   document.head.appendChild(style)
 
   const cleanup = () => {

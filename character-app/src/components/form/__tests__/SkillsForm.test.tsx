@@ -27,8 +27,9 @@ describe('SkillsForm', () => {
     expect(html).toContain('Стрельба')
     expect(html).toContain('Select a skill')
     expect(html).toContain('min-w-0 max-w-full')
-    expect(html).toContain('grid-cols-[minmax(0,1.1fr)_4rem_minmax(0,1fr)_5rem_2.25rem]')
-    expect(html).toContain('flex min-w-0 max-w-full flex-col gap-1 overflow-x-auto')
+    expect(html).toContain('>Agility</span>')
+    expect(html).toContain('>Core</span>')
+    expect(html).not.toMatch(/class="[^"]*\btruncate\b/)
     expect(html).toContain('data-size="icon-sm"')
     expect(html).not.toContain('Skill name')
     expect(html).not.toContain('type="checkbox"')
@@ -59,8 +60,8 @@ describe('SkillsForm', () => {
       'Убеждение',
     ]
 
-    expect(orderedNames.map(name => html.indexOf(`title="${name}"`))).toEqual(
-      [...orderedNames].map(name => html.indexOf(`title="${name}"`)).sort((a, b) => a - b),
-    )
+    const positions = orderedNames.map(name => html.indexOf(`>${name}</span>`))
+    expect(positions.every(position => position >= 0)).toBe(true)
+    expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 })

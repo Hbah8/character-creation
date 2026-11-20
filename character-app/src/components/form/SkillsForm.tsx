@@ -52,20 +52,24 @@ export function SkillsForm({ skills, character, onAdd, onUpdate, onRemove }: Pro
         </SelectContent>
       </Select>
 
-      <div className="flex min-w-0 max-w-full flex-col gap-1 overflow-x-auto">
-        <div className="grid min-w-[360px] grid-cols-[minmax(0,1.1fr)_4rem_minmax(0,1fr)_5rem_2.25rem] gap-1.5 px-1 text-xs text-muted-foreground">
-          <Label className="min-w-0 truncate text-xs">{t('skills.columnName')}</Label>
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] gap-x-2 gap-y-1">
+        <div className="col-span-full grid grid-cols-subgrid items-end text-muted-foreground">
+          <Label className="text-xs">{t('skills.columnName')}</Label>
           <Label className="text-xs">{t('skills.columnDie')}</Label>
-          <Label className="min-w-0 truncate text-xs">{t('skills.columnLinkedAttribute')}</Label>
-          <Label className="whitespace-nowrap text-center text-xs">{t('skills.columnStarter')}</Label>
           <span />
         </div>
 
         {effectiveSkills.map(skill => (
-          <div key={skill.id} className="grid min-w-[360px] grid-cols-[minmax(0,1.1fr)_4rem_minmax(0,1fr)_5rem_2.25rem] items-center gap-1.5">
-            <span className="min-w-0 truncate px-3 text-sm" title={skill.name}>{skill.name}</span>
+          <div key={skill.id} className="col-span-full grid grid-cols-subgrid items-center border-b py-1.5 last:border-b-0">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="type-body wrap-anywhere">{skill.name}</span>
+              <div className="flex flex-wrap gap-x-2 type-secondary text-muted-foreground">
+                <span>{t(`attributes.${skill.linkedAttribute}`)}</span>
+                {skill.isStarter && <span>{t('skills.core')}</span>}
+              </div>
+            </div>
             <Select value={skill.die} onValueChange={val => onUpdate(skill.id, { die: val as DieName })}>
-              <SelectTrigger className="h-7">
+              <SelectTrigger size="sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -76,8 +80,6 @@ export function SkillsForm({ skills, character, onAdd, onUpdate, onRemove }: Pro
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <span className="min-w-0 truncate px-3 text-sm" title={t(`attributes.${skill.linkedAttribute}`)}>{t(`attributes.${skill.linkedAttribute}`)}</span>
-            <span className="whitespace-nowrap text-center text-sm">{skill.isStarter ? t('skills.core') : '—'}</span>
             <Button size="icon-sm" variant="ghost" onClick={() => onRemove(skill.id)} className="text-destructive hover:text-destructive" aria-label={t('skills.removeSkill')}>
               <Trash2 />
             </Button>
@@ -85,7 +87,7 @@ export function SkillsForm({ skills, character, onAdd, onUpdate, onRemove }: Pro
         ))}
 
         {skills.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-2">{t('skills.noSkills')}</p>
+          <p className="col-span-full py-2 text-center text-sm text-muted-foreground">{t('skills.noSkills')}</p>
         )}
       </div>
     </div>

@@ -464,30 +464,70 @@
   font-weight: 700;
 }
 
+.compact-sheet-document {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4mm;
+}
+
+.compact-notes-measurement {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+  width: 210mm;
+  height: 0;
+}
+
+.sheet--compact .compact-notes-text {
+  display: flow-root;
+  flex: none;
+  overflow-wrap: anywhere;
+}
+
+.sheet--compact .compact-notes-text ul,
+.sheet--compact .compact-notes-text ol {
+  padding-inline-start: 1.5em;
+}
+
+.sheet--compact .compact-notes-text ul {
+  list-style-type: disc;
+}
+
+.sheet--compact .compact-notes-text ol {
+  list-style-type: decimal;
+}
+
+.sheet--compact .compact-notes-text .compact-notes-list-continuation {
+  list-style-type: none;
+}
+
+.sheet--compact .compact-notes-text pre {
+  white-space: pre-wrap;
+}
+
+.sheet--compact .compact-notes-text img {
+  max-width: 100%;
+  max-height: 260mm;
+  object-fit: contain;
+}
+
 @media print {
+  .compact-sheet-document {
+    display: block;
+  }
+
+  .compact-sheet-document > .sheet + .sheet {
+    break-before: page;
+  }
+
   .sheet--compact {
-    height: 297mm !important;
-    min-height: 297mm !important;
-    padding: 4.5mm;
     break-inside: avoid;
-    page-break-inside: avoid;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
-  }
-
-  .sheet--compact .content {
-    height: 288mm;
-    gap: 1.8mm;
-  }
-
-  .sheet--compact .columns {
-    min-height: 0;
-    gap: 2mm;
-  }
-
-  .sheet--compact .column {
-    min-height: 0;
-    gap: 1.8mm;
   }
 
   .sheet--compact .compact-ammunition-track {
